@@ -1,0 +1,12 @@
+Casino Engine
+Copyright 2026 1638.cloud (Nekbakht Zabirov)
+
+This product includes software developed at
+1638.cloud (https://1638.cloud).
+
+Casino Engine is the open-source game-mechanics module of the 1638.cloud
+iGaming platform. It is the only open-source engine in the 1638.cloud
+platform stack; all other engines (PAM, Wallet, Payment, Risk,
+Engagement, Intelligence, CMS) are proprietary.
+
+Live deployments: moonbet.casino, 2k.ua
