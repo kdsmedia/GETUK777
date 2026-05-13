@@ -86,7 +86,7 @@ cp .env.example .env
 ./gradlew run                  # HTTP :8080, gRPC :5050
 ```
 
-Full setup, integration guides, and operations docs are in [`docs/`](./docs).
+Full setup, integration guides, and operations docs are in [`docs/`](./docs) — see the [Documentation](#documentation) section below.
 
 ---
 
@@ -104,24 +104,20 @@ Full setup, integration guides, and operations docs are in [`docs/`](./docs).
 | DI | Koin |
 | Build | Gradle (Kotlin DSL) |
 
-Architecture: hexagonal (ports & adapters) with CQRS. See
-[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
+Architecture: hexagonal (ports & adapters) with CQRS.
 
 ---
 
 ## Documentation
 
-- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — system design, layers,
-  source structure, event flow
-- [`docs/INTEGRATIONS.md`](./docs/INTEGRATIONS.md) — supported aggregators
-  and how to add a new one
-- [`docs/ADAPTERS.md`](./docs/ADAPTERS.md) — required adapters (Wallet,
-  PlayerLimit, File, Event, Currency) you implement for production
-- [`docs/API.md`](./docs/API.md) — gRPC API reference (`game.v1` package)
-- [`docs/CONFIGURATION.md`](./docs/CONFIGURATION.md) — environment variables
-  and infrastructure
-- [`docs/ERRORS.md`](./docs/ERRORS.md) — domain exception hierarchy and gRPC
-  status mapping
+Technical documentation lives under [`docs/`](./docs):
+
+- [Architecture](./docs/ARCHITECTURE.md) — system design, layers, source structure, event flow
+- [Integrations](./docs/INTEGRATIONS.md) — supported aggregators and how to add a new one
+- [Adapters](./docs/ADAPTERS.md) — required adapters (Wallet, PlayerLimit, File, Event, Currency) you implement for production
+- [API](./docs/API.md) — gRPC API reference (`game.v1` package)
+- [Configuration](./docs/CONFIGURATION.md) — environment variables and infrastructure
+- [Errors](./docs/ERRORS.md) — domain exception hierarchy and gRPC status mapping
 
 ---
 
