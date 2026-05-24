@@ -24,7 +24,9 @@ class PlaceSpinSessionHandler(
         val round = roundRepository.findByExternalIdAndSessionId(
             externalId = externalRoundId,
             sessionId = session.id,
-        )?.copy(session = session) ?: session.openRound(externalId = externalRoundId, freespinId = freespinId)
+        )?.copy(session = session) ?: roundRepository.save(
+            session.openRound(externalId = externalRoundId, freespinId = freespinId),
+        )
 
         val spin = SpinFactory.place(
             round = round,
