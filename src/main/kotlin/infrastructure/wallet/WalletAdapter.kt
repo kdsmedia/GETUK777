@@ -33,7 +33,7 @@ class WalletAdapter(
 
     override suspend fun findBalance(playerId: PlayerId, currency: Currency): PlayerBalance {
         val request = GetAccountRequest.newBuilder()
-            .setPlayerId(playerId.value)
+            .setUserId(playerId.value)
             .setCurrencyCode(currency.value)
             .build()
 
@@ -50,7 +50,7 @@ class WalletAdapter(
         bonusAmount: Amount
     ): PlayerBalance {
         val request = WithdrawRequest.newBuilder()
-            .setPlayerId(playerId.value)
+            .setUserId(playerId.value)
             .setCurrencyCode(currency.value)
             .setRealAmount(realAmount.value)
             .setBonusAmount(bonusAmount.value)
@@ -71,7 +71,7 @@ class WalletAdapter(
         bonusAmount: Amount
     ): PlayerBalance {
         val request = DepositRequest.newBuilder()
-            .setPlayerId(playerId.value)
+            .setUserId(playerId.value)
             .setCurrencyCode(currency.value)
             .setRealAmount(realAmount.value)
             .setBonusAmount(bonusAmount.value)
