@@ -12,6 +12,7 @@ import domain.vo.GameSymbol
 import domain.vo.Identity
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import org.slf4j.LoggerFactory
 
 class SyncAggregatorUsecase(
     private val aggregatorFactory: IAggregatorFactory,
@@ -20,26 +21,36 @@ class SyncAggregatorUsecase(
     private val providerRepository: IProviderRepository
 ) {
 
-    suspend operator fun invoke(aggregator: Aggregator): Result<Unit> = runCatching {
-        process(aggregator)
-    }
+    private val logger = LoggerFactory.getLogger(SyncAggregatorUsecase::class.java)
+
+    suspend operator fun invoke(aggregator: Aggregator) = process(aggregator)
 
     private suspend fun process(aggregator: Aggregator) = coroutineScope {
+        val id = aggregator.identity.value
         val gameAdapter = aggregatorFactory.createGameAdapter(aggregator)
+
+        logger.info("[{}] fetching games from adapter ({})...", id, aggregator.integration)
 
         val aggregatorGamesAsync = async { gameAdapter.getAggregatorGames() }
         val gamesAsync = async { gameRepository.findAll() }
         val variantsAsync = async { gameVariantRepository.findAllByIntegration(aggregator.integration) }
         val allProvidersAsync = async { providerRepository.findAll().toMutableList() }
 
+        val aggregatorGames = aggregatorGamesAsync.await()
+        logger.info("[{}] adapter returned {} games", id, aggregatorGames.size)
+
         val updateGames = mutableListOf<Game>()
         val updatedVariants = mutableListOf<GameVariant>()
+        var newProviders = 0
+        var newGames = 0
+        var updatedVariantsCount = 0
 
-        for (aggregatorGame in aggregatorGamesAsync.await()) {
+        for (aggregatorGame in aggregatorGames) {
             var variant = variantsAsync.await()
                 .find { it.symbol.value == aggregatorGame.symbol && it.integration == aggregator.integration }
 
             if (variant != null) {
+                updatedVariantsCount++
                 updatedVariants.add(variant.copy(
                     freeSpinEnable = aggregatorGame.freeSpinEnable,
                     freeChipEnable = aggregatorGame.freeChipEnable,
@@ -65,6 +76,8 @@ class SyncAggregatorUsecase(
                 ).let { providerRepository.save(it) }
 
                 allProvidersAsync.await().add(provider)
+                newProviders++
+                logger.info("[{}] new provider: identity={}", id, providerIdentity.value)
             }
 
             val gameIdentity = Identity.generate("${providerIdentity}_${aggregatorGame.name}")
@@ -79,6 +92,7 @@ class SyncAggregatorUsecase(
                 )
 
                 updateGames.add(game)
+                newGames++
             }
 
             variant = GameVariant(
@@ -100,8 +114,15 @@ class SyncAggregatorUsecase(
             updatedVariants.add(variant)
         }
 
+        logger.info(
+            "[{}] summary: {} fetched, {} new games, {} new providers, {} existing variants refreshed, {} variants total",
+            id, aggregatorGames.size, newGames, newProviders, updatedVariantsCount, updatedVariants.size,
+        )
+
         gameRepository.saveAll(updateGames)
         gameVariantRepository.saveAll(updatedVariants)
+
+        logger.info("[{}] persisted: {} games, {} variants", id, updateGames.size, updatedVariants.size)
     }
 
 }
