@@ -68,9 +68,14 @@ class ProcessSpinUsecase(
 
         checkLimits(spin)
 
-        backgroundTaskPort.launch(action = { updateBalance(spin) })
+        val result = resultAsync.await()
 
-        resultAsync.await()
+        // Debit/credit the wallet with the balance-split spin (real/bonus computed by
+        // SpinBalanceCalculator). The raw `spin` has realAmount/bonusAmount = 0, so
+        // using it would move nothing and leave the wallet balance unchanged.
+        backgroundTaskPort.launch(action = { updateBalance(result.spin) })
+
+        result
     }
 
     private suspend fun updateBalance(spin: Spin) {

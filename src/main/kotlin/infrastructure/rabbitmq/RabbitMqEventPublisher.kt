@@ -43,7 +43,10 @@ class RabbitMqEventPublisher(
             basicPublish {
                 exchange = CASINO_EXCHANGE
                 this.routingKey = routingKey
-                message { payload }
+                // payload is already JSON; set the raw body. The lib's message { }
+                // helper would JSON-encode the String again (double-encoding it into
+                // "\"{...}\"") and break consumers.
+                message = payload.toByteArray(Charsets.UTF_8)
             }
         }
     }
