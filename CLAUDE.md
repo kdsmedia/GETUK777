@@ -107,7 +107,7 @@ Boot sequence (each step is a `configure*()` extension function on `Application`
 3. `configureSerialization()` — kotlinx.serialization JSON with `ignoreUnknownKeys`
 4. `configureCallLogging()`
 5. `configureRabbitMq()` — installs RabbitMQ plugin
-6. `configureRouting()` — registers aggregator webhook routes under `/api/webhook` (defined in `api/rest/RestModule.kt`)
+6. `configureWebhook()` — wires all inbound aggregator webhooks across transports (defined in `api/webhook/WebhookModule.kt`): REST routes under `/api/webhook` (OneGameHub, Pragmatic) plus the gRPC webhook server (TONGame) on `WEBHOOK_GRPC_PORT`. New aggregators plug into the matching transport here.
 7. `configureGrpc()` — launches gRPC server on separate coroutine (IO dispatcher) with 6 services (defined in `api/grpc/GrpcModule.kt`)
 8. `configureConsumers()` — starts RabbitMQ event consumers
 
@@ -187,7 +187,7 @@ import application.cqrs.game.SaveGameCommand as SaveGameCqrs
 
 ## Aggregator Integration
 
-Currently implemented: **OneGameHub** (`infrastructure/aggregator/onegamehub/`), **Pragmatic Play** (`infrastructure/aggregator/pragmatic/`), and **Pateplay** (`infrastructure/aggregator/pateplay/`).
+Currently implemented: **OneGameHub** (`infrastructure/aggregator/onegamehub/`), **Pragmatic Play** (`infrastructure/aggregator/pragmatic/`), **Pateplay** (`infrastructure/aggregator/pateplay/`), and **TONGame** (`infrastructure/aggregator/tongame/`).
 
 Routing is handled by `AggregatorRegistry : IAggregatorFactory` (in `infrastructure/aggregator/`). It indexes every bound `AggregatorAdapterProvider` by its `integration` string and raises `AggregatorNotSupportedException` for unknown keys. Each aggregator provides: Config, `*AdapterProvider` (implementing `AggregatorAdapterProvider` — replaces the old `*AdapterFactory`), GameAdapter (IGamePort), FreespinAdapter (IFreespinPort), HttpClient, and Webhook.
 
@@ -202,6 +202,13 @@ See `.claude/skills/add-aggregator.md` for the step-by-step guide. See `.claude/
 **Pragmatic specifics**: Uses MD5 hash authentication (sorted params + secret key), form-encoded POST requests, GET webhook endpoints at `/pragmatic/*.html`, and decimal string amounts (converted to/from minor units via ×100).
 
 **Pateplay specifics**: Static game catalog (no game discovery API), launch URLs constructed locally (no API call), HMAC-SHA256 authentication for freespin API, no webhook handler (wallet callback not yet implemented).
+
+**TONGame specifics**: gRPC aggregator (`slot.v1`), not HTTP. Two directions:
+
+- **Outbound (we → provider)**: `TongameGrpcClient` (`infrastructure/aggregator/tongame/client/`) dials the provider's `slot.v1.service.GameService` with `x-identity` + `x-api-key` metadata (slot.v1 §3 — API key in metadata, **no separate secret/HMAC**). `getAggregatorGames()` maps `GameService.List` → `AggregatorGame` (provider supplies `identity`/`name`/`currency`; locales/platforms defaulted). The channel is lazy so the launch path never opens it. Launch URLs are built locally (`https://<host>/<game>/?sessionToken=<ourToken>&operatorIdentity=<id>`) — `SessionService.CreateSession` is intentionally **not** called; callbacks carry our own session token. Freespins unsupported.
+- **Inbound (provider → us)**: this is an aggregator **webhook**, not part of our internal game.v1 API. `TongameWalletGrpcService` (`infrastructure/aggregator/tongame/webhook/`) implements the published `slot.v1.service.WalletService` (from `com.nekzabirov:aggregator-tongame-grpc-client`), is bound in `aggregatorModule` (alongside the HTTP webhooks `OneGameHubWebhook`/`PragmaticWebhook`), and runs on a **separate webhook gRPC server** started from `api/webhook/WebhookModule.kt`'s `configureWebhook()` on `WEBHOOK_GRPC_PORT` (default 5051). All inbound webhooks — REST, gRPC, sockets — live in that one `configureWebhook()` umbrella, separate from the `:5050` game.v1 API server (`api/grpc/GrpcModule.kt`). That webhook port is the `walletAddress` registered out-of-band with the provider. Its RPCs bridge into the spin pipeline via `Bus`: `Balance`/`OpenRound`→`FindSessionBalanceQuery`, `Debit`→`PlaceSpinSessionCommand`, `Credit`→`SettleSpinSessionCommand`, `CloseRound`→`EndRoundSessionCommand`. Round opening is lazy (first `Debit`); spin ids are synthesized from `round_id` (`<roundId>:debit` / `:credit`) since slot.v1 carries no transaction id — same idempotency posture as the other aggregators. It uses its **own** exception→status mapping (not the shared `handleGrpcCall`): `SessionNotFound`→`UNAUTHENTICATED`, round/funds/conflict→`FAILED_PRECONDITION`, bad request→`INVALID_ARGUMENT`.
+
+The client jar is built with a newer Kotlin than this module reads natively, so `build.gradle.kts` sets `-Xskip-metadata-version-check`. Config keys: `address` (provider gRPC `host:port`), `operatorIdentity`, `apiKey`, `gameLaunchUrl`, `gameDemoLaunchUrl`.
 
 ## Event System (DomainEvent → RabbitMQ)
 

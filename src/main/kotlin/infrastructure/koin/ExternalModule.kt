@@ -12,6 +12,7 @@ import infrastructure.aggregator.AggregatorRegistry
 import infrastructure.aggregator.onegamehub.OneGameHubAdapterProvider
 import infrastructure.aggregator.pateplay.PateplayAdapterProvider
 import infrastructure.aggregator.pragmatic.PragmaticAdapterProvider
+import infrastructure.aggregator.tongame.TongameAdapterProvider
 import infrastructure.rabbitmq.PlaceSpinEventConsumer
 import infrastructure.rabbitmq.RabbitMqEventPublisher
 import infrastructure.redis.PlayerLimitRedis
@@ -35,6 +36,7 @@ val externalModule = module {
     single(named("onegamehub")) { OneGameHubAdapterProvider() } bind AggregatorAdapterProvider::class
     single(named("pragmatic")) { PragmaticAdapterProvider() } bind AggregatorAdapterProvider::class
     single(named("pateplay")) { PateplayAdapterProvider() } bind AggregatorAdapterProvider::class
+    single(named("tongame")) { TongameAdapterProvider() } bind AggregatorAdapterProvider::class
     single<IAggregatorFactory> {
         AggregatorRegistry(providers = getAll<AggregatorAdapterProvider>())
     }

@@ -27,5 +27,13 @@ dependencyResolutionManagement {
                 password = System.getenv("GITHUB_TOKEN")
             }
         }
+        maven {
+            name = "GitHubPackagesTongameAggregator"
+            url = uri("https://maven.pkg.github.com/nekzabirov/IGaming-Aggregator-TONGame")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
     }
 }

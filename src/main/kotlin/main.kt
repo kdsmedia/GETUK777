@@ -6,8 +6,7 @@ import api.grpc.service.FreespinGrpcService
 import api.grpc.service.GameGrpcService
 import api.grpc.service.ProviderGrpcService
 import api.grpc.service.WinnerGrpcService
-import api.rest.configureRouting
-import api.rest.httpPort
+import api.webhook.configureWebhook
 import infrastructure.persistence.DatabaseConfig
 import infrastructure.persistence.DatabaseFactory
 import io.grpc.ServerBuilder
@@ -46,7 +45,7 @@ fun main() {
         configureCallLogging()
         configureRabbitMq()
         configureRabbitMqTopology()
-        configureRouting()
+        configureWebhook()
         configureGrpc()
         configureConsumers()
     }.start(wait = true)
@@ -92,3 +91,5 @@ private fun Application.configureConsumers() {
     val consumer = get<PlaceSpinEventConsumer>()
     consumer.start()
 }
+
+private fun httpPort(): Int = System.getenv("HTTP_PORT")?.toIntOrNull() ?: 8080
