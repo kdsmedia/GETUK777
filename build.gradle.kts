@@ -106,6 +106,8 @@ dependencies {
 
     // Redis
     implementation(libs.lettuce)
+    // Required at runtime by Lettuce's coroutines API (RedisCoroutinesCommands).
+    implementation(libs.kotlinx.coroutines.reactive)
 
     // Flyway DB migrations
     implementation(libs.flyway.core)
