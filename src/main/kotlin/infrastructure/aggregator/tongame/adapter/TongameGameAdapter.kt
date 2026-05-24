@@ -47,15 +47,17 @@ class TongameGameAdapter(
     override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): String {
         val gameSymbol = session.gameVariant.symbol.value
 
-        val sessionToken = client.createSession(
+        // We mint the token; the provider stores it and echoes it back in wallet webhooks,
+        // so it resolves via our own findByToken.
+        client.createSession(
+            sessionToken = session.token.value,
             playerId = session.playerId.value,
             gameId = gameSymbol,
-            currency = session.currency.value,
-        ).sessionToken
+        )
 
         return buildGameUrl(gameSymbol) {
             parameters.append("mode", "real")
-            parameters.append("sessionToken", sessionToken)
+            parameters.append("sessionToken", session.token.value)
             parameters.append("operatorIdentity", config.operatorIdentity)
         }
     }

@@ -2,7 +2,6 @@ package infrastructure.aggregator.tongame.client
 
 import infrastructure.aggregator.tongame.TongameConfig
 import infrastructure.aggregator.tongame.client.dto.CreateSessionRequest
-import infrastructure.aggregator.tongame.client.dto.CreateSessionResponse
 import infrastructure.aggregator.tongame.client.dto.GameDto
 import infrastructure.aggregator.tongame.client.dto.ListGamesResponse
 import io.ktor.client.HttpClient
@@ -21,12 +20,14 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 /**
- * Operator → provider REST client (slot v1, `/api/v1/operator/...`). Every call is
- * authenticated with the `X-Identity` + `X-Api-Key` headers.
+ * Operator → provider REST client (`/api/v1/operator/...`). Every call is authenticated with
+ * the `X-Identity` + `X-Api-Key` headers. `expectSuccess` makes non-2xx responses throw so
+ * failures (e.g. 409 on a duplicate session token) surface instead of being swallowed.
  */
 class TongameHttpClient(private val config: TongameConfig) {
 
     private val client = HttpClient(CIO) {
+        expectSuccess = true
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
         }
@@ -43,19 +44,20 @@ class TongameHttpClient(private val config: TongameConfig) {
         }.body<ListGamesResponse>().games
     }
 
-    suspend fun createSession(playerId: String, gameId: String, currency: String): CreateSessionResponse {
-        return client.post("${config.apiUrl}/api/v1/operator/session") {
+    /** Registers our session token with the provider. The provider stores it and uses it to
+     *  authenticate later wallet webhooks. Returns 204 (no body). */
+    suspend fun createSession(sessionToken: String, playerId: String, gameId: String) {
+        client.post("${config.apiUrl}/api/v1/operator/session") {
             auth()
             contentType(ContentType.Application.Json)
             setBody(
                 CreateSessionRequest(
-                    identity = config.operatorIdentity,
+                    sessionToken = sessionToken,
                     playerId = playerId,
                     gameId = gameId,
-                    currency = currency,
                 )
             )
-        }.body()
+        }
     }
 
     private fun HttpRequestBuilder.auth() {
