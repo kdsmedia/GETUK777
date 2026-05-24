@@ -4,6 +4,7 @@ import application.Bus
 import application.command.session.EndRoundSessionCommand
 import application.command.session.PlaceSpinSessionCommand
 import application.command.session.SettleSpinSessionCommand
+import application.port.external.ICurrencyPort
 import application.query.session.FindSessionBalanceQuery
 import application.query.session.FindSessionQuery
 import domain.exception.conflict.ConflictException
@@ -22,17 +23,21 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import kotlinx.serialization.Serializable
+import java.math.BigDecimal
 
 /**
  * Inbound TONGame wallet webhooks (provider → operator). Four flat POST paths under
  * `/api/webhook/tongame`. Sessions resolve by our own session token via [FindSessionQuery].
  *
- * TONGame differs from the other aggregators: currency is NOT locked to the session — the
- * player can switch currency in-game, so every wallet call carries its own `currency`. We
- * override the resolved session's currency with the request's before driving the pipeline,
- * so the wallet operation hits the right currency. Money is string-encoded nano-TON.
+ * Money on the wire is a decimal string in whole units of the currency (e.g. "10.5" TON).
+ * We convert it to/from the wallet's system units via [ICurrencyPort]. TONGame currency is
+ * not session-locked — the player can switch in-game — so each call carries its own currency,
+ * which we pin onto the resolved session before driving the spin pipeline.
  */
-class TongameWebhook(private val bus: Bus) {
+class TongameWebhook(
+    private val bus: Bus,
+    private val currencyPort: ICurrencyPort,
+) {
 
     fun Route.route() = route("/tongame") {
         post("/balance") {
@@ -52,7 +57,7 @@ class TongameWebhook(private val bus: Bus) {
                         session = session,
                         externalRoundId = body.roundId,
                         externalSpinId = "${body.roundId}:place",
-                        amount = Amount(body.amount.toLong()),
+                        amount = toAmount(body.amount, body.currency),
                     )
                 )
             }
@@ -67,7 +72,7 @@ class TongameWebhook(private val bus: Bus) {
                         session = session,
                         externalRoundId = body.roundId,
                         externalSpinId = "${body.roundId}:settle",
-                        amount = Amount(body.amount.toLong()),
+                        amount = toAmount(body.amount, body.currency),
                     )
                 )
             }
@@ -87,6 +92,10 @@ class TongameWebhook(private val bus: Bus) {
     private suspend fun resolveSession(token: String, currency: String): Session =
         bus(FindSessionQuery(token)).copy(currency = Currency(currency))
 
+    /** Decimal wire amount (e.g. "10.5") → wallet system units. */
+    private suspend fun toAmount(decimal: String, currency: String): Amount =
+        Amount(currencyPort.convertToUnits(decimal.toDouble(), Currency(currency)))
+
     private suspend fun ApplicationCall.respondBalance(block: suspend () -> PlayerBalance) {
         val balance = try {
             block()
@@ -104,8 +113,12 @@ class TongameWebhook(private val bus: Bus) {
             return
         }
 
-        respond(BalanceResponse(amount = balance.total.value.toString(), currency = balance.currency.value))
+        val decimal = currencyPort.convertFromUnits(balance.total.value, balance.currency)
+        respond(BalanceResponse(amount = decimal.toPlainDecimal(), currency = balance.currency.value))
     }
+
+    private fun Double.toPlainDecimal(): String =
+        BigDecimal.valueOf(this).stripTrailingZeros().toPlainString()
 
     @Serializable
     private data class BalanceRequest(val sessionToken: String, val currency: String)
