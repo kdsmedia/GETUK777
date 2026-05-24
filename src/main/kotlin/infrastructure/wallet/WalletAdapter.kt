@@ -12,24 +12,15 @@ import domain.vo.Amount
 import domain.vo.Currency
 import domain.vo.PlayerId
 import io.grpc.ManagedChannel
-import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class WalletAdapter(
-    private val config: WalletConfig
+    channel: ManagedChannel
 ) : IWalletPort {
 
-    private val channel: ManagedChannel by lazy {
-        ManagedChannelBuilder
-            .forAddress(config.address, config.port)
-            .usePlaintext()
-            .build()
-    }
-
-    private val stub: WalletServiceGrpc.WalletServiceBlockingStub by lazy {
+    private val stub: WalletServiceGrpc.WalletServiceBlockingStub =
         WalletServiceGrpc.newBlockingStub(channel)
-    }
 
     override suspend fun findBalance(playerId: PlayerId, currency: Currency): PlayerBalance {
         val request = GetAccountRequest.newBuilder()

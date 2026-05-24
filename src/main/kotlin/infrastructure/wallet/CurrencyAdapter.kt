@@ -6,7 +6,6 @@ import com.nekgamebling.wallet.v1.ConvertToSystemUnitRequest
 import com.nekgamebling.wallet.v1.CurrencyServiceGrpc
 import domain.vo.Currency
 import io.grpc.ManagedChannel
-import io.grpc.ManagedChannelBuilder
 import java.math.BigDecimal
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,22 +13,14 @@ import kotlinx.coroutines.withContext
 /**
  * Currency conversion backed by wallet-engine's gRPC CurrencyService. The
  * system unit is nano (1e9), currency-independent. Shares the same wallet-engine
- * endpoint as [WalletAdapter].
+ * channel as [WalletAdapter].
  */
 class CurrencyAdapter(
-    private val config: WalletConfig
+    channel: ManagedChannel
 ) : ICurrencyPort {
 
-    private val channel: ManagedChannel by lazy {
-        ManagedChannelBuilder
-            .forAddress(config.address, config.port)
-            .usePlaintext()
-            .build()
-    }
-
-    private val stub: CurrencyServiceGrpc.CurrencyServiceBlockingStub by lazy {
+    private val stub: CurrencyServiceGrpc.CurrencyServiceBlockingStub =
         CurrencyServiceGrpc.newBlockingStub(channel)
-    }
 
     override suspend fun convertToUnits(amount: Double, currency: Currency): Long {
         val request = ConvertToSystemUnitRequest.newBuilder()

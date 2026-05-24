@@ -20,15 +20,19 @@ import infrastructure.s3.S3FileAdapter
 import infrastructure.util.BackgroundWorker
 import infrastructure.wallet.CurrencyAdapter
 import infrastructure.wallet.WalletAdapter
+import infrastructure.wallet.walletChannel
+import io.grpc.ManagedChannel
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val externalModule = module {
-    single<IWalletPort> { WalletAdapter(config = get()) }
+    // One shared gRPC channel to wallet-engine for both wallet + currency adapters.
+    single<ManagedChannel> { walletChannel(get()) }
+    single<IWalletPort> { WalletAdapter(channel = get()) }
     single<FileAdapter> { S3FileAdapter(config = get()) }
     single<IPlayerLimitPort> { PlayerLimitRedis(config = get()) }
-    single<ICurrencyPort> { CurrencyAdapter(config = get()) }
+    single<ICurrencyPort> { CurrencyAdapter(channel = get()) }
     single<IBackgroundTaskPort> { BackgroundWorker() }
     single<IEventPort> { RabbitMqEventPublisher(application = get()) }
 
