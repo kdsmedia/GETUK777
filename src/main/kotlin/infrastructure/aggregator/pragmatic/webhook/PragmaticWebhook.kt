@@ -3,6 +3,7 @@ package infrastructure.aggregator.pragmatic.webhook
 import application.Bus
 import application.command.session.EndRoundSessionCommand
 import application.query.session.FindSessionBalanceQuery
+import application.query.session.FindSessionQuery
 import application.command.session.PlaceSpinSessionCommand
 import application.command.session.SettleSpinSessionCommand
 import domain.exception.forbidden.InsufficientBalanceException
@@ -112,13 +113,15 @@ class PragmaticWebhook(private val bus: Bus) {
 
     private suspend fun authenticate(sessionToken: String): PragmaticResponse {
         return runCatching {
-            bus(FindSessionBalanceQuery(sessionToken))
+            val session = bus(FindSessionQuery(sessionToken))
+            bus(FindSessionBalanceQuery(session))
         }.toBalanceResponse(userId = sessionToken)
     }
 
     private suspend fun balance(sessionToken: String): PragmaticResponse {
         return runCatching {
-            bus(FindSessionBalanceQuery(sessionToken))
+            val session = bus(FindSessionQuery(sessionToken))
+            bus(FindSessionBalanceQuery(session))
         }.toBalanceResponse()
     }
 
@@ -126,8 +129,9 @@ class PragmaticWebhook(private val bus: Bus) {
         val amountMinor = providerToMinorUnits(payload.amount)
 
         return runCatching {
+            val session = bus(FindSessionQuery(sessionToken))
             bus(PlaceSpinSessionCommand(
-                sessionToken = sessionToken,
+                session = session,
                 gameSymbol = payload.gameId,
                 externalRoundId = payload.roundId,
                 externalSpinId = payload.reference,
@@ -142,8 +146,9 @@ class PragmaticWebhook(private val bus: Bus) {
         val amountMinor = providerToMinorUnits(totalAmount)
 
         val result = runCatching {
+            val session = bus(FindSessionQuery(sessionToken))
             bus(SettleSpinSessionCommand(
-                sessionToken = sessionToken,
+                session = session,
                 gameSymbol = payload.gameId,
                 externalRoundId = payload.roundId,
                 externalSpinId = payload.reference,
@@ -157,8 +162,9 @@ class PragmaticWebhook(private val bus: Bus) {
 
     private suspend fun endRound(sessionToken: String, roundId: String): PragmaticResponse {
         runCatching {
+            val session = bus(FindSessionQuery(sessionToken))
             bus(EndRoundSessionCommand(
-                sessionToken = sessionToken,
+                session = session,
                 externalRoundId = roundId
             ))
         }
@@ -184,8 +190,9 @@ class PragmaticWebhook(private val bus: Bus) {
         return if (isDebit) {
             val amountMinor = providerToMinorUnits(decimalAmount.abs())
             runCatching {
+                val session = bus(FindSessionQuery(sessionToken))
                 bus(PlaceSpinSessionCommand(
-                    sessionToken = sessionToken,
+                    session = session,
                     gameSymbol = gameId,
                     externalRoundId = roundId,
                     externalSpinId = reference,
@@ -195,8 +202,9 @@ class PragmaticWebhook(private val bus: Bus) {
         } else {
             val amountMinor = providerToMinorUnits(decimalAmount)
             runCatching {
+                val session = bus(FindSessionQuery(sessionToken))
                 bus(SettleSpinSessionCommand(
-                    sessionToken = sessionToken,
+                    session = session,
                     gameSymbol = gameId,
                     externalRoundId = roundId,
                     externalSpinId = reference,

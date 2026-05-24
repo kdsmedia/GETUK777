@@ -2,6 +2,7 @@ package infrastructure.aggregator.onegamehub.webhook
 
 import application.Bus
 import application.query.session.FindSessionBalanceQuery
+import application.query.session.FindSessionQuery
 import application.command.session.EndRoundSessionCommand
 import application.command.session.PlaceSpinSessionCommand
 import application.command.session.SettleSpinSessionCommand
@@ -46,14 +47,16 @@ class  OneGameHubWebhook(private val bus: Bus) {
 
     private suspend fun balance(sessionToken: String): OneGameHubResponse {
         return runCatching {
-            bus(FindSessionBalanceQuery(sessionToken))
+            val session = bus(FindSessionQuery(sessionToken))
+            bus(FindSessionBalanceQuery(session))
         }.toResponse()
     }
 
     private suspend fun bet(sessionToken: String, parameters: Parameters): OneGameHubResponse {
         return runCatching {
+            val session = bus(FindSessionQuery(sessionToken))
             bus(PlaceSpinSessionCommand(
-                sessionToken = sessionToken,
+                session = session,
                 gameSymbol = parameters.gameSymbol,
                 externalRoundId = parameters.roundId,
                 externalSpinId = parameters.transactionId,
@@ -65,8 +68,9 @@ class  OneGameHubWebhook(private val bus: Bus) {
 
     private suspend fun win(sessionToken: String, parameters: Parameters): OneGameHubResponse {
         return runCatching {
+            val session = bus(FindSessionQuery(sessionToken))
             bus(SettleSpinSessionCommand(
-                sessionToken = sessionToken,
+                session = session,
                 gameSymbol = parameters.gameSymbol,
                 externalRoundId = parameters.roundId,
                 externalSpinId = parameters.transactionId,
@@ -76,8 +80,9 @@ class  OneGameHubWebhook(private val bus: Bus) {
         }.onSuccess { _ ->
             if (parameters.isRoundEnd) {
                 runCatching {
+                    val session = bus(FindSessionQuery(sessionToken))
                     bus(EndRoundSessionCommand(
-                        sessionToken = sessionToken,
+                        session = session,
                         externalRoundId = parameters.roundId
                     ))
                 }

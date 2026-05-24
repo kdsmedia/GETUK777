@@ -2,10 +2,11 @@ package application.command.session
 
 import application.ICommand
 import domain.model.PlayerBalance
+import domain.model.Session
 import domain.vo.Amount
 
 data class PlaceSpinSessionCommand(
-    val sessionToken: String,
+    val session: Session,
     val gameSymbol: String? = null,
     val externalRoundId: String,
     val externalSpinId: String,

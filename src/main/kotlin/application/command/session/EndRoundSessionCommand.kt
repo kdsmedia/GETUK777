@@ -1,9 +1,10 @@
 package application.command.session
 
 import application.ICommand
+import domain.model.Session
 
 data class EndRoundSessionCommand(
-    val sessionToken: String,
+    val session: Session,
 
     val externalRoundId: String,
 ) : ICommand<Unit>
