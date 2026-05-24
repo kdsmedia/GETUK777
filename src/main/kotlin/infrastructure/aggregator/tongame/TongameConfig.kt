@@ -2,13 +2,14 @@ package infrastructure.aggregator.tongame
 
 class TongameConfig(config: Map<String, Any>) {
 
-    /** Provider gRPC server address (`host:port`) — SessionService/GameService live here. */
-    val address = config["address"]?.toString() ?: ""
+    /** Provider REST base URL, e.g. `https://operator-api.djmgame.com`. Operator endpoints
+     *  live under `<apiUrl>/api/v1/operator/...`. */
+    val apiUrl = (config["apiUrl"]?.toString() ?: "").trimEnd('/')
 
-    /** Operator identity registered with the provider — sent as the `x-identity` header. */
+    /** Operator identity registered with the provider — sent as the `X-Identity` header. */
     val operatorIdentity = config["operatorIdentity"]?.toString() ?: ""
 
-    /** Operator API key — sent as the `x-api-key` header. slot.v1 has no separate secret. */
+    /** Operator API key — sent as the `X-Api-Key` header. */
     val apiKey = config["apiKey"]?.toString() ?: ""
 
     /** Base host for game frontends. Each game is served at `<gameSymbol>.<gameHost>`. */

@@ -6,17 +6,17 @@ import domain.model.Session
 import domain.vo.Currency
 import domain.vo.Locale
 import infrastructure.aggregator.tongame.TongameConfig
-import infrastructure.aggregator.tongame.client.TongameGrpcClient
+import infrastructure.aggregator.tongame.client.TongameHttpClient
 import io.ktor.http.URLBuilder
 
 class TongameGameAdapter(
     private val config: TongameConfig,
 ) : IGamePort {
 
-    private val client = TongameGrpcClient(config)
+    private val client = TongameHttpClient(config)
 
     override suspend fun getAggregatorGames(): List<IGamePort.AggregatorGame> {
-        return client.listGames().map { game ->
+        return client.getGames().map { game ->
             IGamePort.AggregatorGame(
                 symbol = game.identity,
                 name = game.name,
@@ -51,7 +51,7 @@ class TongameGameAdapter(
             playerId = session.playerId.value,
             gameId = gameSymbol,
             currency = session.currency.value,
-        )
+        ).sessionToken
 
         return buildGameUrl(gameSymbol) {
             parameters.append("mode", "real")

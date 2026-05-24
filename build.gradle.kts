@@ -15,13 +15,6 @@ val grpcClientVersionProvider = providers.gradleProperty("grpcClientVersion").or
 
 kotlin {
     jvmToolchain(21)
-
-    // The tongame gRPC client (aggregator-tongame-grpc-client) is built with a newer
-    // Kotlin than this module reads natively. Its stubs are generated gRPC/proto code,
-    // so reading the newer metadata is safe.
-    compilerOptions {
-        freeCompilerArgs.add("-Xskip-metadata-version-check")
-    }
 }
 
 application {
@@ -126,8 +119,6 @@ dependencies {
     implementation("com.nekgambling:user-grpc-client:1.0.0")
     implementation("com.nekgamebling:wallet-grpc-client:1.0.0")
 
-    //Aggregator TONGame
-    implementation("com.nekzabirov:aggregator-tongame-grpc-client:1.0.0")
 
     // Testing
     testImplementation(libs.bundles.testing)
