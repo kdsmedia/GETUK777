@@ -6,6 +6,7 @@ import api.grpc.service.FreespinGrpcService
 import api.grpc.service.GameGrpcService
 import api.grpc.service.ProviderGrpcService
 import api.grpc.service.WinnerGrpcService
+import api.webhook.configureRestInspector
 import api.webhook.configureWebhook
 import infrastructure.persistence.DatabaseConfig
 import infrastructure.persistence.DatabaseFactory
@@ -43,6 +44,7 @@ fun main() {
         configureDatabase()
         configureSerialization()
         configureCallLogging()
+        configureRestInspector()
         configureRabbitMq()
         configureRabbitMqTopology()
         configureWebhook()

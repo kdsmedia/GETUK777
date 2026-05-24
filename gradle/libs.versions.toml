@@ -25,6 +25,7 @@ ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
 ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging-jvm", version.ref = "ktor" }
+ktor-server-double-receive = { module = "io.ktor:ktor-server-double-receive", version.ref = "ktor" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 
 # Ktor Client
@@ -102,7 +103,8 @@ ktor-server = [
     "ktor-server-core",
     "ktor-server-cio",
     "ktor-server-content-negotiation",
-    "ktor-server-call-logging"
+    "ktor-server-call-logging",
+    "ktor-server-double-receive"
 ]
 ktor-client = [
     "ktor-client-core",
