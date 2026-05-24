@@ -57,6 +57,7 @@ class GameGrpcService(
                 bonusWageringEnable = request.bonusWageringEnable,
                 tags = request.tagsList,
                 providerIdentity = Identity(request.providerIdentity),
+                active = request.active,
             )
         )
         Empty.getDefaultInstance()

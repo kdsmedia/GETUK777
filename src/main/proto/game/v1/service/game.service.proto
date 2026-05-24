@@ -64,6 +64,8 @@ message SaveGameCommand {
   repeated string tags = 5;
 
   string provider_identity = 6;
+
+  bool active = 7;
 }
 
 message UpdateGameImageCommand {

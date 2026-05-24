@@ -14,4 +14,6 @@ data class SaveGameCommand(
     val tags: List<String>,
 
     val providerIdentity: Identity,
+
+    val active: Boolean,
 ) : ICommand<Unit>

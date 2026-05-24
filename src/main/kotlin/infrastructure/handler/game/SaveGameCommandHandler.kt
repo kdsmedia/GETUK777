@@ -25,6 +25,7 @@ class SaveGameCommandHandler(
             bonusBetEnable = command.bonusBetEnable,
             bonusWageringEnable = command.bonusWageringEnable,
             tags = command.tags,
+            active = command.active,
         ) ?: Game(
             identity = command.identity,
             name = command.name,
@@ -32,6 +33,7 @@ class SaveGameCommandHandler(
             bonusBetEnable = command.bonusBetEnable,
             bonusWageringEnable = command.bonusWageringEnable,
             tags = command.tags,
+            active = command.active,
         )
 
         gameRepository.save(game)

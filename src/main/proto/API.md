@@ -33,6 +33,7 @@ message SaveGameCommand {
   bool bonus_wagering_enable = 4;   // Allow bonus wagering
   repeated string tags = 5;         // Searchable tags
   string provider_identity = 6;     // Parent provider identity
+  bool active = 7;                  // Whether the game is active (playable/visible)
 }
 ```
 
