@@ -18,7 +18,7 @@ import infrastructure.rabbitmq.RabbitMqEventPublisher
 import infrastructure.redis.PlayerLimitRedis
 import infrastructure.s3.S3FileAdapter
 import infrastructure.util.BackgroundWorker
-import infrastructure.util.CurrencyAdapter
+import infrastructure.wallet.CurrencyAdapter
 import infrastructure.wallet.WalletAdapter
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
@@ -28,7 +28,7 @@ val externalModule = module {
     single<IWalletPort> { WalletAdapter(config = get()) }
     single<FileAdapter> { S3FileAdapter(config = get()) }
     single<IPlayerLimitPort> { PlayerLimitRedis(config = get()) }
-    single<ICurrencyPort> { CurrencyAdapter() }
+    single<ICurrencyPort> { CurrencyAdapter(config = get()) }
     single<IBackgroundTaskPort> { BackgroundWorker() }
     single<IEventPort> { RabbitMqEventPublisher(application = get()) }
 
