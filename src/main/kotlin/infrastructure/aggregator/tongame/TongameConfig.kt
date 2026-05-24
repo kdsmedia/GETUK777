@@ -11,7 +11,6 @@ class TongameConfig(config: Map<String, Any>) {
     /** Operator API key — sent as the `x-api-key` header. slot.v1 has no separate secret. */
     val apiKey = config["apiKey"]?.toString() ?: ""
 
-    val gameLaunchUrl = config["gameLaunchUrl"]?.toString() ?: ""
-
-    val gameDemoLaunchUrl = config["gameDemoLaunchUrl"]?.toString() ?: ""
+    /** Base host for game frontends. Each game is served at `<gameSymbol>.<gameHost>`. */
+    val gameHost = config["gameHost"]?.toString() ?: ""
 }

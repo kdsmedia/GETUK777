@@ -8,7 +8,6 @@ import domain.vo.Locale
 import infrastructure.aggregator.tongame.TongameConfig
 import infrastructure.aggregator.tongame.client.TongameGrpcClient
 import io.ktor.http.URLBuilder
-import io.ktor.http.appendPathSegments
 
 class TongameGameAdapter(
     private val config: TongameConfig,
@@ -40,41 +39,31 @@ class TongameGameAdapter(
         currency: Currency,
         lobbyUrl: String,
     ): String {
-        check(config.gameDemoLaunchUrl.isNotBlank()) { "TONGame demo launch URL not configured" }
-
-        return buildLaunchUrl(
-            baseHost = config.gameDemoLaunchUrl,
-            gameSymbol = gameSymbol,
-            sessionToken = "",
-        )
+        return buildGameUrl(gameSymbol) {
+            parameters.append("mode", "demo")
+        }
     }
 
     override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): String {
-        check(config.gameLaunchUrl.isNotBlank()) { "TONGame game launch URL not configured" }
+        val gameSymbol = session.gameVariant.symbol.value
 
         val sessionToken = client.createSession(
             playerId = session.playerId.value,
-            gameId = session.gameVariant.symbol.value,
+            gameId = gameSymbol,
             currency = session.currency.value,
         )
 
-        return buildLaunchUrl(
-            baseHost = config.gameLaunchUrl,
-            gameSymbol = session.gameVariant.symbol.value,
-            sessionToken = sessionToken,
-        )
-    }
-
-    private fun buildLaunchUrl(
-        baseHost: String,
-        gameSymbol: String,
-        sessionToken: String,
-    ): String {
-        return URLBuilder("https://$baseHost").apply {
-            appendPathSegments(gameSymbol)
+        return buildGameUrl(gameSymbol) {
+            parameters.append("mode", "real")
             parameters.append("sessionToken", sessionToken)
             parameters.append("operatorIdentity", config.operatorIdentity)
-        }.buildString()
+        }
+    }
+
+    private fun buildGameUrl(gameSymbol: String, query: URLBuilder.() -> Unit): String {
+        check(config.gameHost.isNotBlank()) { "TONGame game host not configured" }
+
+        return URLBuilder("https://$gameSymbol.${config.gameHost}").apply(query).buildString()
     }
 
     companion object {
