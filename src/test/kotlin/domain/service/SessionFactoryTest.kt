@@ -1,6 +1,5 @@
 package domain.service
 
-import domain.exception.badrequest.UnsupportedLocaleException
 import domain.exception.badrequest.UnsupportedPlatformException
 import domain.exception.conflict.AggregatorNotActiveException
 import domain.exception.conflict.GameNotActiveException
@@ -58,8 +57,8 @@ class SessionFactoryTest : FunSpec({
         shouldThrow<AggregatorNotActiveException> { call(game = game) }
     }
 
-    test("unsupported locale throws") {
-        shouldThrow<UnsupportedLocaleException> { call(locale = "fr") }
+    test("unsupported locale falls back to en") {
+        call(locale = "fr").locale shouldBe Locale("en")
     }
 
     test("unsupported platform throws") {

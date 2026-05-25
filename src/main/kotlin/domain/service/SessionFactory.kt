@@ -1,6 +1,5 @@
 package domain.service
 
-import domain.exception.badrequest.UnsupportedLocaleException
 import domain.exception.badrequest.UnsupportedPlatformException
 import domain.exception.conflict.AggregatorNotActiveException
 import domain.exception.conflict.GameNotActiveException
@@ -16,6 +15,8 @@ import domain.vo.SessionToken
 
 object SessionFactory {
 
+    private val DEFAULT_LOCALE = Locale("en")
+
     fun create(
         token: SessionToken,
         playerId: PlayerId,
@@ -28,7 +29,10 @@ object SessionFactory {
         domainRequire(gameVariant.game.provider.active) { ProviderNotActiveException() }
         domainRequire(gameVariant.game.provider.aggregator.active) { AggregatorNotActiveException() }
 
-        domainRequire(gameVariant.supportsLocale(locale)) { UnsupportedLocaleException(locale) }
+        // Locale is a soft UI-language hint — if the game doesn't advertise the requested
+        // one, fall back to English instead of refusing to launch.
+        val resolvedLocale = if (gameVariant.supportsLocale(locale)) locale else DEFAULT_LOCALE
+
         domainRequire(gameVariant.supportsPlatform(platform)) { UnsupportedPlatformException(platform) }
 
         return Session(
@@ -37,7 +41,7 @@ object SessionFactory {
             playerId = playerId,
             externalToken = null,
             currency = currency,
-            locale = locale,
+            locale = resolvedLocale,
             platform = platform,
         )
     }
