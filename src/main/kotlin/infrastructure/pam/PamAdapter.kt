@@ -26,9 +26,12 @@ class PamAdapter(
 
         val user = withContext(Dispatchers.IO) { stub.findUser(request) }.user
 
+        // Read via plain getters (not optional-presence accessors): the published
+        // user-grpc-client proto exposes username/profile.avatar but not has* on them.
+        // Unset proto3 strings default to "", which we treat as absent.
         return IPlayerPort.Player(
-            username = if (user.hasUsername()) user.username else playerId.value,
-            profilePic = if (user.hasProfile() && user.profile.hasAvatar()) user.profile.avatar else null,
+            username = user.username.ifBlank { playerId.value },
+            profilePic = user.profile.avatar.ifBlank { null },
         )
     }
 }
