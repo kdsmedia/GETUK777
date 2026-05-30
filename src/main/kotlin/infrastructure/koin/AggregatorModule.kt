@@ -8,5 +8,5 @@ import org.koin.dsl.module
 val aggregatorModule = module {
     single { OneGameHubWebhook(bus = get()) }
     single { PragmaticWebhook(bus = get()) }
-    single { TongameWebhook(bus = get(), currencyPort = get()) }
+    single { TongameWebhook(bus = get(), playerPort = get()) }
 }
