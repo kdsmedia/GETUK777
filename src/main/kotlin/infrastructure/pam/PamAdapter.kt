@@ -8,10 +8,6 @@ import io.grpc.ManagedChannel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/**
- * Player profile lookups backed by pam-engine's gRPC AccountService. PAM keys users by an
- * internal numeric id, which is exactly the value carried by [PlayerId].
- */
 class PamAdapter(
     channel: ManagedChannel
 ) : IPlayerPort {
@@ -26,12 +22,14 @@ class PamAdapter(
 
         val user = withContext(Dispatchers.IO) { stub.findUser(request) }.user
 
-        // Read via plain getters (not optional-presence accessors): the published
-        // user-grpc-client proto exposes username/profile.avatar but not has* on them.
-        // Unset proto3 strings default to "", which we treat as absent.
+        // The published user-grpc-client jar exposes User.username, but its Profile
+        // predates the avatar field, so an avatar can't be read here — return null
+        // (profilePic is optional in the TONGame contract). A blank username (proto3
+        // default for unset) falls back to the player id.
+        val username = user.username
         return IPlayerPort.Player(
-            username = user.username.ifBlank { playerId.value },
-            profilePic = user.profile.avatar.ifBlank { null },
+            username = if (username.isNullOrBlank()) playerId.value else username,
+            profilePic = null,
         )
     }
 }
