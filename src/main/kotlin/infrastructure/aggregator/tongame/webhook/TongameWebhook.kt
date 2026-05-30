@@ -5,7 +5,8 @@ import application.command.session.EndRoundSessionCommand
 import application.command.session.PlaceSpinSessionCommand
 import application.command.session.SettleSpinSessionCommand
 import application.port.external.IPlayerPort
-import application.query.session.FindSessionBalanceQuery
+import application.port.external.IWalletPort
+import application.query.aggregator.FindAggregatorQuery
 import application.query.session.FindSessionByPlayerIdQuery
 import domain.exception.conflict.ConflictException
 import domain.exception.forbidden.ForbiddenException
@@ -16,6 +17,8 @@ import domain.exception.notfound.SessionNotFoundException
 import domain.model.Session
 import domain.vo.Amount
 import domain.vo.Currency
+import domain.vo.Identity
+import domain.vo.PlayerId
 import infrastructure.aggregator.tongame.TongameConfig
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
@@ -31,29 +34,32 @@ import kotlinx.serialization.Serializable
  * `/api/webhook/tongame`: `/player`, `/balance`, `/round/open`, `/round/close`, `/debit`,
  * `/credit`.
  *
- * Identity: the provider echoes back, as `playerId`, the value we passed to `POST /api/v1/session`
- * — our own operator player id — so sessions resolve via [FindSessionByPlayerIdQuery]
- * (findByPlayerId, most-recent session for that player). Each request is authenticated by the
- * `X-Secret-Key` header, checked against the aggregator's stored secret.
+ * Identity is the operator `playerId` we sent to `POST /api/v1/session` and that the provider
+ * echoes back in every call — there is no per-request session token. `/player` and `/balance`
+ * resolve the player/wallet directly by `playerId` (no session). `/debit`/`/credit`/`/round/close`
+ * attach spins to a round, which in our model is keyed by the casino session, so those resolve
+ * the player's session via [FindSessionByPlayerIdQuery]. Every call authenticates with the
+ * `X-Secret-Key` header, checked against the TONGame aggregator's stored `apiKey` (a constant,
+ * read from the aggregator config — not from any session).
  *
  * Money is integer minor units == wallet system units (nano), passed straight through. TONGame
  * currency is not session-locked — the player can switch in-game — so each call carries its own
- * currency, pinned onto the resolved session before driving the spin pipeline.
+ * currency, used directly (balance) or pinned onto the resolved session (spins).
  *
- * `/debit` is the decline path: insufficient funds / limit breaches answer non-2xx (402), which
- * rolls back the engine's surrounding transaction.
+ * `/debit` is the decline path: insufficient funds / limit breaches answer non-2xx (402).
  */
 class TongameWebhook(
     private val bus: Bus,
     private val playerPort: IPlayerPort,
+    private val walletPort: IWalletPort,
 ) {
 
     fun Route.route() = route("/tongame") {
         post("/player") {
             val body = call.receive<PlayerRequest>()
             call.handle {
-                val session = resolveSession(call, body.playerId, currency = null)
-                val player = playerPort.findPlayer(session.playerId)
+                call.verifySecret()
+                val player = playerPort.findPlayer(PlayerId(body.playerId))
                 call.respond(PlayerResponse(username = player.username, profilePic = player.profilePic))
             }
         }
@@ -61,16 +67,16 @@ class TongameWebhook(
         post("/balance") {
             val body = call.receive<BalanceRequest>()
             call.handle {
-                val session = resolveSession(call, body.playerId, body.currency)
-                val balance = bus(FindSessionBalanceQuery(session))
+                call.verifySecret()
+                val balance = walletPort.findBalance(PlayerId(body.playerId), Currency(body.currency))
                 call.respond(BalanceResponse(balance = balance.total.value))
             }
         }
 
         post("/round/open") {
-            val body = call.receive<RoundRequest>()
+            call.receive<RoundRequest>()
             call.handle {
-                resolveSession(call, body.playerId, body.currency)
+                call.verifySecret()
                 call.respond(HttpStatusCode.OK)
             }
         }
@@ -78,7 +84,8 @@ class TongameWebhook(
         post("/round/close") {
             val body = call.receive<RoundRequest>()
             call.handle {
-                val session = resolveSession(call, body.playerId, body.currency)
+                call.verifySecret()
+                val session = resolveSession(body.playerId, body.currency)
                 bus(EndRoundSessionCommand(session = session, externalRoundId = body.roundId.toString()))
                 call.respond(HttpStatusCode.OK)
             }
@@ -87,7 +94,8 @@ class TongameWebhook(
         post("/debit") {
             val body = call.receive<MoneyRequest>()
             call.handle {
-                val session = resolveSession(call, body.playerId, body.currency)
+                call.verifySecret()
+                val session = resolveSession(body.playerId, body.currency)
                 bus(
                     PlaceSpinSessionCommand(
                         session = session,
@@ -103,7 +111,8 @@ class TongameWebhook(
         post("/credit") {
             val body = call.receive<MoneyRequest>()
             call.handle {
-                val session = resolveSession(call, body.playerId, body.currency)
+                call.verifySecret()
+                val session = resolveSession(body.playerId, body.currency)
                 bus(
                     SettleSpinSessionCommand(
                         session = session,
@@ -117,13 +126,17 @@ class TongameWebhook(
         }
     }
 
-    /** Resolve our session by the echoed playerId, verify the shared secret, and pin the request currency. */
-    private suspend fun resolveSession(call: ApplicationCall, playerId: String, currency: String?): Session {
-        val session = bus(FindSessionByPlayerIdQuery(playerId))
-        val secret = TongameConfig(session.gameVariant.game.provider.aggregator.config).apiKey
-        if (call.request.headers["X-Secret-Key"] != secret) throw InvalidSecretException()
-        return if (currency != null) session.copy(currency = Currency(currency)) else session
+    /** Verify X-Secret-Key against the TONGame aggregator's stored apiKey (a constant, not session-derived). */
+    private suspend fun ApplicationCall.verifySecret() {
+        val aggregator = bus(FindAggregatorQuery(Identity(AGGREGATOR_IDENTITY)))
+            .orElseThrow { InvalidSecretException() }
+        val apiKey = TongameConfig(aggregator.config).apiKey
+        if (request.headers["X-Secret-Key"] != apiKey) throw InvalidSecretException()
     }
+
+    /** Resolve the player's current session (rounds are session-keyed) and pin the request currency. */
+    private suspend fun resolveSession(playerId: String, currency: String): Session =
+        bus(FindSessionByPlayerIdQuery(playerId)).copy(currency = Currency(currency))
 
     private suspend fun ApplicationCall.handle(block: suspend () -> Unit) {
         try {
@@ -178,4 +191,8 @@ class TongameWebhook(
 
     @Serializable
     private data class ErrorResponse(val error: String, val message: String?)
+
+    private companion object {
+        const val AGGREGATOR_IDENTITY = "tongame"
+    }
 }
