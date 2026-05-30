@@ -5,6 +5,7 @@ import application.port.external.IBackgroundTaskPort
 import application.port.external.ICurrencyPort
 import application.port.external.IEventPort
 import application.port.external.IPlayerLimitPort
+import application.port.external.IPlayerPort
 import application.port.external.IWalletPort
 import application.port.factory.AggregatorAdapterProvider
 import application.port.factory.IAggregatorFactory
@@ -13,6 +14,8 @@ import infrastructure.aggregator.onegamehub.OneGameHubAdapterProvider
 import infrastructure.aggregator.pateplay.PateplayAdapterProvider
 import infrastructure.aggregator.pragmatic.PragmaticAdapterProvider
 import infrastructure.aggregator.tongame.TongameAdapterProvider
+import infrastructure.pam.PamAdapter
+import infrastructure.pam.pamChannel
 import infrastructure.rabbitmq.PlaceSpinEventConsumer
 import infrastructure.rabbitmq.RabbitMqEventPublisher
 import infrastructure.redis.PlayerLimitRedis
@@ -33,6 +36,8 @@ val externalModule = module {
     single<FileAdapter> { S3FileAdapter(config = get()) }
     single<IPlayerLimitPort> { PlayerLimitRedis(config = get()) }
     single<ICurrencyPort> { CurrencyAdapter(channel = get()) }
+    // Separate gRPC channel to pam-engine (user-engine) for player profile lookups.
+    single<IPlayerPort> { PamAdapter(channel = pamChannel(get())) }
     single<IBackgroundTaskPort> { BackgroundWorker() }
     single<IEventPort> { RabbitMqEventPublisher(application = get()) }
 

@@ -2,8 +2,8 @@ package infrastructure.aggregator.tongame.client
 
 import infrastructure.aggregator.tongame.TongameConfig
 import infrastructure.aggregator.tongame.client.dto.CreateSessionRequest
+import infrastructure.aggregator.tongame.client.dto.CreateSessionResponse
 import infrastructure.aggregator.tongame.client.dto.GameDto
-import infrastructure.aggregator.tongame.client.dto.ListGamesResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
@@ -20,9 +20,9 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 /**
- * Operator → provider REST client (`/api/v1/operator/...`). Every call is authenticated with
- * the `X-Identity` + `X-Api-Key` headers. `expectSuccess` makes non-2xx responses throw so
- * failures (e.g. 409 on a duplicate session token) surface instead of being swallowed.
+ * Operator → provider REST client (`/api/v1/...`). Every call is authenticated with the
+ * `X-Operator` + `X-Secret-Key` headers. `expectSuccess` makes non-2xx responses throw so
+ * failures surface instead of being swallowed.
  */
 class TongameHttpClient(private val config: TongameConfig) {
 
@@ -39,29 +39,23 @@ class TongameHttpClient(private val config: TongameConfig) {
     }
 
     suspend fun getGames(): List<GameDto> {
-        return client.get("${config.apiUrl}/api/v1/operator/game") {
+        return client.get("${config.apiUrl}/api/v1/games") {
             auth()
-        }.body<ListGamesResponse>().games
+        }.body()
     }
 
-    /** Registers our session token with the provider. The provider stores it and uses it to
-     *  authenticate later wallet webhooks. Returns 204 (no body). */
-    suspend fun createSession(sessionToken: String, playerId: String, gameId: String) {
-        client.post("${config.apiUrl}/api/v1/operator/session") {
+    /** Mints a provider session for [playerId] and returns the provider-issued token to embed
+     *  in the launch URL. The provider echoes [playerId] back in every later wallet webhook. */
+    suspend fun createSession(playerId: String): String {
+        return client.post("${config.apiUrl}/api/v1/session") {
             auth()
             contentType(ContentType.Application.Json)
-            setBody(
-                CreateSessionRequest(
-                    sessionToken = sessionToken,
-                    playerId = playerId,
-                    gameId = gameId,
-                )
-            )
-        }
+            setBody(CreateSessionRequest(playerId = playerId))
+        }.body<CreateSessionResponse>().token
     }
 
     private fun HttpRequestBuilder.auth() {
-        header("X-Identity", config.operatorIdentity)
-        header("X-Api-Key", config.apiKey)
+        header("X-Operator", config.operatorIdentity)
+        header("X-Secret-Key", config.apiKey)
     }
 }

@@ -1,5 +1,6 @@
 package infrastructure.koin
 
+import infrastructure.pam.PamConfig
 import infrastructure.persistence.CASINO_DB_NAME
 import infrastructure.persistence.DatabaseConfig
 import infrastructure.rabbitmq.RabbitMqConfig
@@ -21,6 +22,12 @@ val configModule = module {
         WalletConfig(
             address = System.getenv("WALLET_GRPC_HOST") ?: "localhost",
             port = (System.getenv("WALLET_GRPC_PORT") ?: "5555").toInt()
+        )
+    }
+    single {
+        PamConfig(
+            address = System.getenv("PAM_GRPC_HOST") ?: "localhost",
+            port = (System.getenv("PAM_GRPC_PORT") ?: "9090").toInt()
         )
     }
     single {

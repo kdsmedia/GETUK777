@@ -19,7 +19,7 @@ class TongameGameAdapter(
         return client.getGames().map { game ->
             IGamePort.AggregatorGame(
                 symbol = game.identity,
-                name = game.name,
+                name = game.identity,
                 providerName = PROVIDER_NAME,
                 freeSpinEnable = false,
                 freeChipEnable = false,
@@ -47,17 +47,13 @@ class TongameGameAdapter(
     override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): String {
         val gameSymbol = session.gameVariant.symbol.value
 
-        // We mint the token; the provider stores it and echoes it back in wallet webhooks,
-        // so it resolves via our own findByToken.
-        client.createSession(
-            sessionToken = session.token.value,
-            playerId = session.playerId.value,
-            gameId = gameSymbol,
-        )
+        // The provider mints the WS token from our session token (sent as playerId) and echoes
+        // that same playerId back in wallet webhooks, where we resolve via our own findByToken.
+        val providerToken = client.createSession(playerId = session.token.value)
 
         return buildGameUrl(gameSymbol) {
             parameters.append("mode", "real")
-            parameters.append("sessionToken", session.token.value)
+            parameters.append("sessionToken", providerToken)
             parameters.append("operatorIdentity", config.operatorIdentity)
         }
     }

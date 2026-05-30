@@ -10,7 +10,7 @@ class TongameLiveTest : FunSpec({
             val adapter = TongameGameAdapter(
                 TongameConfig(
                     mapOf(
-                        "address" to address,
+                        "apiUrl" to address,
                         "operatorIdentity" to "development",
                         "apiKey" to "test-deve",
                     )
