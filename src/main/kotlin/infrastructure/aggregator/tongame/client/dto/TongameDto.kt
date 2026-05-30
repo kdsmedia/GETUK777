@@ -9,11 +9,5 @@ data class GameDto(
 
 @Serializable
 data class CreateSessionRequest(
-    val playerId: String,
-)
-
-@Serializable
-data class CreateSessionResponse(
     val token: String,
-    val expireAt: String? = null,
 )

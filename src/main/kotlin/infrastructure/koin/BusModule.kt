@@ -40,7 +40,6 @@ import application.query.provider.FindProviderQuery
 import application.query.round.FindAllRoundQuery
 import application.query.round.FindRoundQuery
 import application.query.session.FindSessionBalanceQuery
-import application.query.session.FindSessionByPlayerIdQuery
 import application.query.session.FindSessionQuery
 import application.query.winner.LastWinnerQuery
 import infrastructure.handler.aggregator.BatchAggregatorQueryHandler
@@ -78,7 +77,6 @@ import infrastructure.handler.round.FindAllRoundQueryHandler
 import infrastructure.handler.round.FindRoundQueryHandler
 import infrastructure.handler.session.EndRoundSessionHandler
 import infrastructure.handler.session.FindSessionBalanceHandler
-import infrastructure.handler.session.FindSessionByPlayerIdHandler
 import infrastructure.handler.session.FindSessionHandler
 import infrastructure.handler.session.PlaceSpinSessionHandler
 import infrastructure.handler.session.SettleSpinSessionHandler
@@ -127,7 +125,6 @@ val busModule = module {
             ),
             queryHandlers = mapOf(
                 FindSessionQuery::class.java to get<FindSessionHandler>(),
-                FindSessionByPlayerIdQuery::class.java to get<FindSessionByPlayerIdHandler>(),
                 FindSessionBalanceQuery::class.java to get<FindSessionBalanceHandler>(),
                 FindGameQuery::class.java to get<FindGameQueryHandler>(),
                 FindAllGameQuery::class.java to get<FindAllGameQueryHandler>(),

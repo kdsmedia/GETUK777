@@ -10,6 +10,4 @@ interface ISessionRepository {
 
     suspend fun findByToken(token: String): Session?
 
-    suspend fun findByPlayerId(playerId: String): Session?
-
 }

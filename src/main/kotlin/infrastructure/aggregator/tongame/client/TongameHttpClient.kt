@@ -2,7 +2,6 @@ package infrastructure.aggregator.tongame.client
 
 import infrastructure.aggregator.tongame.TongameConfig
 import infrastructure.aggregator.tongame.client.dto.CreateSessionRequest
-import infrastructure.aggregator.tongame.client.dto.CreateSessionResponse
 import infrastructure.aggregator.tongame.client.dto.GameDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -44,14 +43,15 @@ class TongameHttpClient(private val config: TongameConfig) {
         }.body()
     }
 
-    /** Mints a provider session for [playerId] and returns the provider-issued token to embed
-     *  in the launch URL. The provider echoes [playerId] back in every later wallet webhook. */
-    suspend fun createSession(playerId: String): String {
-        return client.post("${config.apiUrl}/api/v1/session") {
+    /** Registers our own session [token] with the provider (it mints nothing). The provider then
+     *  calls our `/player` webhook with this same [token] to learn the player, and echoes the token
+     *  back as `sessionToken` in every later wallet webhook. Throws on non-2xx (expectSuccess). */
+    suspend fun createSession(token: String) {
+        client.post("${config.apiUrl}/api/v1/session") {
             auth()
             contentType(ContentType.Application.Json)
-            setBody(CreateSessionRequest(playerId = playerId))
-        }.body<CreateSessionResponse>().token
+            setBody(CreateSessionRequest(token = token))
+        }
     }
 
     private fun HttpRequestBuilder.auth() {
