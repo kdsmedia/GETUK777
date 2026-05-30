@@ -26,9 +26,15 @@ class OpenSessionUsecase(
 
         val gameAdapter = aggregatorFactory.createGameAdapter(aggregator)
 
-        val launchUrl = gameAdapter.getLaunchUrl(session, lobbyUrl)
-
+        // Persist (and commit) the session BEFORE launching the provider. getLaunchUrl can drive a
+        // synchronous provider -> operator webhook that resolves this session by token (e.g. TONGame
+        // mints its session via POST /api/v1/session, which calls our /player back with the same
+        // token). That callback reads in a separate DB connection, so the row must already be
+        // committed; saving after the launch call left it invisible and the provider answered 401
+        // UNKNOWN_SESSION, surfacing here as a 500.
         val updatedSession = sessionRepository.save(session)
+
+        val launchUrl = gameAdapter.getLaunchUrl(updatedSession, lobbyUrl)
 
         eventPort.publish(SessionOpened(updatedSession))
 

@@ -6,7 +6,7 @@ import application.command.session.PlaceSpinSessionCommand
 import application.command.session.SettleSpinSessionCommand
 import application.port.external.IPlayerPort
 import application.query.session.FindSessionBalanceQuery
-import application.query.session.FindSessionQuery
+import application.query.session.FindSessionByPlayerIdQuery
 import domain.exception.conflict.ConflictException
 import domain.exception.forbidden.ForbiddenException
 import domain.exception.forbidden.InsufficientBalanceException
@@ -32,8 +32,8 @@ import kotlinx.serialization.Serializable
  * `/credit`.
  *
  * Identity: the provider echoes back, as `playerId`, the value we passed to `POST /api/v1/session`
- * — our own session token — so sessions resolve via [FindSessionQuery] (findByToken). The real
- * wallet/player id is then read off `session.playerId`. Each request is authenticated by the
+ * — our own operator player id — so sessions resolve via [FindSessionByPlayerIdQuery]
+ * (findByPlayerId, most-recent session for that player). Each request is authenticated by the
  * `X-Secret-Key` header, checked against the aggregator's stored secret.
  *
  * Money is integer minor units == wallet system units (nano), passed straight through. TONGame
@@ -117,9 +117,9 @@ class TongameWebhook(
         }
     }
 
-    /** Resolve our session by the echoed token, verify the shared secret, and pin the request currency. */
-    private suspend fun resolveSession(call: ApplicationCall, token: String, currency: String?): Session {
-        val session = bus(FindSessionQuery(token))
+    /** Resolve our session by the echoed playerId, verify the shared secret, and pin the request currency. */
+    private suspend fun resolveSession(call: ApplicationCall, playerId: String, currency: String?): Session {
+        val session = bus(FindSessionByPlayerIdQuery(playerId))
         val secret = TongameConfig(session.gameVariant.game.provider.aggregator.config).apiKey
         if (call.request.headers["X-Secret-Key"] != secret) throw InvalidSecretException()
         return if (currency != null) session.copy(currency = Currency(currency)) else session

@@ -47,9 +47,10 @@ class TongameGameAdapter(
     override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): String {
         val gameSymbol = session.gameVariant.symbol.value
 
-        // The provider mints the WS token from our session token (sent as playerId) and echoes
-        // that same playerId back in wallet webhooks, where we resolve via our own findByToken.
-        val providerToken = client.createSession(playerId = session.token.value)
+        // TONGame's `playerId` is the operator's own player id (per its API contract), so we send
+        // our real player id. The provider mints a launch token from it and echoes that same
+        // playerId back in every wallet webhook, where we resolve the session via findByPlayerId.
+        val providerToken = client.createSession(playerId = session.playerId.value)
 
         return buildGameUrl(gameSymbol) {
             parameters.append("mode", "real")

@@ -12,6 +12,7 @@ import infrastructure.persistence.mapper.SessionMapper.toDomain
 import infrastructure.persistence.table.SessionTable
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.dao.with
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.update
@@ -42,6 +43,22 @@ class SessionRepositoryImpl : ISessionRepository {
 
     override suspend fun findByToken(token: String): Session? = dbRead {
         SessionEntity.find { SessionTable.token eq token }
+            .with(
+                SessionEntity::gameVariant,
+                GameVariantEntity::game,
+                GameEntity::provider,
+                GameEntity::collections,
+                ProviderEntity::aggregator,
+            )
+            .firstOrNull()?.toDomain()
+    }
+
+    // playerId is not unique (a player can open several sessions over time); the wallet webhooks
+    // that resolve by playerId always concern the player's current play, so we return the most
+    // recently created session for that player.
+    override suspend fun findByPlayerId(playerId: String): Session? = dbRead {
+        SessionEntity.find { SessionTable.playerId eq playerId }
+            .orderBy(SessionTable.id to SortOrder.DESC)
             .with(
                 SessionEntity::gameVariant,
                 GameVariantEntity::game,
