@@ -1,60 +1,22 @@
 package infrastructure.rabbitmq
 
-import application.port.external.IPlayerLimitPort
+import application.usecase.DecreasePlayerLimitUsecase
+import com.rabbitmq.client.Channel
 import domain.vo.Amount
 import domain.vo.PlayerId
-import infrastructure.rabbitmq.mapper.SpinPlacedPayload
-import io.github.damir.denis.tudor.ktor.server.rabbitmq.dsl.basicConsume
-import io.github.damir.denis.tudor.ktor.server.rabbitmq.dsl.queueBind
-import io.github.damir.denis.tudor.ktor.server.rabbitmq.dsl.queueDeclare
-import io.github.damir.denis.tudor.ktor.server.rabbitmq.dsl.rabbitmq
-import io.ktor.server.application.Application
-import org.slf4j.LoggerFactory
+import event.SpinEvent
+import event.AppEventConsumer
+import event.model.SpinType
 
 class PlaceSpinEventConsumer(
-    private val application: Application,
-    private val playerLimitPort: IPlayerLimitPort,
-) {
+    channel: Channel,
+    private val decreasePlayerLimit: DecreasePlayerLimitUsecase,
+) : AppEventConsumer<SpinEvent>(channel, SpinEvent::class) {
 
-    private val logger = LoggerFactory.getLogger(PlaceSpinEventConsumer::class.java)
+    override suspend fun handle(event: SpinEvent) {
+        val spin = event.data
+        if (spin.type != SpinType.Place) return
 
-    companion object {
-        private const val QUEUE_NAME = "casino-engine.player-limit.spin-placed"
-        private const val ROUTING_KEY = "spin.placed"
-    }
-
-    fun start() {
-        application.rabbitmq {
-            queueBind {
-                queue = QUEUE_NAME
-                exchange = CASINO_EXCHANGE
-                routingKey = ROUTING_KEY
-                queueDeclare {
-                    queue = QUEUE_NAME
-                    durable = true
-                }
-            }
-
-            basicConsume {
-                queue = QUEUE_NAME
-                autoAck = true
-                deliverCallback<SpinPlacedPayload> { message ->
-                    handlePlacedSpin(message.body)
-                }
-            }
-        }
-    }
-
-    private suspend fun handlePlacedSpin(payload: SpinPlacedPayload) {
-        val playerId = PlayerId(payload.playerId)
-        val spinAmount = Amount(payload.amount)
-
-        val currentLimit = playerLimitPort.getMaxPlaceAmount(playerId) ?: return
-
-        val newLimit = Amount(maxOf(0, currentLimit.value - spinAmount.value))
-
-        playerLimitPort.saveMaxPlaceAmount(playerId, newLimit)
-
-        logger.info("Decreased player limit for [${playerId.value}]: $currentLimit -> $newLimit")
+        decreasePlayerLimit(PlayerId(spin.playerId), Amount(spin.amount))
     }
 }

@@ -1,17 +1,18 @@
 package application.usecase
 
-import application.port.external.IEventPort
 import application.port.factory.IAggregatorFactory
-import domain.event.SessionOpened
 import domain.exception.DomainException
 import domain.model.Session
 import domain.repository.ISessionRepository
+import event.AppEventPublisher
+import event.SessionEvent
+import event.mapper.toModel
 import org.slf4j.LoggerFactory
 
 class OpenSessionUsecase(
     private val aggregatorFactory: IAggregatorFactory,
     private val sessionRepository: ISessionRepository,
-    private val eventPort: IEventPort,
+    private val eventPublisher: AppEventPublisher,
 ) {
 
     private val logger = LoggerFactory.getLogger(OpenSessionUsecase::class.java)
@@ -36,7 +37,7 @@ class OpenSessionUsecase(
 
         val launchUrl = gameAdapter.getLaunchUrl(updatedSession, lobbyUrl)
 
-        eventPort.publish(SessionOpened(updatedSession))
+        eventPublisher.publish(SessionEvent(updatedSession.toModel()))
 
         logger.info("Session opened: id={} player={}", updatedSession.id, updatedSession.playerId.value)
 

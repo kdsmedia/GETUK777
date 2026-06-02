@@ -1,14 +1,16 @@
 package application.usecase
 
-import application.port.external.IEventPort
 import domain.exception.DomainException
 import domain.model.Round
 import domain.repository.IRoundRepository
+import event.AppEventPublisher
+import event.RoundEvent
+import event.mapper.toModel
 import org.slf4j.LoggerFactory
 
 class FinishRoundUsecase(
     private val roundRepository: IRoundRepository,
-    private val eventPort: IEventPort,
+    private val eventPublisher: AppEventPublisher,
 ) {
 
     private val logger = LoggerFactory.getLogger(FinishRoundUsecase::class.java)
@@ -16,9 +18,8 @@ class FinishRoundUsecase(
     suspend operator fun invoke(round: Round): Result<Unit> = runCatching {
         logger.info("Finishing round: id={} session={}", round.id, round.session.id)
 
-        val (finishedRound, events) = round.finish()
-        roundRepository.save(finishedRound)
-        eventPort.publishAll(events)
+        val finishedRound = roundRepository.save(round.finish())
+        eventPublisher.publish(RoundEvent(finishedRound.toModel()))
 
         logger.info("Round finished: id={}", finishedRound.id)
     }.onFailure { e ->

@@ -1,5 +1,6 @@
 package infrastructure.koin
 
+import application.usecase.DecreasePlayerLimitUsecase
 import application.usecase.FinishRoundUsecase
 import application.usecase.OpenSessionUsecase
 import application.usecase.ProcessSpinUsecase
@@ -10,7 +11,7 @@ val usecaseModule = module {
     single {
         ProcessSpinUsecase(
             spinRepository = get(),
-            eventPort = get(),
+            eventPublisher = get(),
             walletPort = get(),
             playerLimitPort = get(),
             backgroundTaskPort = get(),
@@ -20,13 +21,18 @@ val usecaseModule = module {
         OpenSessionUsecase(
             aggregatorFactory = get(),
             sessionRepository = get(),
-            eventPort = get(),
+            eventPublisher = get(),
         )
     }
     single {
         FinishRoundUsecase(
             roundRepository = get(),
-            eventPort = get(),
+            eventPublisher = get(),
+        )
+    }
+    single {
+        DecreasePlayerLimitUsecase(
+            playerLimitPort = get(),
         )
     }
     single {

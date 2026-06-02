@@ -19,14 +19,11 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.routing.routing
+import com.rabbitmq.client.Channel
+import event.declareEventExchange
 import infrastructure.aggregator.onegamehub.webhook.OneGameHubWebhook
 import infrastructure.aggregator.pragmatic.webhook.PragmaticWebhook
-import infrastructure.rabbitmq.CASINO_EXCHANGE
 import infrastructure.rabbitmq.PlaceSpinEventConsumer
-import infrastructure.rabbitmq.RabbitMqConfig
-import io.github.damir.denis.tudor.ktor.server.rabbitmq.RabbitMQ
-import io.github.damir.denis.tudor.ktor.server.rabbitmq.dsl.exchangeDeclare
-import io.github.damir.denis.tudor.ktor.server.rabbitmq.dsl.rabbitmq
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -45,7 +42,6 @@ fun main() {
         configureSerialization()
         configureCallLogging()
         configureRestInspector()
-        configureRabbitMq()
         configureRabbitMqTopology()
         configureWebhook()
         configureGrpc()
@@ -71,27 +67,16 @@ private fun Application.configureCallLogging() {
     install(CallLogging)
 }
 
-private fun Application.configureRabbitMq() {
-    val config = get<RabbitMqConfig>()
-    install(RabbitMQ) {
-        uri = config.uri
-    }
-}
-
 private fun Application.configureRabbitMqTopology() {
-    rabbitmq {
-        exchangeDeclare {
-            exchange = CASINO_EXCHANGE
-            type = "topic"
-            durable = true
-        }
-    }
-    logger.info("RabbitMQ topology ready: exchange={}", CASINO_EXCHANGE)
+    val channel = get<Channel>()
+    declareEventExchange(channel)
+    logger.info("RabbitMQ topology ready: exchange={}", event.EVENT_EXCHANGE)
 }
 
 private fun Application.configureConsumers() {
-    val consumer = get<PlaceSpinEventConsumer>()
-    consumer.start()
+    // Instantiating an AppEventConsumer auto-declares its queue, binds it, and starts
+    // consuming in the base class init block — resolving it from Koin is enough.
+    get<PlaceSpinEventConsumer>()
 }
 
 private fun httpPort(): Int = System.getenv("HTTP_PORT")?.toIntOrNull() ?: 8080

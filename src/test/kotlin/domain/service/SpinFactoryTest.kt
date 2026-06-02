@@ -22,7 +22,7 @@ class SpinFactoryTest : FunSpec({
     }
 
     test("place on finished round throws") {
-        val (finished, _) = TestFixtures.round().finish()
+        val finished = TestFixtures.round().finish()
         shouldThrow<RoundAlreadyFinishedException> {
             SpinFactory.place(finished, ExternalSpinId("spin_1"), Amount(100))
         }
@@ -35,14 +35,14 @@ class SpinFactoryTest : FunSpec({
     }
 
     test("settle on finished round throws") {
-        val (finished, _) = TestFixtures.round().finish()
+        val finished = TestFixtures.round().finish()
         shouldThrow<RoundAlreadyFinishedException> {
             SpinFactory.settle(finished, ExternalSpinId("spin_2"), Amount(100))
         }
     }
 
     test("rollback creates a ROLLBACK spin — allowed after round finish") {
-        val (finished, _) = TestFixtures.round().finish()
+        val finished = TestFixtures.round().finish()
         val spin = SpinFactory.rollback(finished, ExternalSpinId("spin_3"), Amount(100))
         spin.type shouldBe SpinType.ROLLBACK
         spin.isRollback shouldBe true

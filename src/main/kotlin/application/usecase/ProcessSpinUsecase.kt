@@ -1,10 +1,8 @@
 package application.usecase
 
 import application.port.external.IBackgroundTaskPort
-import application.port.external.IEventPort
 import application.port.external.IPlayerLimitPort
 import application.port.external.IWalletPort
-import domain.event.toDomainEvent
 import domain.exception.DomainException
 import domain.exception.domainRequire
 import domain.exception.forbidden.MaxPlaceSpinException
@@ -13,13 +11,16 @@ import domain.model.Spin
 import domain.repository.ISpinRepository
 import domain.service.SpinBalanceCalculator
 import domain.service.SpinResult
+import event.AppEventPublisher
+import event.SpinEvent
+import event.mapper.toModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
 
 class ProcessSpinUsecase(
     private val spinRepository: ISpinRepository,
-    private val eventPort: IEventPort,
+    private val eventPublisher: AppEventPublisher,
     private val walletPort: IWalletPort,
     private val playerLimitPort: IPlayerLimitPort,
     private val backgroundTaskPort: IBackgroundTaskPort,
@@ -41,7 +42,12 @@ class ProcessSpinUsecase(
 
         val updatedSpin = spinRepository.save(result.spin)
 
-        eventPort.publish(updatedSpin.toDomainEvent())
+        // Spin persisted: the event reflects committed state, so publish it now. The wallet
+        // debit/credit was dispatched fire-and-forget to backgroundTaskPort (see process());
+        // BackgroundWorker catches and logs any wallet failure — it does NOT roll back this
+        // spin or this event. The event is the source of truth for the committed spin; a
+        // failed wallet move is reconciled out-of-band, never by suppressing the event.
+        eventPublisher.publish(SpinEvent(updatedSpin.toModel()))
 
         logger.info("Spin processed: id={} type={}", updatedSpin.id, updatedSpin.type)
 

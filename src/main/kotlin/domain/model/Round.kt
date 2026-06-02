@@ -1,7 +1,5 @@
 package domain.model
 
-import domain.event.RoundFinished
-import domain.event.WithEvents
 import domain.exception.conflict.RoundAlreadyFinishedException
 import domain.exception.domainRequire
 import domain.util.ext.LocalDateTimeExt
@@ -28,14 +26,13 @@ data class Round(
         get() = finishedAt != null
 
     /**
-     * Closes the round. Returns the updated [Round] alongside a [RoundFinished] domain
-     * event the usecase should publish after persistence commits.
+     * Closes the round and returns the finished [Round]. The usecase publishes a
+     * `RoundEvent` snapshot after persistence commits.
      *
      * Throws [RoundAlreadyFinishedException] if the round was already closed.
      */
-    fun finish(): WithEvents<Round> {
+    fun finish(): Round {
         domainRequire(!isFinished) { RoundAlreadyFinishedException() }
-        val finished = copy(finishedAt = LocalDateTimeExt.now())
-        return WithEvents(finished, listOf(RoundFinished(finished)))
+        return copy(finishedAt = LocalDateTimeExt.now())
     }
 }
