@@ -1,0 +1,39 @@
+{
+  "name": "@nekzabirov/game-grpc-client",
+  "version": "0.0.0",
+  "description": "TypeScript gRPC client for the Game (Casino) Service",
+  "type": "module",
+  "license": "UNLICENSED",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "proto:gen": "buf generate ../src/main/proto && node scripts/gen-barrel.mjs",
+    "build": "npm run proto:gen && tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.12.0"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.70.0",
+    "@bufbuild/protoc-gen-es": "^2.12.0",
+    "typescript": "^6.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nekzabirov/IGaming-Game-Engine.git"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
