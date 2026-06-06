@@ -1,3 +1,3 @@
 package infrastructure.persistence
 
-const val CASINO_DB_NAME = "casino"
+val CASINO_DB_NAME: String = System.getenv("DATABASE_NAME") ?: "casino"
