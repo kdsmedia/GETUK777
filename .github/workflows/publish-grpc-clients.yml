@@ -1,0 +1,24 @@
+name: Publish gRPC Clients (TS + proto)
+
+# Java client stays native (built by this engine's Gradle, with Kotlin stubs) in
+# publish-grpc-client.yml. This caller centralizes the TypeScript client + raw protos.
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    uses: nekzabirov/IGaming-gRPC-Actions/.github/workflows/publish-grpc-clients.yml@main
+    secrets: inherit
+    with:
+      version: ${{ github.ref_name }}
+      proto_dir: src/main/proto
+      java_enabled: false
+      npm_package: '@nekzabirov/game-grpc-client'
+      proto_package: '@nekzabirov/game-proto'
