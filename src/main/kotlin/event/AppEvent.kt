@@ -13,6 +13,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlin.reflect.KClass
 import kotlin.reflect.full.companionObjectInstance
+import org.slf4j.LoggerFactory
 
 /** Shared JSON codec for the event envelope and every snapshot payload. */
 val appJson = Json {
@@ -95,14 +96,26 @@ abstract class AppEventConsumer<E : AppEvent<*>>(channel: Channel, type: KClass<
         channel.queueDeclare(queue, true, false, false, null)
         channel.queueBind(queue, EVENT_EXCHANGE, meta.route)
         val callback = DeliverCallback { _, delivery ->
-            val envelope = appJson.parseToJsonElement(delivery.body.decodeToString()).jsonObject
-            val data = appJson.decodeFromJsonElement(meta.serializer, envelope.getValue("data"))
-            @Suppress("UNCHECKED_CAST")
-            val event = meta.create(data) as E
-            runBlocking { handle(event) }
+            try {
+                val envelope = appJson.parseToJsonElement(delivery.body.decodeToString()).jsonObject
+                val data = appJson.decodeFromJsonElement(meta.serializer, envelope.getValue("data"))
+                @Suppress("UNCHECKED_CAST")
+                val event = meta.create(data) as E
+                runBlocking { handle(event) }
+            } catch (e: Exception) {
+                // A poison message or a failing handler must NEVER escape this callback. The RabbitMQ
+                // client closes the channel on an uncaught consumer exception, and that channel is shared
+                // with the publisher, so one bad delivery would take down ALL event publishing (the
+                // 2026-06-09 outage). Auto-ack already dropped the delivery — log it and keep consuming.
+                log.error("Dropping poison/failed delivery on queue '{}' (route '{}'): {}", queue, meta.route, e.message, e)
+            }
         }
         channel.basicConsume(queue, true, callback, { _ -> })
     }
 
     abstract suspend fun handle(event: E)
+
+    companion object {
+        private val log = LoggerFactory.getLogger(AppEventConsumer::class.java)
+    }
 }
