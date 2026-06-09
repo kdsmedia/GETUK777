@@ -13,7 +13,6 @@ import domain.service.SpinBalanceCalculator
 import domain.service.SpinResult
 import event.AppEventPublisher
 import event.SpinEvent
-import event.mapper.toModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
@@ -47,7 +46,7 @@ class ProcessSpinUsecase(
         // BackgroundWorker catches and logs any wallet failure — it does NOT roll back this
         // spin or this event. The event is the source of truth for the committed spin; a
         // failed wallet move is reconciled out-of-band, never by suppressing the event.
-        eventPublisher.publish(SpinEvent(updatedSpin.toModel()))
+        eventPublisher.publish(SpinEvent(updatedSpin))
 
         logger.info("Spin processed: id={} type={}", updatedSpin.id, updatedSpin.type)
 

@@ -1,11 +1,11 @@
 package event
 
-import event.model.Spin
+import domain.model.Spin
 import kotlinx.serialization.KSerializer
 
 data class SpinEvent(override val data: Spin) : AppEvent<Spin> {
 
-    override val playerId = data.playerId
+    override val playerId = data.round.session.playerId.value
 
     companion object : AppEvent.Meta<Spin> {
         override val route = "spin.events"

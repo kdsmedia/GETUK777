@@ -35,7 +35,7 @@ class OpenSessionUsecaseTest : FunSpec({
         result.getOrThrow().launchUrl shouldBe "https://launch.url"
         result.getOrThrow().session shouldBe session
         verify(exactly = 1) {
-            eventPublisher.publish(match<SessionEvent> { it.data.playerId == session.playerId.value })
+            eventPublisher.publish(match<SessionEvent> { it.data.playerId == session.playerId })
         }
     }
 

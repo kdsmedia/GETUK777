@@ -6,7 +6,6 @@ import domain.model.Session
 import domain.repository.ISessionRepository
 import event.AppEventPublisher
 import event.SessionEvent
-import event.mapper.toModel
 import org.slf4j.LoggerFactory
 
 class OpenSessionUsecase(
@@ -37,7 +36,7 @@ class OpenSessionUsecase(
 
         val launchUrl = gameAdapter.getLaunchUrl(updatedSession, lobbyUrl)
 
-        eventPublisher.publish(SessionEvent(updatedSession.toModel()))
+        eventPublisher.publish(SessionEvent(updatedSession))
 
         logger.info("Session opened: id={} player={}", updatedSession.id, updatedSession.playerId.value)
 

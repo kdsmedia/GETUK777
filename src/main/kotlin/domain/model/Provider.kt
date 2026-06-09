@@ -6,7 +6,9 @@ import domain.util.Orderable
 import domain.vo.Country
 import domain.vo.Identity
 import domain.vo.ImageMap
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Provider(
     val identity: Identity,
 

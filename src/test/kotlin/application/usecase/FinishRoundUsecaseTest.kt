@@ -29,7 +29,7 @@ class FinishRoundUsecaseTest : FunSpec({
         val result = usecase.invoke(round)
 
         result.isSuccess shouldBe true
-        publishedSlot.captured.data.finished shouldBe true
+        publishedSlot.captured.data.isFinished shouldBe true
         coVerify(exactly = 1) { roundRepo.save(match { it.isFinished }) }
     }
 

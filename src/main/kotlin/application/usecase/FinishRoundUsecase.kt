@@ -5,7 +5,6 @@ import domain.model.Round
 import domain.repository.IRoundRepository
 import event.AppEventPublisher
 import event.RoundEvent
-import event.mapper.toModel
 import org.slf4j.LoggerFactory
 
 class FinishRoundUsecase(
@@ -19,7 +18,7 @@ class FinishRoundUsecase(
         logger.info("Finishing round: id={} session={}", round.id, round.session.id)
 
         val finishedRound = roundRepository.save(round.finish())
-        eventPublisher.publish(RoundEvent(finishedRound.toModel()))
+        eventPublisher.publish(RoundEvent(finishedRound))
 
         logger.info("Round finished: id={}", finishedRound.id)
     }.onFailure { e ->

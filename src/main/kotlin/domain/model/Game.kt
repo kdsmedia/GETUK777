@@ -5,7 +5,9 @@ import domain.util.Imageable
 import domain.util.Orderable
 import domain.vo.Identity
 import domain.vo.ImageMap
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Game(
     val identity: Identity,
 

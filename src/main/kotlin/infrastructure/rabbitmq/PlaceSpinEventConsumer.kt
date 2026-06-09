@@ -2,11 +2,9 @@ package infrastructure.rabbitmq
 
 import application.usecase.DecreasePlayerLimitUsecase
 import com.rabbitmq.client.Channel
-import domain.vo.Amount
-import domain.vo.PlayerId
-import event.SpinEvent
+import domain.model.SpinType
 import event.AppEventConsumer
-import event.model.SpinType
+import event.SpinEvent
 
 class PlaceSpinEventConsumer(
     channel: Channel,
@@ -15,8 +13,8 @@ class PlaceSpinEventConsumer(
 
     override suspend fun handle(event: SpinEvent) {
         val spin = event.data
-        if (spin.type != SpinType.Place) return
+        if (spin.type != SpinType.PLACE) return
 
-        decreasePlayerLimit(PlayerId(spin.playerId), Amount(spin.amount))
+        decreasePlayerLimit(spin.round.session.playerId, spin.amount)
     }
 }

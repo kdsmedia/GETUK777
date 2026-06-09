@@ -5,7 +5,9 @@ import domain.util.Imageable
 import domain.vo.Identity
 import domain.vo.ImageMap
 import domain.vo.LocaleName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Collection(
     val identity: Identity,
 

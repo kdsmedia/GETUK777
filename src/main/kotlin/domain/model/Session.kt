@@ -7,7 +7,9 @@ import domain.vo.FreespinId
 import domain.vo.Locale
 import domain.vo.PlayerId
 import domain.vo.SessionToken
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Session(
     val id: Long = Long.MIN_VALUE,
 

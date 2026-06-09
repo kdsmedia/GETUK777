@@ -2,16 +2,19 @@ package domain.model
 
 import domain.vo.Amount
 import domain.vo.ExternalSpinId
+import kotlinx.serialization.Serializable
 
 /**
  * Spin type representing the state of a spin transaction.
  */
+@Serializable
 enum class SpinType {
     PLACE,
     SETTLE,
     ROLLBACK
 }
 
+@Serializable
 data class Spin(
     val id: Long = Long.MIN_VALUE,
 

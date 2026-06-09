@@ -1,11 +1,11 @@
 package event
 
-import event.model.Session
+import domain.model.Session
 import kotlinx.serialization.KSerializer
 
 data class SessionEvent(override val data: Session) : AppEvent<Session> {
 
-    override val playerId = data.playerId
+    override val playerId = data.playerId.value
 
     companion object : AppEvent.Meta<Session> {
         override val route = "session.events"

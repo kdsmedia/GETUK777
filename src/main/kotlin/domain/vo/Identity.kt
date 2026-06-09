@@ -4,7 +4,9 @@ import domain.exception.badrequest.EmptyIdentityException
 import domain.exception.badrequest.InvalidIdentityFormatException
 import domain.exception.badrequest.InvalidIdentityGenerationException
 import domain.exception.domainRequire
+import kotlinx.serialization.Serializable
 
+@Serializable
 @JvmInline
 value class Identity(val value: String) {
     init {

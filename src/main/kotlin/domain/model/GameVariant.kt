@@ -2,7 +2,9 @@ package domain.model
 
 import domain.vo.GameSymbol
 import domain.vo.Locale
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class GameVariant(
     val id: Long = Long.MIN_VALUE,
 

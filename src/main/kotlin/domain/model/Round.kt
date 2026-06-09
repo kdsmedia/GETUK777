@@ -6,7 +6,9 @@ import domain.util.ext.LocalDateTimeExt
 import domain.vo.ExternalRoundId
 import domain.vo.FreespinId
 import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Round(
     val id: Long = Long.MIN_VALUE,
 
