@@ -1,6 +1,6 @@
 package application.usecase
 
-import domain.event.AppEventPublisher
+import application.port.external.IEventPublisherPort
 import domain.event.RoundEvent
 import domain.exception.conflict.RoundAlreadyFinishedException
 import domain.repository.IRoundRepository
@@ -18,7 +18,7 @@ class FinishRoundUsecaseTest : FunSpec({
 
     test("successful finish saves round and publishes RoundEvent") {
         val roundRepo = mockk<IRoundRepository>()
-        val eventPublisher = mockk<AppEventPublisher>(relaxed = true)
+        val eventPublisher = mockk<IEventPublisherPort>(relaxed = true)
         val publishedSlot = slot<RoundEvent>()
         every { eventPublisher.publish(capture(publishedSlot)) } returns Unit
         coEvery { roundRepo.save(any()) } answers { firstArg() }
@@ -35,7 +35,7 @@ class FinishRoundUsecaseTest : FunSpec({
 
     test("finishing an already-finished round returns failure and does not publish") {
         val roundRepo = mockk<IRoundRepository>(relaxed = true)
-        val eventPublisher = mockk<AppEventPublisher>(relaxed = true)
+        val eventPublisher = mockk<IEventPublisherPort>(relaxed = true)
         val usecase = FinishRoundUsecase(roundRepo, eventPublisher)
 
         val finishedOnce = TestFixtures.round().finish()

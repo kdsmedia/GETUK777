@@ -3,13 +3,13 @@ package infrastructure.koin
 import application.port.external.FileAdapter
 import application.port.external.IBackgroundTaskPort
 import application.port.external.ICurrencyPort
+import application.port.external.IEventPublisherPort
 import application.port.external.IPlayerLimitPort
 import application.port.external.IPlayerPort
 import application.port.external.IWalletPort
 import application.port.factory.AggregatorAdapterProvider
 import application.port.factory.IAggregatorFactory
 import com.rabbitmq.client.Channel
-import domain.event.AppEventPublisher
 import infrastructure.aggregator.AggregatorRegistry
 import infrastructure.aggregator.onegamehub.OneGameHubAdapterProvider
 import infrastructure.aggregator.pateplay.PateplayAdapterProvider
@@ -43,7 +43,7 @@ val externalModule = module {
     single<IBackgroundTaskPort> { BackgroundWorker() }
     // One shared RabbitMQ channel backs the central publisher + every consumer.
     single<Channel> { rabbitMqChannel(get()) }
-    single<AppEventPublisher> { RabbitAppEventPublisher(channel = get()) }
+    single<IEventPublisherPort> { RabbitAppEventPublisher(channel = get()) }
 
     // Aggregator providers — add a new aggregator by binding another AggregatorAdapterProvider.
     single(named("onegamehub")) { OneGameHubAdapterProvider() } bind AggregatorAdapterProvider::class

@@ -1,7 +1,7 @@
 package application.usecase
 
+import application.port.external.IEventPublisherPort
 import application.port.factory.IAggregatorFactory
-import domain.event.AppEventPublisher
 import domain.event.SessionEvent
 import domain.exception.DomainException
 import domain.model.Session
@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 class OpenSessionUsecase(
     private val aggregatorFactory: IAggregatorFactory,
     private val sessionRepository: ISessionRepository,
-    private val eventPublisher: AppEventPublisher,
+    private val eventPublisher: IEventPublisherPort,
 ) {
 
     private val logger = LoggerFactory.getLogger(OpenSessionUsecase::class.java)

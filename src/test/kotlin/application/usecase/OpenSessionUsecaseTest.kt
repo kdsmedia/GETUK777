@@ -1,8 +1,8 @@
 package application.usecase
 
+import application.port.external.IEventPublisherPort
 import application.port.external.IGamePort
 import application.port.factory.IAggregatorFactory
-import domain.event.AppEventPublisher
 import domain.event.SessionEvent
 import domain.repository.ISessionRepository
 import io.kotest.core.spec.style.FunSpec
@@ -19,7 +19,7 @@ class OpenSessionUsecaseTest : FunSpec({
         val aggregatorFactory = mockk<IAggregatorFactory>()
         val gamePort = mockk<IGamePort>()
         val sessionRepo = mockk<ISessionRepository>()
-        val eventPublisher = mockk<AppEventPublisher>(relaxed = true)
+        val eventPublisher = mockk<IEventPublisherPort>(relaxed = true)
 
         val session = TestFixtures.session()
 
@@ -43,7 +43,7 @@ class OpenSessionUsecaseTest : FunSpec({
         val aggregatorFactory = mockk<IAggregatorFactory>()
         val gamePort = mockk<IGamePort>()
         val sessionRepo = mockk<ISessionRepository>(relaxed = true)
-        val eventPublisher = mockk<AppEventPublisher>(relaxed = true)
+        val eventPublisher = mockk<IEventPublisherPort>(relaxed = true)
 
         val session = TestFixtures.session()
 

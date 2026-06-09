@@ -1,10 +1,10 @@
 package infrastructure.rabbitmq
 
+import application.port.external.IEventPublisherPort
 import com.rabbitmq.client.BuiltinExchangeType
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.DeliverCallback
 import domain.event.AppEvent
-import domain.event.AppEventPublisher
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -30,11 +30,11 @@ fun declareEventExchange(channel: Channel) {
 }
 
 /**
- * RabbitMQ adapter for the [AppEventPublisher] domain port. Owns serialization + channel access:
+ * RabbitMQ adapter for the [IEventPublisherPort] driven port. Owns serialization + channel access:
  * wraps any [AppEvent] in the uniform `{ "playerId": ..., "data": ... }` envelope and publishes
  * it on the event's route.
  */
-class RabbitAppEventPublisher(private val channel: Channel) : AppEventPublisher {
+class RabbitAppEventPublisher(private val channel: Channel) : IEventPublisherPort {
 
     override fun publish(event: AppEvent<*>) {
         @Suppress("UNCHECKED_CAST")
@@ -53,7 +53,7 @@ class RabbitAppEventPublisher(private val channel: Channel) : AppEventPublisher 
 }
 
 /** No-op publisher for entrypoints that must never emit events (e.g. the aggregator sync CLI). */
-object NoOpAppEventPublisher : AppEventPublisher {
+object NoOpAppEventPublisher : IEventPublisherPort {
     override fun publish(event: AppEvent<*>) = Unit
 }
 

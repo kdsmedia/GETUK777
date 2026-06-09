@@ -1,9 +1,9 @@
 package application.usecase
 
 import application.port.external.IBackgroundTaskPort
+import application.port.external.IEventPublisherPort
 import application.port.external.IPlayerLimitPort
 import application.port.external.IWalletPort
-import domain.event.AppEventPublisher
 import domain.event.SpinEvent
 import domain.exception.DomainException
 import domain.exception.domainRequire
@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory
 
 class ProcessSpinUsecase(
     private val spinRepository: ISpinRepository,
-    private val eventPublisher: AppEventPublisher,
+    private val eventPublisher: IEventPublisherPort,
     private val walletPort: IWalletPort,
     private val playerLimitPort: IPlayerLimitPort,
     private val backgroundTaskPort: IBackgroundTaskPort,

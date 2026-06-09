@@ -1,6 +1,6 @@
 package application.usecase
 
-import domain.event.AppEventPublisher
+import application.port.external.IEventPublisherPort
 import domain.event.RoundEvent
 import domain.exception.DomainException
 import domain.model.Round
@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 
 class FinishRoundUsecase(
     private val roundRepository: IRoundRepository,
-    private val eventPublisher: AppEventPublisher,
+    private val eventPublisher: IEventPublisherPort,
 ) {
 
     private val logger = LoggerFactory.getLogger(FinishRoundUsecase::class.java)

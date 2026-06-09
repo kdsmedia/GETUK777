@@ -1,6 +1,6 @@
 import application.Bus
 import application.command.aggregator.SyncAllActiveAggregatorCommand
-import domain.event.AppEventPublisher
+import application.port.external.IEventPublisherPort
 import infrastructure.koin.aggregatorModule
 import infrastructure.koin.busModule
 import infrastructure.koin.configModule
@@ -21,7 +21,7 @@ private val logger = LoggerFactory.getLogger("com.nekgamebling.SyncJob")
 
 private val syncOverrideModule = module {
     // SyncJob does not publish events and must not open a RabbitMQ channel.
-    single<AppEventPublisher> { NoOpAppEventPublisher }
+    single<IEventPublisherPort> { NoOpAppEventPublisher }
 }
 
 fun main() {
