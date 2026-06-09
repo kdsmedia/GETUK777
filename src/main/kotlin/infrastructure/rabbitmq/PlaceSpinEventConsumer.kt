@@ -2,9 +2,8 @@ package infrastructure.rabbitmq
 
 import application.usecase.DecreasePlayerLimitUsecase
 import com.rabbitmq.client.Channel
+import domain.event.SpinEvent
 import domain.model.SpinType
-import event.AppEventConsumer
-import event.SpinEvent
 
 class PlaceSpinEventConsumer(
     channel: Channel,

@@ -1,11 +1,11 @@
 package application.usecase
 
 import application.port.factory.IAggregatorFactory
+import domain.event.AppEventPublisher
+import domain.event.SessionEvent
 import domain.exception.DomainException
 import domain.model.Session
 import domain.repository.ISessionRepository
-import event.AppEventPublisher
-import event.SessionEvent
 import org.slf4j.LoggerFactory
 
 class OpenSessionUsecase(

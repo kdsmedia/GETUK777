@@ -1,7 +1,6 @@
 import application.Bus
 import application.command.aggregator.SyncAllActiveAggregatorCommand
-import event.AppEventPublisher
-import event.NoOpAppEventPublisher
+import domain.event.AppEventPublisher
 import infrastructure.koin.aggregatorModule
 import infrastructure.koin.busModule
 import infrastructure.koin.configModule
@@ -11,6 +10,7 @@ import infrastructure.koin.persistenceModule
 import infrastructure.koin.usecaseModule
 import infrastructure.persistence.DatabaseConfig
 import infrastructure.persistence.DatabaseFactory
+import infrastructure.rabbitmq.NoOpAppEventPublisher
 import kotlinx.coroutines.runBlocking
 import org.koin.core.context.startKoin
 import org.koin.dsl.module

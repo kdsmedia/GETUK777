@@ -20,10 +20,11 @@ import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.routing.routing
 import com.rabbitmq.client.Channel
-import event.declareEventExchange
 import infrastructure.aggregator.onegamehub.webhook.OneGameHubWebhook
 import infrastructure.aggregator.pragmatic.webhook.PragmaticWebhook
+import infrastructure.rabbitmq.EVENT_EXCHANGE
 import infrastructure.rabbitmq.PlaceSpinEventConsumer
+import infrastructure.rabbitmq.declareEventExchange
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -70,7 +71,7 @@ private fun Application.configureCallLogging() {
 private fun Application.configureRabbitMqTopology() {
     val channel = get<Channel>()
     declareEventExchange(channel)
-    logger.info("RabbitMQ topology ready: exchange={}", event.EVENT_EXCHANGE)
+    logger.info("RabbitMQ topology ready: exchange={}", EVENT_EXCHANGE)
 }
 
 private fun Application.configureConsumers() {

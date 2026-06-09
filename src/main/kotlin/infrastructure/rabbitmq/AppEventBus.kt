@@ -1,21 +1,21 @@
-package event
+package infrastructure.rabbitmq
 
 import com.rabbitmq.client.BuiltinExchangeType
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.DeliverCallback
-import domain.exception.system.EventPublishingException
+import domain.event.AppEvent
+import domain.event.AppEventPublisher
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import org.slf4j.LoggerFactory
 import kotlin.reflect.KClass
 import kotlin.reflect.full.companionObjectInstance
-import org.slf4j.LoggerFactory
 
-/** Shared JSON codec for the event envelope and every snapshot payload. */
+/** Shared JSON codec for the event envelope and every payload. */
 val appJson = Json {
     ignoreUnknownKeys = true
     encodeDefaults = true
@@ -30,34 +30,13 @@ fun declareEventExchange(channel: Channel) {
 }
 
 /**
- * Uniform event contract. Every event carries exactly one [data] snapshot; the correlation
- * key [playerId] is derived from [data]. The companion [Meta] supplies the route, the payload
- * serializer, and a rebuild factory — the only place that knows how to wire the event.
+ * RabbitMQ adapter for the [AppEventPublisher] domain port. Owns serialization + channel access:
+ * wraps any [AppEvent] in the uniform `{ "playerId": ..., "data": ... }` envelope and publishes
+ * it on the event's route.
  */
-interface AppEvent<T : Any> {
-    val playerId: String
+class RabbitAppEventPublisher(private val channel: Channel) : AppEventPublisher {
 
-    val data: T
-
-    interface Meta<T : Any> {
-        val route: String
-
-        val serializer: KSerializer<T>
-
-        fun create(data: T): AppEvent<T>
-    }
-}
-
-/**
- * The one place that owns serialization + channel access. Wraps any [AppEvent] in the uniform
- * `{ "playerId": ..., "data": ... }` envelope and publishes it on the event's route.
- *
- * Open so non-publishing entrypoints (e.g. the sync CLI) can supply a no-op override.
- */
-open class AppEventPublisher(private val channel: Channel?) {
-
-    open fun publish(event: AppEvent<*>) {
-        val channel = channel ?: throw EventPublishingException("AppEventPublisher has no channel")
+    override fun publish(event: AppEvent<*>) {
         @Suppress("UNCHECKED_CAST")
         val meta = event::class.companionObjectInstance as AppEvent.Meta<Any>
         val envelope = buildJsonObject {
@@ -74,7 +53,7 @@ open class AppEventPublisher(private val channel: Channel?) {
 }
 
 /** No-op publisher for entrypoints that must never emit events (e.g. the aggregator sync CLI). */
-object NoOpAppEventPublisher : AppEventPublisher(null) {
+object NoOpAppEventPublisher : AppEventPublisher {
     override fun publish(event: AppEvent<*>) = Unit
 }
 
@@ -83,9 +62,9 @@ object NoOpAppEventPublisher : AppEventPublisher(null) {
  * the shared exchange on the event's route, decodes the envelope, rebuilds the event, and hands
  * it to [handle]. Subclasses are read-only routers — they own no codec or channel logic.
  *
- * Mirrors the crm reference: the delivery callback decodes the envelope and runs [handle] via
- * `runBlocking`. Auto-ack stays on — these consumers feed at-most-once Redis projections, so a
- * failed handler is logged by the client and not requeued.
+ * The delivery callback decodes the envelope and runs [handle] via `runBlocking`. Auto-ack stays
+ * on — these consumers feed at-most-once Redis projections, so a failed handler is logged and not
+ * requeued.
  */
 abstract class AppEventConsumer<E : AppEvent<*>>(channel: Channel, type: KClass<E>) {
 

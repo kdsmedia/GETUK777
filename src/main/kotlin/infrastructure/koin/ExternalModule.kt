@@ -9,7 +9,7 @@ import application.port.external.IWalletPort
 import application.port.factory.AggregatorAdapterProvider
 import application.port.factory.IAggregatorFactory
 import com.rabbitmq.client.Channel
-import event.AppEventPublisher
+import domain.event.AppEventPublisher
 import infrastructure.aggregator.AggregatorRegistry
 import infrastructure.aggregator.onegamehub.OneGameHubAdapterProvider
 import infrastructure.aggregator.pateplay.PateplayAdapterProvider
@@ -18,6 +18,7 @@ import infrastructure.aggregator.tongame.TongameAdapterProvider
 import infrastructure.pam.PamAdapter
 import infrastructure.pam.pamChannel
 import infrastructure.rabbitmq.PlaceSpinEventConsumer
+import infrastructure.rabbitmq.RabbitAppEventPublisher
 import infrastructure.rabbitmq.rabbitMqChannel
 import infrastructure.redis.PlayerLimitRedis
 import infrastructure.s3.S3FileAdapter
@@ -42,7 +43,7 @@ val externalModule = module {
     single<IBackgroundTaskPort> { BackgroundWorker() }
     // One shared RabbitMQ channel backs the central publisher + every consumer.
     single<Channel> { rabbitMqChannel(get()) }
-    single { AppEventPublisher(channel = get()) }
+    single<AppEventPublisher> { RabbitAppEventPublisher(channel = get()) }
 
     // Aggregator providers — add a new aggregator by binding another AggregatorAdapterProvider.
     single(named("onegamehub")) { OneGameHubAdapterProvider() } bind AggregatorAdapterProvider::class

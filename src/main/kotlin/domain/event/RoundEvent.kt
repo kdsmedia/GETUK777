@@ -1,4 +1,4 @@
-package event
+package domain.event
 
 import domain.model.Round
 import kotlinx.serialization.KSerializer

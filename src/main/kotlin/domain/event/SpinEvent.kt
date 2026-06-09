@@ -1,4 +1,4 @@
-package event
+package domain.event
 
 import domain.model.Spin
 import kotlinx.serialization.KSerializer

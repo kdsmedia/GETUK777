@@ -2,9 +2,9 @@ package application.usecase
 
 import application.port.external.IGamePort
 import application.port.factory.IAggregatorFactory
+import domain.event.AppEventPublisher
+import domain.event.SessionEvent
 import domain.repository.ISessionRepository
-import event.AppEventPublisher
-import event.SessionEvent
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
