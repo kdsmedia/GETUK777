@@ -55,19 +55,13 @@ Four layers: `api/` (gRPC services + REST webhooks) → `application/` (commands
 
 ```
 domain/
-├── model/         # Aggregates, entities
+├── model/         # Aggregates, entities — @Serializable; published on the event bus AS-IS (no snapshot twins)
+├── event/         # Events ARE a domain concern: AppEvent<T> + Meta marker, plus SpinEvent/RoundEvent/SessionEvent (each wraps a domain model directly)
 ├── vo/            # Value objects (@JvmInline value class with init validation)
 ├── service/       # Domain services (SpinBalanceCalculator, factories)
 ├── repository/    # Repository INTERFACES (DDD-pure: contracts live with the model)
 ├── exception/     # Sealed DomainException hierarchy
-└── util/          # Trait interfaces (Activatable, Imageable, Orderable)
-                   # (events are NOT a domain concern — they live in the top-level `event/` package)
-
-event/             # Central event package (crm envelope pattern)
-├── AppEvent.kt    # AppEvent + Meta + AppEventPublisher + AppEventConsumer + appJson + EVENT_EXCHANGE
-├── SpinEvent.kt   # one file per event (SpinEvent/RoundEvent/SessionEvent), companion Meta
-├── model/         # @Serializable wire snapshots (Spin+SpinType, Round, Session)
-└── mapper/        # domain.X.toModel() — domain aggregate → wire snapshot
+└── util/          # Trait interfaces (Activatable, Imageable, Orderable) + AnyMapSerializer (config Map<String,Any>)
 
 application/
 ├── Bus.kt                 # CQRS bus contract
@@ -76,14 +70,14 @@ application/
 ├── command/<feature>/     # Write-side: command DTOs (no handlers — those live in infra)
 ├── query/<feature>/       # Read-side: query DTOs + their View result types side-by-side
 ├── usecase/               # Application services / use cases (orchestrators)
-├── port/external/         # Driven ports for external systems (FileAdapter, IWalletPort, IPlayerLimitPort, ...)
+├── port/external/         # Driven ports for external systems (FileAdapter, IWalletPort, IPlayerLimitPort, IEventPublisherPort, ...)
 └── port/factory/          # Driven ports for adapter factories (AggregatorAdapterProvider, IAggregatorFactory)
 
 infrastructure/
 ├── handler/<feature>/     # Command/query handler IMPLEMENTATIONS (touch DB / repos / external)
 ├── persistence/           # Exposed repositories implementing domain.repository contracts
 ├── aggregator/<vendor>/   # Aggregator integration adapters
-├── rabbitmq/              # Event publisher + consumers
+├── rabbitmq/              # AppEventBus.kt (RabbitAppEventPublisher impl of IEventPublisherPort, NoOpAppEventPublisher, AppEventConsumer base, appJson, EVENT_EXCHANGE) + consumers
 ├── redis/                 # Player limit cache
 ├── s3/                    # File storage adapter
 ├── wallet/                # Wallet gRPC client
@@ -123,7 +117,7 @@ Environment variables: `HTTP_PORT` (default 8080), `GRPC_PORT` (default 5050).
 
 Standalone CLI entrypoint that syncs games from all active aggregators, then exits. Uses `startKoin` directly (not koin-ktor) with same modules minus `grpcModule`, no `Application` registration. Dispatches `SyncAllActiveAggregatorCommand` via the CQRS Bus.
 
-**Important**: SyncJob does NOT register `Application` in Koin. A `syncOverrideModule` is loaded after `externalModule` to replace `AppEventPublisher` with `NoOpAppEventPublisher` (sync doesn't publish events and must not open a RabbitMQ channel). If adding new singletons that depend on `Application` or the RabbitMQ `Channel`, ensure the sync code path doesn't resolve them, or add an override in `syncOverrideModule`.
+**Important**: SyncJob does NOT register `Application` in Koin. A `syncOverrideModule` is loaded after `externalModule` to bind `IEventPublisherPort` to `NoOpAppEventPublisher` (sync doesn't publish events and must not open a RabbitMQ channel). If adding new singletons that depend on `Application` or the RabbitMQ `Channel`, ensure the sync code path doesn't resolve them, or add an override in `syncOverrideModule`.
 
 ## CQRS Pattern
 
@@ -144,13 +138,13 @@ That's it — `BusModule` never needs to be edited.
 
 ## Data Flow — Spin Lifecycle
 
-1. **OpenSessionUsecase** — aggregator creates game adapter → gets launch URL via `getLaunchUrl(session, lobbyUrl)` → saves session → publishes `SessionEvent(session.toModel())` via `AppEventPublisher`
+1. **OpenSessionUsecase** — aggregator creates game adapter → gets launch URL via `getLaunchUrl(session, lobbyUrl)` → saves session → publishes `SessionEvent(session)` via `IEventPublisherPort`
 2. **ProcessSpinUsecase** — for each spin (PLACE/SETTLE/ROLLBACK):
    - Freespin rounds skip balance calculation entirely
-   - Regular rounds: check player limits → calculate balance via `SpinBalanceCalculator` → withdraw/deposit via `IWalletPort` → save spin → publish `SpinEvent(spin.toModel())` (lifecycle carried by `Spin.type`, not separate event types)
-3. **FinishRoundUsecase** — `round.finish()` returns the finished `Round` → save → publish `RoundEvent(round.toModel())` (with `finished = true`)
+   - Regular rounds: check player limits → calculate balance via `SpinBalanceCalculator` → withdraw/deposit via `IWalletPort` → save spin → publish `SpinEvent(spin)` (lifecycle carried by `Spin.type`, not separate event types)
+3. **FinishRoundUsecase** — `round.finish()` returns the finished `Round` → save → publish `RoundEvent(round)` (with `finished = true`)
 
-Use cases are callable via `operator fun invoke()`, return `Result<Response>`, and take domain models (not DTOs). They inject `AppEventPublisher` and publish per-model snapshot events after the write commits.
+Use cases are callable via `operator fun invoke()`, return `Result<Response>`, and take domain models. They inject `IEventPublisherPort` and publish the domain model directly — the event wraps the aggregate as-is, there is no snapshot mapping — after the write commits.
 
 **Session convenience**: `session.openRound(externalId, freespinId)` is the preferred way to create a round — it delegates to `RoundFactory` but keeps the call anchored to the parent aggregate.
 
@@ -220,24 +214,24 @@ Launch URLs put the game in a subdomain (`<gameSymbol>.<gameHost>`) and carry th
 
 ## Event System (AppEvent envelope → RabbitMQ)
 
-**Uniform envelope, per-model events.** Every event ships as `{ "playerId": <key>, "data": {<model>} }` on a `<domain>.events` route. There is one event per domain model carrying the full snapshot — lifecycle lives *inside* the model (e.g. `Spin.type`), never as separate `*Placed`/`*Settled` event types. The central package is top-level `event/`:
+**Uniform envelope, per-model events, published AS-IS.** Every event ships as `{ "playerId": <key>, "data": {<domain model>} }` on a `<domain>.events` route. The `data` is the **domain aggregate itself** — `SpinEvent` wraps `domain.model.Spin`, `RoundEvent` wraps `Round`, `SessionEvent` wraps `Session`. There are **no snapshot twins and no mappers** (the old `event/model/` + `event/mapper/` were deleted). The domain models are `@Serializable`, so the full nested aggregate graph (e.g. `Spin.round.session.gameVariant.game.provider.aggregator` — including `aggregator.config` secrets — plus the recursive `reference`) ships verbatim. One event per domain model; lifecycle lives *inside* the model (e.g. `Spin.type`), never as separate `*Placed`/`*Settled` types.
 
-- `event/AppEvent.kt` — the entire core: the `AppEvent<T>` interface + `Meta<T>` companion contract, the generic `AppEventPublisher` (owns serialization + channel), the generic `AppEventConsumer<E>` base, the shared `appJson`, the `EVENT_EXCHANGE` env constant (`EVENT_EXCHANGE` env, default `crm.exchange`), and `declareEventExchange(channel)`.
-- `event/SpinEvent.kt` / `RoundEvent.kt` / `SessionEvent.kt` — one file per event. Each has exactly one `data` param, derives `playerId` from `data`, and a companion `Meta` supplying `route` + `serializer` + `create(data)`.
-- `event/model/` — `@Serializable` wire snapshots `Spin` (+ `SpinType{Place,Settle,Rollback}`), `Round`, `Session`. These are twins of the domain aggregates, never the aggregates themselves.
-- `event/mapper/` — `domain.X.toModel()` extensions producing the wire snapshot at publish time (pulling `playerId`/`gameIdentity`/`currency`/`freespinId` out of the nested `Spin.round.session` graph).
+The event types + contract live in **`domain/event/`**; the RabbitMQ machinery lives in **`infrastructure/rabbitmq/`**:
+- `domain/event/AppEvent.kt` — the `AppEvent<T>` interface + its `Meta<T>` companion contract (`route` + `serializer` + `create(data)`). Pure domain, no framework deps.
+- `domain/event/SpinEvent.kt` / `RoundEvent.kt` / `SessionEvent.kt` — one file per event; each takes one `data: <domain model>`, derives `playerId` from `data` (e.g. `data.round.session.playerId.value`), and a companion `Meta`.
+- `application/port/external/IEventPublisherPort` — the driven port use cases depend on (`publish(AppEvent<*>)`); follows the project `I…Port` convention.
+- `infrastructure/rabbitmq/AppEventBus.kt` — `RabbitAppEventPublisher` (impl of `IEventPublisherPort`; owns `appJson` + channel + envelope), `NoOpAppEventPublisher`, the generic `AppEventConsumer<E>` base, `EVENT_EXCHANGE` (env, default `crm.exchange`), `declareEventExchange(channel)`.
+- `domain/util/AnyMapSerializer.kt` — custom `KSerializer<Map<String,Any>>` for `Aggregator.config` (kotlinx has no serializer for `Any`); without it the full graph would not compile.
 
-**Routes:** `spin.events`, `round.events`, `session.events`. The casino→bonus stream is a hard cross-engine contract — see the wire shapes in the bonus-engine docs; `SpinType` serializes to exactly `Place`/`Settle`/`Rollback`, and round-finished is `RoundEvent` with `finished = true` (NOT a spin type).
+**Routes:** `spin.events`, `round.events`, `session.events`. `SpinType` serializes as the domain enum names `PLACE`/`SETTLE`/`ROLLBACK` (NOT `Place`/`Settle`/`Rollback`); round-finished is `RoundEvent` with `finished = true` (NOT a spin type). The only live consumer is **crm-engine** (bonus-engine is decommissioned) — the wire shape is now the full domain graph, so crm ingestion must tolerate it.
 
-**No codec outside the core.** Use cases inject `AppEventPublisher` and call `publish(SpinEvent(spin.toModel()))` etc. The publisher wraps the snapshot in the envelope and publishes on `meta.route`. No use case / event / consumer touches JSON, bytes, or the channel.
+**No codec outside the adapter.** Use cases inject `IEventPublisherPort` and call `publish(SpinEvent(spin))` etc. `RabbitAppEventPublisher` wraps the model in the envelope and publishes on `meta.route`. No use case or event touches JSON, bytes, or the channel.
 
-**Consumer**: `PlaceSpinEventConsumer : AppEventConsumer<SpinEvent>(channel, SpinEvent::class)` is a read-only router — its `handle()` only checks `spin.type == Place` and delegates the Redis limit decrement to `DecreasePlayerLimitUsecase` (which owns `IPlayerLimitPort`). The consumer holds no business logic and never publishes. Its queue name is auto-derived from the class `simpleName`; the base `init` declares the queue, binds it to `EVENT_EXCHANGE` on `spin.events`, and starts consuming — so resolving the consumer from Koin is enough to start it. The AMQP delivery callback decodes the envelope and runs `handle()` via `runBlocking` (mirroring the crm reference). Auto-ack is on; a failed `handle()` is logged, not requeued.
+**Consumer**: `PlaceSpinEventConsumer : AppEventConsumer<SpinEvent>(channel, SpinEvent::class)` (in `infrastructure/rabbitmq/`) is a read-only router — `handle()` checks `spin.type == SpinType.PLACE` and delegates the Redis limit decrement to `DecreasePlayerLimitUsecase`, reading `spin.round.session.playerId` + `spin.amount` straight off the domain model. No business logic, never publishes. Its queue name is auto-derived from the class `simpleName`; the base `init` declares + binds the queue and starts consuming. The delivery callback decodes the envelope and runs `handle()` via `runBlocking`, **wrapped in try/catch** so a poison/failed delivery can never close the shared channel (the 2026-06-09 outage — do NOT remove the try/catch). Auto-ack is on; a failed `handle()` is logged, not requeued.
 
 **Channel**: `infrastructure/rabbitmq/rabbitMqChannel(config)` opens a single `com.rabbitmq.client.Channel` from `RabbitMqConfig`; it backs both the publisher and every consumer (bound as `single<Channel>` in `ExternalModule`).
 
 **Publishing timing**: usecases publish **after** the DB transaction commits (outside the `dbTransaction { }` block) so a failed write never emits phantom events. See `.claude/rules/domain-events.md`. `ProcessSpinUsecase` dispatches the wallet debit/credit fire-and-forget through `IBackgroundTaskPort` (`BackgroundWorker` catches and logs any wallet failure) and publishes `SpinEvent` once the spin row commits — a failed wallet move is reconciled out-of-band and does NOT suppress or roll back the published event. The committed spin is the source of truth.
-
-**Publisher null-channel**: `AppEventPublisher.publish` throws `EventPublishingException` (a `SystemException`) when its channel is null, so the gRPC interceptor maps it to `INTERNAL` instead of letting a raw `IllegalArgumentException` escape. `NoOpAppEventPublisher` (sync job) overrides `publish` to a no-op, so it never hits this path.
 
 **Connection config**: `RabbitMqConfig` (built in `infrastructure/koin/ConfigModule.kt`) reads `RABBIT_HOST`, `RABBIT_PORT`, `RABBIT_USER`, `RABBIT_PASSWORD`, and `RABBIT_TLS` from env. `RABBIT_TLS=true` switches the URI scheme to `amqps://` — required for AWS Amazon MQ for RabbitMQ and any TLS-only broker. The Java client auto-enables TLS via the URI scheme using the JVM's default trust store (publicly-signed CAs), so no keystore is needed for AWS. Set `RABBIT_PORT=5671` alongside `RABBIT_TLS=true`; the default port is not changed automatically.
 
@@ -254,9 +248,9 @@ The `grpcModule` is defined in `api/grpc/config/` and registers gRPC service sin
 
 **`BusModule`**: tiny (~13 lines). It constructs a `HandlerRegistry`, populates it from `getAll<CqrsHandler>()`, and wraps the result in `BusImpl`. Never needs to be touched when adding handlers.
 
-**`ExternalModule`**: `AggregatorAdapterProvider`s are bound with named qualifiers and `bind AggregatorAdapterProvider::class` so `AggregatorRegistry(providers = getAll())` collects them all. It also binds `single<Channel> { rabbitMqChannel(get()) }`, `single { AppEventPublisher(channel = get()) }`, and the `PlaceSpinEventConsumer`. (Note: there is no `ImageAttachmentService` — `SetImageCommandHandler` calls `FileAdapter.upload(...)` directly.)
+**`ExternalModule`**: `AggregatorAdapterProvider`s are bound with named qualifiers and `bind AggregatorAdapterProvider::class` so `AggregatorRegistry(providers = getAll())` collects them all. It also binds `single<Channel> { rabbitMqChannel(get()) }`, `single<IEventPublisherPort> { RabbitAppEventPublisher(channel = get()) }`, and the `PlaceSpinEventConsumer`. (Note: there is no `ImageAttachmentService` — `SetImageCommandHandler` calls `FileAdapter.upload(...)` directly.)
 
-**SyncJob** (SyncJob.kt): Same modules minus `grpcModule`, no `Application` registration, includes `syncOverrideModule` which binds `single<AppEventPublisher> { NoOpAppEventPublisher }` so sync never publishes events or opens a RabbitMQ channel.
+**SyncJob** (SyncJob.kt): Same modules minus `grpcModule`, no `Application` registration, includes `syncOverrideModule` which binds `single<IEventPublisherPort> { NoOpAppEventPublisher }` so sync never publishes events or opens a RabbitMQ channel.
 
 **Application registration**: the `Application` instance is registered in `configureKoin()` as `module { single { application } }` (koin-ktor does not auto-register it) for the webhook/gRPC layers. The event publisher and consumer no longer depend on `Application` — they take a `com.rabbitmq.client.Channel`.
 
@@ -268,8 +262,8 @@ The `grpcModule` is defined in `api/grpc/config/` and registers gRPC service sin
 - **Monetary values**: `Long` in minor units internally, `string` in proto for BigInteger precision
 - **Factories**: `object` singletons with validation (e.g., `SessionFactory.create()` checks active status and locale/platform support); `Session.openRound()` delegates to `RoundFactory` as a convenience on the parent aggregate
 - **SpinBalanceCalculator**: PLACE deducts (real-first when bonusBet), SETTLE deposits to same pool as original bet, ROLLBACK refunds to original pools. Pre-checks `canAfford` for every spin type. Exhaustively unit-tested.
-- **Spin convenience**: `spin.isPlace` / `isSettle` / `isRollback` computed properties. The wire snapshot is built by `domain.Spin.toModel()` (`event/mapper/`), which maps `SpinType.PLACE/SETTLE/ROLLBACK` → wire `Place/Settle/Rollback`
-- **Round.finish()**: returns the finished `Round` (sets `finishedAt`); `FinishRoundUsecase` publishes `RoundEvent(round.toModel())` with `finished = true` after the write commits
+- **Spin convenience**: `spin.isPlace` / `isSettle` / `isRollback` computed properties (getter-only — kotlinx serializes only constructor state, so they never appear on the wire). `SpinEvent(spin)` publishes the domain `Spin` directly; `SpinType` serializes as `PLACE`/`SETTLE`/`ROLLBACK`
+- **Round.finish()**: returns the finished `Round` (sets `finishedAt`); `FinishRoundUsecase` publishes `RoundEvent(round)` with `finished = true` after the write commits
 - **Read-side projections**: query handlers that join across aggregates return `application/projection/<ctx>/<X>Projection` DTOs (e.g. `CollectionProjection` with game counts), never polluting domain models with denormalized fields
 - **Wallet dependency**: wallet proto resolved via direct `srcDir("../wallete-engine/proto")` source reference in `build.gradle.kts` (note the "wallete" spelling — intentional carve-out, do NOT fix)
 - **File storage interface**: Named `FileAdapter` (not `FilePort`), located in `application/port/external/FilePort.kt` — intentional carve-out, do NOT rename
