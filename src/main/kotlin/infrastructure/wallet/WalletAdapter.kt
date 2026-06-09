@@ -4,7 +4,6 @@ import application.port.external.IWalletPort
 import com.nekgamebling.wallet.v1.Account
 import com.nekgamebling.wallet.v1.DepositRequest
 import com.nekgamebling.wallet.v1.GetAccountRequest
-import com.nekgamebling.wallet.v1.TransactionType
 import com.nekgamebling.wallet.v1.WalletServiceGrpc
 import com.nekgamebling.wallet.v1.WithdrawRequest
 import domain.model.PlayerBalance
@@ -46,7 +45,7 @@ class WalletAdapter(
             .setRealAmount(realAmount.value)
             .setBonusAmount(bonusAmount.value)
             .setExternalId(transactionId)
-            .setType(TransactionType.TRANSACTION_TYPE_SPIN)
+            .setType("SPIN")
             .build()
 
         val response = withContext(Dispatchers.IO) { stub.withdraw(request) }
@@ -67,7 +66,7 @@ class WalletAdapter(
             .setRealAmount(realAmount.value)
             .setBonusAmount(bonusAmount.value)
             .setExternalId(transactionId)
-            .setType(TransactionType.TRANSACTION_TYPE_SPIN)
+            .setType("SPIN")
             .build()
 
         val response = withContext(Dispatchers.IO) { stub.deposit(request) }
