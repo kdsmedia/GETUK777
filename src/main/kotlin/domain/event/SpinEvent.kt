@@ -10,7 +10,7 @@ data class SpinEvent(override val data: Spin) : AppEvent<Spin> {
     companion object : AppEvent.Meta<Spin> {
         override val route = "spin.events"
 
-        override val serializer: KSerializer<Spin> = Spin.serializer()
+        override val serializer: KSerializer<Spin> = SpinWireSerializer
 
         override fun create(data: Spin): AppEvent<Spin> = SpinEvent(data)
     }

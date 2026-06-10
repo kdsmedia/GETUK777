@@ -10,7 +10,7 @@ data class RoundEvent(override val data: Round) : AppEvent<Round> {
     companion object : AppEvent.Meta<Round> {
         override val route = "round.events"
 
-        override val serializer: KSerializer<Round> = Round.serializer()
+        override val serializer: KSerializer<Round> = RoundWireSerializer
 
         override fun create(data: Round): AppEvent<Round> = RoundEvent(data)
     }
