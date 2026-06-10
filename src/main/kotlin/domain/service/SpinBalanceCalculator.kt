@@ -19,11 +19,6 @@ object SpinBalanceCalculator {
     fun process(balance: PlayerBalance, spin: Spin): SpinResult {
         val bonusBetEnabled = spin.round.gameVariant.game.bonusBetEnable
 
-        val canAfford = if (bonusBetEnabled) balance.canAfford(spin.amount)
-                        else balance.canAffordWithReal(spin.amount)
-
-        domainRequire(canAfford) { InsufficientBalanceException() }
-
         return when (spin.type) {
             SpinType.PLACE    -> place(balance, spin, bonusBetEnabled)
             SpinType.SETTLE   -> settle(balance, spin)
@@ -36,6 +31,14 @@ object SpinBalanceCalculator {
         spin: Spin,
         bonusBetEnabled: Boolean
     ): SpinResult {
+        // Affordability only gates PLACE: SETTLE/ROLLBACK credit the player and must
+        // never be declined by the current balance (an all-in bet leaves balance 0,
+        // which would block its own cashout).
+        val canAfford = if (bonusBetEnabled) balance.canAfford(spin.amount)
+                        else balance.canAffordWithReal(spin.amount)
+
+        domainRequire(canAfford) { InsufficientBalanceException() }
+
         val fromReal: Amount
         val fromBonus: Amount
 

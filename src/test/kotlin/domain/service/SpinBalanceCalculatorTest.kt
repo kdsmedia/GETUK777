@@ -122,6 +122,28 @@ class SpinBalanceCalculatorTest : FunSpec({
         result.spin.realAmount shouldBe Amount.ZERO
     }
 
+    test("SETTLE succeeds when win exceeds current balance (all-in cashout)") {
+        val placedRef = TestFixtures.spin(
+            type = SpinType.PLACE,
+            amount = Amount(1000),
+        ).copy(realAmount = Amount(1000), bonusAmount = Amount.ZERO)
+
+        val settle = TestFixtures.spin(
+            type = SpinType.SETTLE,
+            externalId = "spin_2",
+            amount = Amount(3280),
+            reference = placedRef,
+        )
+        val balance = TestFixtures.balance(real = 0, bonus = 0)
+
+        val result = SpinBalanceCalculator.process(balance, settle)
+
+        result.balance.realAmount shouldBe Amount(3280)
+        result.balance.bonusAmount shouldBe Amount.ZERO
+        result.spin.realAmount shouldBe Amount(3280)
+        result.spin.bonusAmount shouldBe Amount.ZERO
+    }
+
     test("ROLLBACK restores original real + bonus breakdown from reference spin") {
         val placedRef = TestFixtures.spin(
             type = SpinType.PLACE,
@@ -134,7 +156,6 @@ class SpinBalanceCalculatorTest : FunSpec({
             amount = Amount(500),
             reference = placedRef,
         )
-        // Balance must pass the calculator's canAfford pre-check.
         val balance = TestFixtures.balance(real = 1000, bonus = 500)
 
         val result = SpinBalanceCalculator.process(balance, rollback)

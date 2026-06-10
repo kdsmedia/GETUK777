@@ -261,7 +261,7 @@ The `grpcModule` is defined in `api/grpc/config/` and registers gRPC service sin
 - **Domain traits** (Activatable, Imageable, Orderable): mutable interfaces. Game overrides via `copy()` for immutability; Provider/Collection/Aggregator mutate directly
 - **Monetary values**: `Long` in minor units internally, `string` in proto for BigInteger precision
 - **Factories**: `object` singletons with validation (e.g., `SessionFactory.create()` checks active status and locale/platform support); `Session.openRound()` delegates to `RoundFactory` as a convenience on the parent aggregate
-- **SpinBalanceCalculator**: PLACE deducts (real-first when bonusBet), SETTLE deposits to same pool as original bet, ROLLBACK refunds to original pools. Pre-checks `canAfford` for every spin type. Exhaustively unit-tested.
+- **SpinBalanceCalculator**: PLACE deducts (real-first when bonusBet), SETTLE deposits to same pool as original bet, ROLLBACK refunds to original pools. `canAfford` gates PLACE only — SETTLE/ROLLBACK credit the player and are never declined by balance. Exhaustively unit-tested.
 - **Spin convenience**: `spin.isPlace` / `isSettle` / `isRollback` computed properties (getter-only — kotlinx serializes only constructor state, so they never appear on the wire). `SpinEvent(spin)` publishes the domain `Spin` directly; `SpinType` serializes as `PLACE`/`SETTLE`/`ROLLBACK`
 - **Round.finish()**: returns the finished `Round` (sets `finishedAt`); `FinishRoundUsecase` publishes `RoundEvent(round)` with `finished = true` after the write commits
 - **Read-side projections**: query handlers that join across aggregates return `application/projection/<ctx>/<X>Projection` DTOs (e.g. `CollectionProjection` with game counts), never polluting domain models with denormalized fields
