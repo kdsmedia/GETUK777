@@ -13,6 +13,10 @@ class IdentityTest : FunSpec({
         Identity("pragmatic_play").value shouldBe "pragmatic_play"
     }
 
+    test("hyphenated identity is accepted") {
+        Identity("pragmatic-play").value shouldBe "pragmatic-play"
+    }
+
     test("empty identity throws") {
         shouldThrow<EmptyIdentityException> { Identity("") }
     }
@@ -26,7 +30,13 @@ class IdentityTest : FunSpec({
     }
 
     test("identity with special characters throws") {
-        shouldThrow<InvalidIdentityFormatException> { Identity("pragmatic-play") }
+        shouldThrow<InvalidIdentityFormatException> { Identity("pragmatic.play") }
+    }
+
+    test("identity with leading or doubled separators throws") {
+        shouldThrow<InvalidIdentityFormatException> { Identity("_pragmatic") }
+        shouldThrow<InvalidIdentityFormatException> { Identity("pragmatic__play") }
+        shouldThrow<InvalidIdentityFormatException> { Identity("pragmatic-") }
     }
 
     test("Identity.generate slugifies input") {

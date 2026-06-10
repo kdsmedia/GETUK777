@@ -11,10 +11,13 @@ import kotlinx.serialization.Serializable
 value class Identity(val value: String) {
     init {
         domainRequire(value.isNotEmpty()) { EmptyIdentityException() }
-        domainRequire(value.matches(Regex("^[a-z0-9_]+$"))) { InvalidIdentityFormatException() }
+        domainRequire(value.matches(SLUG)) { InvalidIdentityFormatException() }
     }
 
     companion object {
+        /** Fleet-wide canonical slug: lowercase alphanumerics joined by single `-` or `_`. */
+        private val SLUG = Regex("^[a-z0-9]+(?:[-_][a-z0-9]+)*$")
+
         fun generate(input: String): Identity {
             val converted = input
                 .trim()
