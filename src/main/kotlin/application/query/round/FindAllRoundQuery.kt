@@ -6,7 +6,7 @@ import domain.vo.Identity
 import domain.vo.Page
 import domain.vo.Pageable
 import domain.vo.PlayerId
-import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.Instant
 
 data class FindAllRoundQuery(
     val playerId: PlayerId?,
@@ -23,9 +23,9 @@ data class FindAllRoundQuery(
 
     val maxSettleAmount: Amount?,
 
-    val dateFrom: LocalDateTime?,
+    val dateFrom: Instant?,
 
-    val dateTo: LocalDateTime?,
+    val dateTo: Instant?,
 
     val pageable: Pageable,
 ) : IQuery<Page<RoundView>>

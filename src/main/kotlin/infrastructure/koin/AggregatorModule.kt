@@ -6,7 +6,7 @@ import infrastructure.aggregator.tongame.webhook.TongameWebhook
 import org.koin.dsl.module
 
 val aggregatorModule = module {
-    single { OneGameHubWebhook(bus = get()) }
-    single { PragmaticWebhook(bus = get()) }
+    single { OneGameHubWebhook(bus = get(), currencyPort = get()) }
+    single { PragmaticWebhook(bus = get(), currencyPort = get()) }
     single { TongameWebhook(bus = get(), playerPort = get(), walletPort = get()) }
 }

@@ -2,6 +2,7 @@ package infrastructure.aggregator.pragmatic.webhook
 
 import application.Bus
 import application.command.session.EndRoundSessionCommand
+import application.port.external.ICurrencyPort
 import application.query.session.FindSessionBalanceQuery
 import application.query.session.FindSessionQuery
 import application.command.session.PlaceSpinSessionCommand
@@ -10,7 +11,9 @@ import domain.exception.forbidden.InsufficientBalanceException
 import domain.exception.forbidden.MaxPlaceSpinException
 import domain.exception.notfound.SessionNotFoundException
 import domain.model.PlayerBalance
+import domain.model.Session
 import domain.vo.Amount
+import domain.vo.Currency
 import infrastructure.aggregator.pragmatic.webhook.dto.PragmaticBetDto
 import infrastructure.aggregator.pragmatic.webhook.dto.PragmaticResponse
 import io.ktor.server.response.respond
@@ -18,9 +21,11 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 import java.math.BigDecimal
-import java.math.RoundingMode
 
-class PragmaticWebhook(private val bus: Bus) {
+class PragmaticWebhook(
+    private val bus: Bus,
+    private val currencyPort: ICurrencyPort,
+) {
 
     fun Route.route() = route("/pragmatic") {
         get("/authenticate.html") {
@@ -126,34 +131,33 @@ class PragmaticWebhook(private val bus: Bus) {
     }
 
     private suspend fun bet(sessionToken: String, payload: PragmaticBetDto): PragmaticResponse {
-        val amountMinor = providerToMinorUnits(payload.amount)
-
         return runCatching {
             val session = bus(FindSessionQuery(sessionToken))
+            val amount = session.toSystemUnit(BigDecimal(payload.amount))
             bus(PlaceSpinSessionCommand(
                 session = session,
                 gameSymbol = payload.gameId,
                 externalRoundId = payload.roundId,
                 externalSpinId = payload.reference,
                 freespinId = payload.bonusCode,
-                amount = Amount(amountMinor)
+                amount = amount
             ))
         }.toBalanceResponse(transactionId = payload.reference)
     }
 
     private suspend fun result(sessionToken: String, payload: PragmaticBetDto): PragmaticResponse {
         val totalAmount = BigDecimal(payload.amount).add(BigDecimal(payload.promoWinAmount))
-        val amountMinor = providerToMinorUnits(totalAmount)
 
         val result = runCatching {
             val session = bus(FindSessionQuery(sessionToken))
+            val amount = session.toSystemUnit(totalAmount)
             bus(SettleSpinSessionCommand(
                 session = session,
                 gameSymbol = payload.gameId,
                 externalRoundId = payload.roundId,
                 externalSpinId = payload.reference,
                 freespinId = payload.bonusCode,
-                amount = Amount(amountMinor)
+                amount = amount
             ))
         }
 
@@ -188,75 +192,62 @@ class PragmaticWebhook(private val bus: Bus) {
         val isDebit = decimalAmount < BigDecimal.ZERO
 
         return if (isDebit) {
-            val amountMinor = providerToMinorUnits(decimalAmount.abs())
             runCatching {
                 val session = bus(FindSessionQuery(sessionToken))
+                val converted = session.toSystemUnit(decimalAmount.abs())
                 bus(PlaceSpinSessionCommand(
                     session = session,
                     gameSymbol = gameId,
                     externalRoundId = roundId,
                     externalSpinId = reference,
-                    amount = Amount(amountMinor)
+                    amount = converted
                 ))
             }.toBalanceResponse()
         } else {
-            val amountMinor = providerToMinorUnits(decimalAmount)
             runCatching {
                 val session = bus(FindSessionQuery(sessionToken))
+                val converted = session.toSystemUnit(decimalAmount)
                 bus(SettleSpinSessionCommand(
                     session = session,
                     gameSymbol = gameId,
                     externalRoundId = roundId,
                     externalSpinId = reference,
-                    amount = Amount(amountMinor)
+                    amount = converted
                 ))
             }.toBalanceResponse()
         }
     }
 
-    private fun providerToMinorUnits(amount: String): Long {
-        return BigDecimal(amount)
-            .multiply(MINOR_UNIT_MULTIPLIER)
-            .setScale(0, RoundingMode.HALF_UP)
-            .toLong()
-    }
+    /** Provider decimal amount + session currency → wallet system unit (nano). */
+    private suspend fun Session.toSystemUnit(amount: BigDecimal): Amount =
+        Amount(currencyPort.convertToUnits(amount.toDouble(), currency))
 
-    private fun providerToMinorUnits(amount: BigDecimal): Long {
-        return amount
-            .multiply(MINOR_UNIT_MULTIPLIER)
-            .setScale(0, RoundingMode.HALF_UP)
-            .toLong()
-    }
+    /** Wallet system unit (nano) → provider decimal string, using the balance's currency. */
+    private suspend fun systemUnitToProvider(amount: Amount, currency: Currency): String =
+        BigDecimal.valueOf(currencyPort.convertFromUnits(amount.value, currency)).toPlainString()
 
-    private fun minorUnitsToProvider(amount: Amount): String {
-        return BigDecimal(amount.value)
-            .divide(MINOR_UNIT_MULTIPLIER, 2, RoundingMode.HALF_UP)
-            .toPlainString()
-    }
-
-    private fun Result<PlayerBalance>.toBalanceResponse(
+    private suspend fun Result<PlayerBalance>.toBalanceResponse(
         transactionId: String? = null,
         userId: String? = null
     ): PragmaticResponse {
-        return map { balance ->
-            PragmaticResponse.Success(
-                cash = minorUnitsToProvider(balance.realAmount),
-                bonus = minorUnitsToProvider(balance.bonusAmount),
-                currency = balance.currency.value,
-                userId = userId,
-                transactionId = transactionId
-            )
-        }.getOrElse { exception ->
-            when (exception) {
-                is SessionNotFoundException -> PragmaticResponse.Error.SESSION_EXPIRED
-                is InsufficientBalanceException -> PragmaticResponse.Error.INSUFFICIENT_FUNDS
-                is MaxPlaceSpinException -> PragmaticResponse.Error.BET_LIMIT_EXCEEDED
-                else -> PragmaticResponse.Error.UNEXPECTED_ERROR
+        return fold(
+            onSuccess = { balance ->
+                PragmaticResponse.Success(
+                    cash = systemUnitToProvider(balance.realAmount, balance.currency),
+                    bonus = systemUnitToProvider(balance.bonusAmount, balance.currency),
+                    currency = balance.currency.value,
+                    userId = userId,
+                    transactionId = transactionId
+                )
+            },
+            onFailure = { exception ->
+                when (exception) {
+                    is SessionNotFoundException -> PragmaticResponse.Error.SESSION_EXPIRED
+                    is InsufficientBalanceException -> PragmaticResponse.Error.INSUFFICIENT_FUNDS
+                    is MaxPlaceSpinException -> PragmaticResponse.Error.BET_LIMIT_EXCEEDED
+                    else -> PragmaticResponse.Error.UNEXPECTED_ERROR
+                }
             }
-        }
-    }
-
-    companion object {
-        private val MINOR_UNIT_MULTIPLIER = BigDecimal(100)
+        )
     }
 }

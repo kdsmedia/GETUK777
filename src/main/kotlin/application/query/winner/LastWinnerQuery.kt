@@ -9,7 +9,7 @@ import domain.vo.Identity
 import domain.vo.Page
 import domain.vo.Pageable
 import domain.vo.PlayerId
-import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.Instant
 
 data class LastWin(
     val game: Game,
@@ -17,7 +17,7 @@ data class LastWin(
     val amount: Amount,
     val currency: Currency,
     val playerId: PlayerId,
-    val date: LocalDateTime,
+    val date: Instant,
 )
 
 data class LastWinnerQuery(
@@ -30,8 +30,8 @@ data class LastWinnerQuery(
 
     val playerId: PlayerId? = null,
 
-    val fromDate: LocalDateTime? = null,
-    val toDate: LocalDateTime? = null,
+    val fromDate: Instant? = null,
+    val toDate: Instant? = null,
 
     val pageable: Pageable
 ) : IQuery<Page<LastWin>>

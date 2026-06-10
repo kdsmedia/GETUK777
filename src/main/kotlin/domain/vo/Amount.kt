@@ -4,7 +4,7 @@ import domain.exception.badrequest.InvalidAmountException
 import domain.exception.domainRequire
 import kotlinx.serialization.Serializable
 
-/** Monetary amount in minor units (cents). */
+/** Monetary amount in the wallet system unit (nano = value×1e9). */
 @Serializable
 @JvmInline
 value class Amount(val value: Long) {

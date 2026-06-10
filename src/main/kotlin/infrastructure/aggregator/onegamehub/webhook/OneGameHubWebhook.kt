@@ -1,6 +1,7 @@
 package infrastructure.aggregator.onegamehub.webhook
 
 import application.Bus
+import application.port.external.ICurrencyPort
 import application.query.session.FindSessionBalanceQuery
 import application.query.session.FindSessionQuery
 import application.command.session.EndRoundSessionCommand
@@ -10,6 +11,7 @@ import domain.exception.forbidden.InsufficientBalanceException
 import domain.exception.forbidden.MaxPlaceSpinException
 import domain.exception.notfound.SessionNotFoundException
 import domain.model.PlayerBalance
+import domain.model.Session
 import domain.vo.Amount
 import infrastructure.aggregator.onegamehub.webhook.dto.OneGameHubResponse
 import io.ktor.http.Parameters
@@ -17,9 +19,12 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 
-class  OneGameHubWebhook(private val bus: Bus) {
+class  OneGameHubWebhook(
+    private val bus: Bus,
+    private val currencyPort: ICurrencyPort,
+) {
 
-    private val Parameters.amount get() = this["amount"]!!.toLong()
+    private val Parameters.amount get() = this["amount"]!!.toDouble()
     private val Parameters.gameSymbol get() = this["game_id"]!!
     private val Parameters.transactionId get() = this["transaction_id"]!!
     private val Parameters.roundId get() = this["round_id"]!!
@@ -61,7 +66,7 @@ class  OneGameHubWebhook(private val bus: Bus) {
                 externalRoundId = parameters.roundId,
                 externalSpinId = parameters.transactionId,
                 freespinId = parameters.freespinId,
-                amount = Amount(parameters.amount)
+                amount = session.toSystemUnit(parameters.amount)
             ))
         }.toResponse()
     }
@@ -75,7 +80,7 @@ class  OneGameHubWebhook(private val bus: Bus) {
                 externalRoundId = parameters.roundId,
                 externalSpinId = parameters.transactionId,
                 freespinId = parameters.freespinId,
-                amount = Amount(parameters.amount)
+                amount = session.toSystemUnit(parameters.amount)
             ))
         }.onSuccess { _ ->
             if (parameters.isRoundEnd) {
@@ -89,6 +94,10 @@ class  OneGameHubWebhook(private val bus: Bus) {
             }
         }.toResponse()
     }
+
+    /** Provider decimal amount + session currency → wallet system unit (nano). */
+    private suspend fun Session.toSystemUnit(amount: Double): Amount =
+        Amount(currencyPort.convertToUnits(amount, currency))
 
     private fun Result<PlayerBalance>.toResponse(): OneGameHubResponse {
         return map { balance ->

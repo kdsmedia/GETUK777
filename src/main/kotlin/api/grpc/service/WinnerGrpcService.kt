@@ -12,7 +12,7 @@ import domain.vo.Currency
 import domain.vo.Identity
 import domain.vo.Pageable
 import domain.vo.PlayerId
-import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.Instant
 import com.nekgamebling.game.v1.FindAllWinnersQuery as FindAllWinnersProto
 
 class WinnerGrpcService(
@@ -27,8 +27,8 @@ class WinnerGrpcService(
                 maxAmount = if (request.hasMaxAmount()) Amount(request.maxAmount) else null,
                 currency = request.currency.takeIf { it.isNotBlank() }?.let { Currency(it) },
                 playerId = request.playerId.takeIf { it.isNotBlank() }?.let { PlayerId(it) },
-                fromDate = request.fromDate.takeIf { it.isNotBlank() }?.let { LocalDateTime.parse(it) },
-                toDate = request.toDate.takeIf { it.isNotBlank() }?.let { LocalDateTime.parse(it) },
+                fromDate = request.fromDate.takeIf { it.isNotBlank() }?.let { Instant.parse(it) },
+                toDate = request.toDate.takeIf { it.isNotBlank() }?.let { Instant.parse(it) },
                 pageable = Pageable(request.pageNum, request.pageSize),
             )
         )
