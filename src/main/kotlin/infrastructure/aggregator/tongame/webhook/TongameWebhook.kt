@@ -106,7 +106,7 @@ class TongameWebhook(
                     PlaceSpinSessionCommand(
                         session = session,
                         externalRoundId = body.roundId.toString(),
-                        externalSpinId = "${body.roundId}:place",
+                        externalSpinId = body.spinId("place"),
                         amount = Amount(body.amount),
                     )
                 )
@@ -123,7 +123,7 @@ class TongameWebhook(
                     SettleSpinSessionCommand(
                         session = session,
                         externalRoundId = body.roundId.toString(),
-                        externalSpinId = "${body.roundId}:settle",
+                        externalSpinId = body.spinId("settle"),
                         amount = Amount(body.amount),
                     )
                 )
@@ -187,7 +187,13 @@ class TongameWebhook(
         val game: String? = null,
         val currency: String,
         val amount: Long,
-    )
+        /** Provider tx id — a round may carry many place/settle pairs (multi-drop games). */
+        val transactionId: Long? = null,
+    ) {
+        /** Unique spin id per transaction; the legacy per-round synthesis covers old senders. */
+        fun spinId(kind: String): String =
+            transactionId?.let { "$roundId:$kind:$it" } ?: "$roundId:$kind"
+    }
 
     @Serializable
     private data class PlayerResponse(val id: String, val username: String, val profilePic: String?)
