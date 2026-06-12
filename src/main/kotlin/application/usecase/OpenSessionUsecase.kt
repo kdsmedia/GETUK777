@@ -36,7 +36,16 @@ class OpenSessionUsecase(
 
         val launchUrl = gameAdapter.getLaunchUrl(updatedSession, lobbyUrl)
 
-        eventPublisher.publish(SessionEvent(updatedSession))
+        // The session is committed and the launch URL issued — a broker failure must never
+        // fail the open at this point.
+        try {
+            eventPublisher.publish(SessionEvent(updatedSession))
+        } catch (e: Exception) {
+            logger.error(
+                "EVENT PUBLISH FAILED (event lost): route={} sessionId={} player={}",
+                SessionEvent.route, updatedSession.id, updatedSession.playerId.value, e,
+            )
+        }
 
         logger.info("Session opened: id={} player={}", updatedSession.id, updatedSession.playerId.value)
 

@@ -18,7 +18,16 @@ class FinishRoundUsecase(
         logger.info("Finishing round: id={} session={}", round.id, round.session.id)
 
         val finishedRound = roundRepository.save(round.finish())
-        eventPublisher.publish(RoundEvent(finishedRound))
+
+        // The round is committed — a broker failure must never fail the finish at this point.
+        try {
+            eventPublisher.publish(RoundEvent(finishedRound))
+        } catch (e: Exception) {
+            logger.error(
+                "EVENT PUBLISH FAILED (event lost): route={} roundId={} session={}",
+                RoundEvent.route, finishedRound.id, finishedRound.session.id, e,
+            )
+        }
 
         logger.info("Round finished: id={}", finishedRound.id)
     }.onFailure { e ->

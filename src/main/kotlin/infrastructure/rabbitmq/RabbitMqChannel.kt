@@ -1,14 +1,15 @@
 package infrastructure.rabbitmq
 
-import com.rabbitmq.client.Channel
+import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 
 /**
- * Opens a single long-lived [Channel] from a [RabbitMqConfig]. The channel backs both the
- * central [RabbitAppEventPublisher] and every [AppEventConsumer]; the underlying
- * connection stays open for the process lifetime.
+ * Opens the single long-lived [Connection] from a [RabbitMqConfig]; it stays open for the
+ * process lifetime. The publisher and the consumers each run on their OWN channel from this
+ * connection — publisher confirms and consumer deliveries must never share a channel, so a
+ * channel-level error on one side cannot take down the other.
  */
-fun rabbitMqChannel(config: RabbitMqConfig): Channel {
+fun rabbitMqConnection(config: RabbitMqConfig): Connection {
     val factory = ConnectionFactory().apply { setUri(config.uri) }
-    return factory.newConnection().createChannel()
+    return factory.newConnection()
 }

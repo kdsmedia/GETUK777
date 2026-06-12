@@ -52,8 +52,8 @@ import org.koin.dsl.module
 val handlerModule = module {
     // Session
     single { FindSessionHandler(sessionRepository = get()) }
-    single { PlaceSpinSessionHandler(roundRepository = get(), processSpinUsecase = get()) }
-    single { SettleSpinSessionHandler(roundRepository = get(), processSpinUsecase = get()) }
+    single { PlaceSpinSessionHandler(roundRepository = get(), spinRepository = get(), processSpinUsecase = get(), walletPort = get()) }
+    single { SettleSpinSessionHandler(roundRepository = get(), spinRepository = get(), processSpinUsecase = get(), walletPort = get()) }
     single { EndRoundSessionHandler(roundRepository = get(), finishRoundUsecase = get()) }
     single { FindSessionBalanceHandler(walletAdapter = get()) }
 

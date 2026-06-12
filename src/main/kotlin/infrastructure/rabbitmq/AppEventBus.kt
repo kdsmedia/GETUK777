@@ -1,9 +1,12 @@
 package infrastructure.rabbitmq
 
 import application.port.external.IEventPublisherPort
+import com.rabbitmq.client.AlreadyClosedException
 import com.rabbitmq.client.BuiltinExchangeType
 import com.rabbitmq.client.Channel
+import com.rabbitmq.client.Connection
 import com.rabbitmq.client.DeliverCallback
+import com.rabbitmq.client.MessageProperties
 import domain.event.AppEvent
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -33,8 +36,18 @@ fun declareEventExchange(channel: Channel) {
  * RabbitMQ adapter for the [IEventPublisherPort] driven port. Owns serialization + channel access:
  * wraps any [AppEvent] in the uniform `{ "playerId": ..., "data": ... }` envelope and publishes
  * it on the event's route.
+ *
+ * Runs on its OWN confirm-mode channel (never the consumer channel): messages go out PERSISTENT
+ * and each publish blocks until the broker confirms, so an accepted publish is actually on disk.
+ * Publishes are serialized under a lock — the Java client's confirm tracking is not thread-safe.
+ * A channel closed by a channel-level AMQP error is lazily re-created from the [Connection] and
+ * the publish retried once.
  */
-class RabbitAppEventPublisher(private val channel: Channel) : IEventPublisherPort {
+class RabbitAppEventPublisher(private val connection: Connection) : IEventPublisherPort {
+
+    private val lock = Any()
+
+    private var channel: Channel? = null
 
     override fun publish(event: AppEvent<*>) {
         @Suppress("UNCHECKED_CAST")
@@ -43,12 +56,28 @@ class RabbitAppEventPublisher(private val channel: Channel) : IEventPublisherPor
             put("playerId", JsonPrimitive(event.playerId))
             put("data", appJson.encodeToJsonElement(meta.serializer, event.data))
         }
-        channel.basicPublish(
-            EVENT_EXCHANGE,
-            meta.route,
-            null,
-            appJson.encodeToString(JsonObject.serializer(), envelope).toByteArray(),
-        )
+        val body = appJson.encodeToString(JsonObject.serializer(), envelope).toByteArray()
+        synchronized(lock) {
+            try {
+                publishConfirmed(meta.route, body)
+            } catch (e: AlreadyClosedException) {
+                // The channel died mid-publish (channel-level AMQP error); the connection is
+                // still up, so re-create the channel and retry once. A second failure propagates.
+                channel = null
+                publishConfirmed(meta.route, body)
+            }
+        }
+    }
+
+    private fun publishConfirmed(route: String, body: ByteArray) {
+        val current = channel?.takeIf { it.isOpen }
+            ?: connection.createChannel().apply { confirmSelect() }.also { channel = it }
+        current.basicPublish(EVENT_EXCHANGE, route, MessageProperties.PERSISTENT_BASIC, body)
+        current.waitForConfirmsOrDie(CONFIRM_TIMEOUT_MS)
+    }
+
+    companion object {
+        private const val CONFIRM_TIMEOUT_MS = 5_000L
     }
 }
 

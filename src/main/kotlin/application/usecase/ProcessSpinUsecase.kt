@@ -46,7 +46,15 @@ class ProcessSpinUsecase(
         // BackgroundWorker catches and logs any wallet failure — it does NOT roll back this
         // spin or this event. The event is the source of truth for the committed spin; a
         // failed wallet move is reconciled out-of-band, never by suppressing the event.
-        eventPublisher.publish(SpinEvent(updatedSpin))
+        // The spin is committed — a broker failure must never 500 the webhook at this point.
+        try {
+            eventPublisher.publish(SpinEvent(updatedSpin))
+        } catch (e: Exception) {
+            logger.error(
+                "EVENT PUBLISH FAILED (event lost): route={} spinId={} externalId={} type={}",
+                SpinEvent.route, updatedSpin.id, updatedSpin.externalId.value, updatedSpin.type, e,
+            )
+        }
 
         logger.info("Spin processed: id={} type={}", updatedSpin.id, updatedSpin.type)
 
