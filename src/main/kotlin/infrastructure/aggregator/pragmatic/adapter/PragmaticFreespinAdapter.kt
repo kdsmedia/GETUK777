@@ -36,10 +36,12 @@ class PragmaticFreespinAdapter(
         gameSymbol: String,
         currency: Currency,
         startAt: LocalDateTime,
-        endAt: LocalDateTime
+        endAt: LocalDateTime,
+        spinAmount: Long,
+        spinCount: Int
     ) {
-        val rounds = (presetValue["rounds"] as? Number)?.toInt() ?: 10
-        val totalBet = (presetValue["totalBet"] as? Number)?.toInt() ?: 100
+        val rounds = spinCount
+        val totalBet = spinAmount
 
         val totalBetDecimal = totalBet.toDouble() / MINOR_UNIT_DIVISOR
 

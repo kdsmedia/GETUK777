@@ -41,6 +41,8 @@ class FreespinGrpcService(
                 currency = Currency(request.currency),
                 startAt = LocalDateTime.parse(request.startAt),
                 endAt = LocalDateTime.parse(request.endAt),
+                spinAmount = request.spinAmount,
+                spinCount = request.spinCount,
                 presetValues = if (request.hasPresetValues()) request.presetValues.toDomainMap() else emptyMap(),
             )
         )

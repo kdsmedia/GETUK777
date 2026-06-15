@@ -36,10 +36,12 @@ class PateplayFreespinAdapter(
         gameSymbol: String,
         currency: Currency,
         startAt: LocalDateTime,
-        endAt: LocalDateTime
+        endAt: LocalDateTime,
+        spinAmount: Long,
+        spinCount: Int
     ) {
-        val rounds = (presetValue["rounds"] as? Number)?.toInt() ?: 1
-        val stake = (presetValue["stake"] as? Number)?.toLong() ?: 100L
+        val rounds = spinCount
+        val stake = spinAmount
 
         val stakeDecimal = BigDecimal(stake)
             .divide(MINOR_UNIT_DIVISOR, 2, RoundingMode.HALF_UP)

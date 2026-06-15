@@ -15,7 +15,9 @@ interface IFreespinPort {
         gameSymbol: String,
         currency: Currency,
         startAt: LocalDateTime,
-        endAt: LocalDateTime
+        endAt: LocalDateTime,
+        spinAmount: Long,
+        spinCount: Int
     )
 
     suspend fun cancel(referenceId: String)

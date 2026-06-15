@@ -19,7 +19,9 @@ class TongameFreespinAdapter : IFreespinPort {
         gameSymbol: String,
         currency: Currency,
         startAt: LocalDateTime,
-        endAt: LocalDateTime
+        endAt: LocalDateTime,
+        spinAmount: Long,
+        spinCount: Int
     ): Unit = throw FreespinNotSupportedException()
 
     override suspend fun cancel(referenceId: String): Unit = throw FreespinNotSupportedException()

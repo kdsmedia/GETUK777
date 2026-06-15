@@ -30,7 +30,9 @@ class CreateFreespinCommandHandler(
             gameSymbol = variant.symbol.value,
             currency = command.currency,
             startAt = command.startAt,
-            endAt = command.endAt
+            endAt = command.endAt,
+            spinAmount = command.spinAmount,
+            spinCount = command.spinCount
         )
     }
 }

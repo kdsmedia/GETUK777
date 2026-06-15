@@ -19,5 +19,9 @@ data class CreateFreespinCommand(
 
     val endAt: LocalDateTime,
 
+    val spinAmount: Long,
+
+    val spinCount: Int,
+
     val presetValues: Map<String, Any>,
 ) : ICommand<Unit>

@@ -38,6 +38,10 @@ message CreateFreespinCommand {
   string end_at = 6;
 
   google.protobuf.Struct preset_values = 7;
+
+  int64 spin_amount = 8;
+
+  int32 spin_count = 9;
 }
 
 message CancelFreespinCommand {

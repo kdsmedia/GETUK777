@@ -37,10 +37,12 @@ class OneGameHubFreespinAdapter(
         gameSymbol: String,
         currency: Currency,
         startAt: LocalDateTime,
-        endAt: LocalDateTime
+        endAt: LocalDateTime,
+        spinAmount: Long,
+        spinCount: Int
     ) {
-        val bet = (presetValue["bet"] as? Number)?.toInt() ?: 0
-        val number = (presetValue["number"] as? Number)?.toInt() ?: 0
+        val bet = spinAmount.toInt()
+        val number = spinCount
         val lineNumber = (presetValue["paylines"] as? Number)?.toInt() ?: 0
 
         val payload = CreateFreespinDto(
