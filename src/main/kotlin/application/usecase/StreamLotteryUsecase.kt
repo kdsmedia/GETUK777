@@ -12,7 +12,6 @@ import domain.repository.IGameVariantRepository
 import domain.repository.ISessionRepository
 import domain.service.SessionFactory
 import domain.vo.Currency
-import domain.vo.Identity
 import domain.vo.Locale
 import domain.vo.PlayerId
 import domain.vo.SessionToken
@@ -34,8 +33,10 @@ class StreamLotteryUsecase(
     private val logger = LoggerFactory.getLogger(StreamLotteryUsecase::class.java)
 
     suspend operator fun invoke(playerId: PlayerId, currency: Currency): Result<LotterySocketSession> = runCatching {
+        // Resolved by the stable provider-side symbol ("lottery"), not the generated game identity
+        // ("<provider>_lottery"). SessionFactory enforces game/provider/aggregator active below.
         val gameVariant = domainRequireNotNull(
-            gameVariantRepository.findActiveByGameIdentity(LOTTERY_IDENTITY)
+            gameVariantRepository.findBySymbol(LOTTERY_SYMBOL)
         ) { GameNotFoundException() }
 
         val aggregator = gameVariant.game.provider.aggregator
@@ -82,7 +83,7 @@ class StreamLotteryUsecase(
     }
 
     companion object {
-        private val LOTTERY_IDENTITY = Identity("lottery")
+        private const val LOTTERY_SYMBOL = "lottery"
 
         private val DEFAULT_LOCALE = Locale("en")
 
