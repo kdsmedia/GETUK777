@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_package = "com.nekgamebling.game.v1";
+option java_multiple_files = true;
+
+// ---------------------------------------------------------------------------
+// Lottery streaming service — a WebSocket→gRPC bridge for the TONGame lottery,
+// which ships no game client. casino-engine mints + registers the session,
+// opens its own WebSocket to the provider's `/ws/lottery`, and relays raw JSON
+// frames over a single bidirectional stream. Frames are opaque passthrough —
+// the lottery protocol itself lives only in the provider:
+//
+//   1st client frame : {"playerId":"42","currency":"TON"}   (consumed here: mint + auth)
+//   later frames     : {"type":"buy","numbers":[...]}        (forwarded to the provider)
+//   server frames    : {"type":"lottery",...} / {"type":"error",...}  (relayed verbatim)
+// ---------------------------------------------------------------------------
+service LotteryService {
+  rpc Connect(stream LotteryClientFrame) returns (stream LotteryServerFrame);
+}
+
+message LotteryClientFrame {
+  string json = 1;
+}
+
+message LotteryServerFrame {
+  string json = 1;
+}

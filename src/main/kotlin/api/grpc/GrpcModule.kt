@@ -4,6 +4,7 @@ import api.grpc.service.AggregatorGrpcService
 import api.grpc.service.CollectionGrpcService
 import api.grpc.service.FreespinGrpcService
 import api.grpc.service.GameGrpcService
+import api.grpc.service.LotteryGrpcService
 import api.grpc.service.ProviderGrpcService
 import api.grpc.service.WinnerGrpcService
 import io.grpc.ServerBuilder
@@ -26,6 +27,7 @@ fun Application.configureGrpc() {
             .addService(get<AggregatorGrpcService>())
             .addService(get<FreespinGrpcService>())
             .addService(get<WinnerGrpcService>())
+            .addService(get<LotteryGrpcService>())
             .build()
             .start()
 

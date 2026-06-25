@@ -2,6 +2,7 @@ package application.port.factory
 
 import application.port.external.IFreespinPort
 import application.port.external.IGamePort
+import application.port.external.ILotteryStreamPort
 import domain.model.Aggregator
 
 /**
@@ -15,4 +16,6 @@ interface IAggregatorFactory {
     fun createGameAdapter(aggregator: Aggregator): IGamePort
 
     fun createFreespinAdapter(aggregator: Aggregator): IFreespinPort
+
+    fun createLotteryStreamAdapter(aggregator: Aggregator): ILotteryStreamPort
 }

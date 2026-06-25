@@ -4,6 +4,7 @@ import application.usecase.DecreasePlayerLimitUsecase
 import application.usecase.FinishRoundUsecase
 import application.usecase.OpenSessionUsecase
 import application.usecase.ProcessSpinUsecase
+import application.usecase.StreamLotteryUsecase
 import application.usecase.SyncAggregatorUsecase
 import org.koin.dsl.module
 
@@ -21,6 +22,14 @@ val usecaseModule = module {
         OpenSessionUsecase(
             aggregatorFactory = get(),
             sessionRepository = get(),
+            eventPublisher = get(),
+        )
+    }
+    single {
+        StreamLotteryUsecase(
+            gameVariantRepository = get(),
+            sessionRepository = get(),
+            aggregatorFactory = get(),
             eventPublisher = get(),
         )
     }

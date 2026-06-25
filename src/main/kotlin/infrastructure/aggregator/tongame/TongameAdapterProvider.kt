@@ -2,9 +2,11 @@ package infrastructure.aggregator.tongame
 
 import application.port.external.IFreespinPort
 import application.port.external.IGamePort
+import application.port.external.ILotteryStreamPort
 import application.port.factory.AggregatorAdapterProvider
 import infrastructure.aggregator.tongame.adapter.TongameFreespinAdapter
 import infrastructure.aggregator.tongame.adapter.TongameGameAdapter
+import infrastructure.aggregator.tongame.stream.TongameLotterySocketClient
 
 class TongameAdapterProvider : AggregatorAdapterProvider {
 
@@ -15,6 +17,9 @@ class TongameAdapterProvider : AggregatorAdapterProvider {
 
     override fun createFreespinAdapter(config: Map<String, Any>): IFreespinPort =
         TongameFreespinAdapter()
+
+    override fun createLotteryStreamAdapter(config: Map<String, Any>): ILotteryStreamPort =
+        TongameLotterySocketClient(TongameConfig(config))
 
     companion object {
         const val INTEGRATION: String = "TONGAME"
