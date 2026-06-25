@@ -31,6 +31,10 @@ class TongameLotterySocketClient(
 
     private val httpClient = TongameHttpClient(config)
 
+    // encodeDefaults so the `type` discriminator (a defaulted field) is always written — kotlinx omits
+    // defaults otherwise, which produced a frame with no `type` and the provider rejected it as malformed.
+    private val json = Json { encodeDefaults = true }
+
     override suspend fun connect(token: SessionToken): LotterySocketSession {
         // Register our session token so the socket `auth` resolves it (provider calls /player back).
         httpClient.createSession(token.value)
@@ -46,7 +50,7 @@ class TongameLotterySocketClient(
     }
 
     private fun authFrame(token: SessionToken): String =
-        Json.encodeToString(AuthFrame(token = token.value, operator = config.operatorIdentity))
+        json.encodeToString(AuthFrame(token = token.value, operator = config.operatorIdentity))
 
     @Serializable
     private data class AuthFrame(
