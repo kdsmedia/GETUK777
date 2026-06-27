@@ -2,9 +2,9 @@ package infrastructure.aggregator.onegamehub
 
 import application.port.external.IFreespinPort
 import application.port.external.IGamePort
-import application.port.external.ILotteryStreamPort
+import application.port.external.IJackpotStreamPort
 import application.port.factory.AggregatorAdapterProvider
-import domain.exception.conflict.LotteryStreamNotSupportedException
+import domain.exception.conflict.JackpotStreamNotSupportedException
 import infrastructure.aggregator.onegamehub.adapter.OneGameHubFreespinAdapter
 import infrastructure.aggregator.onegamehub.adapter.OneGameHubGameAdapter
 
@@ -18,8 +18,8 @@ class OneGameHubAdapterProvider : AggregatorAdapterProvider {
     override fun createFreespinAdapter(config: Map<String, Any>): IFreespinPort =
         OneGameHubFreespinAdapter(OneGameHubConfig(config))
 
-    override fun createLotteryStreamAdapter(config: Map<String, Any>): ILotteryStreamPort =
-        throw LotteryStreamNotSupportedException()
+    override fun createJackpotStreamAdapter(config: Map<String, Any>): IJackpotStreamPort =
+        throw JackpotStreamNotSupportedException()
 
     companion object {
         const val INTEGRATION: String = "ONEGAMEHUB"

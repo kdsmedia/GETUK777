@@ -2,9 +2,9 @@ package infrastructure.aggregator.pateplay
 
 import application.port.external.IFreespinPort
 import application.port.external.IGamePort
-import application.port.external.ILotteryStreamPort
+import application.port.external.IJackpotStreamPort
 import application.port.factory.AggregatorAdapterProvider
-import domain.exception.conflict.LotteryStreamNotSupportedException
+import domain.exception.conflict.JackpotStreamNotSupportedException
 import infrastructure.aggregator.pateplay.adapter.PateplayFreespinAdapter
 import infrastructure.aggregator.pateplay.adapter.PateplayGameAdapter
 
@@ -18,8 +18,8 @@ class PateplayAdapterProvider : AggregatorAdapterProvider {
     override fun createFreespinAdapter(config: Map<String, Any>): IFreespinPort =
         PateplayFreespinAdapter(PateplayConfig(config))
 
-    override fun createLotteryStreamAdapter(config: Map<String, Any>): ILotteryStreamPort =
-        throw LotteryStreamNotSupportedException()
+    override fun createJackpotStreamAdapter(config: Map<String, Any>): IJackpotStreamPort =
+        throw JackpotStreamNotSupportedException()
 
     companion object {
         const val INTEGRATION: String = "PATEPLAY"

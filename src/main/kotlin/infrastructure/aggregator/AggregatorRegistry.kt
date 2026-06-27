@@ -2,7 +2,7 @@ package infrastructure.aggregator
 
 import application.port.external.IFreespinPort
 import application.port.external.IGamePort
-import application.port.external.ILotteryStreamPort
+import application.port.external.IJackpotStreamPort
 import application.port.factory.AggregatorAdapterProvider
 import application.port.factory.IAggregatorFactory
 import domain.exception.badrequest.AggregatorNotSupportedException
@@ -28,8 +28,8 @@ class AggregatorRegistry(
     override fun createFreespinAdapter(aggregator: Aggregator): IFreespinPort =
         resolve(aggregator).createFreespinAdapter(aggregator.config)
 
-    override fun createLotteryStreamAdapter(aggregator: Aggregator): ILotteryStreamPort =
-        resolve(aggregator).createLotteryStreamAdapter(aggregator.config)
+    override fun createJackpotStreamAdapter(aggregator: Aggregator): IJackpotStreamPort =
+        resolve(aggregator).createJackpotStreamAdapter(aggregator.config)
 
     private fun resolve(aggregator: Aggregator): AggregatorAdapterProvider =
         providersByIntegration[aggregator.integration]

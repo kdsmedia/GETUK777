@@ -2,9 +2,9 @@ package infrastructure.aggregator.pragmatic
 
 import application.port.external.IFreespinPort
 import application.port.external.IGamePort
-import application.port.external.ILotteryStreamPort
+import application.port.external.IJackpotStreamPort
 import application.port.factory.AggregatorAdapterProvider
-import domain.exception.conflict.LotteryStreamNotSupportedException
+import domain.exception.conflict.JackpotStreamNotSupportedException
 import infrastructure.aggregator.pragmatic.adapter.PragmaticFreespinAdapter
 import infrastructure.aggregator.pragmatic.adapter.PragmaticGameAdapter
 
@@ -18,8 +18,8 @@ class PragmaticAdapterProvider : AggregatorAdapterProvider {
     override fun createFreespinAdapter(config: Map<String, Any>): IFreespinPort =
         PragmaticFreespinAdapter(PragmaticConfig(config))
 
-    override fun createLotteryStreamAdapter(config: Map<String, Any>): ILotteryStreamPort =
-        throw LotteryStreamNotSupportedException()
+    override fun createJackpotStreamAdapter(config: Map<String, Any>): IJackpotStreamPort =
+        throw JackpotStreamNotSupportedException()
 
     companion object {
         const val INTEGRATION: String = "PRAGMATIC"

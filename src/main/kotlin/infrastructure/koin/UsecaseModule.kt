@@ -2,9 +2,9 @@ package infrastructure.koin
 
 import application.usecase.DecreasePlayerLimitUsecase
 import application.usecase.FinishRoundUsecase
+import application.usecase.JackpotBroadcaster
 import application.usecase.OpenSessionUsecase
 import application.usecase.ProcessSpinUsecase
-import application.usecase.StreamLotteryUsecase
 import application.usecase.SyncAggregatorUsecase
 import org.koin.dsl.module
 
@@ -26,11 +26,9 @@ val usecaseModule = module {
         )
     }
     single {
-        StreamLotteryUsecase(
+        JackpotBroadcaster(
             gameVariantRepository = get(),
-            sessionRepository = get(),
             aggregatorFactory = get(),
-            eventPublisher = get(),
         )
     }
     single {

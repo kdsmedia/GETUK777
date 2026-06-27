@@ -2,7 +2,7 @@ package application.port.factory
 
 import application.port.external.IFreespinPort
 import application.port.external.IGamePort
-import application.port.external.ILotteryStreamPort
+import application.port.external.IJackpotStreamPort
 
 /**
  * Strategy for a single aggregator integration.
@@ -25,5 +25,5 @@ interface AggregatorAdapterProvider {
 
     fun createFreespinAdapter(config: Map<String, Any>): IFreespinPort
 
-    fun createLotteryStreamAdapter(config: Map<String, Any>): ILotteryStreamPort
+    fun createJackpotStreamAdapter(config: Map<String, Any>): IJackpotStreamPort
 }

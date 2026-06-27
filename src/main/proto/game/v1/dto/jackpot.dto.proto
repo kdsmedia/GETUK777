@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_multiple_files = true;
+option java_package = "com.nekgamebling.game.v1";
+
+message JackpotDto {
+  string identity = 1;
+
+  string currency = 2;
+
+  int64 start_at = 3;
+
+  int64 end_at = 4;
+
+  string status = 5;
+
+  repeated JackpotPrizeDto prizes = 6;
+}
+
+message JackpotPrizeDto {
+  string amount = 1;
+
+  string identity = 2;
+}

@@ -15,8 +15,8 @@ class TongameConfig(config: Map<String, Any>) {
     /** Base host for game frontends. Each game is served at `<gameSymbol>.<gameHost>`. */
     val gameHost = config["gameHost"]?.toString() ?: ""
 
-    /** Provider WebSocket base, e.g. `wss://provider.example.com`. The lottery is consumed at
-     *  `<wsUrl>/ws/lottery`. Defaults to [apiUrl] with the scheme swapped to ws/wss. */
+    /** Provider WebSocket base, e.g. `wss://provider.example.com`. The public jackpot is consumed at
+     *  `<wsUrl>/ws/jackpot`. Defaults to [apiUrl] with the scheme swapped to ws/wss. */
     val wsUrl = config["wsUrl"]?.toString()?.trimEnd('/')
         ?: apiUrl.replaceFirst("https://", "wss://").replaceFirst("http://", "ws://")
 }

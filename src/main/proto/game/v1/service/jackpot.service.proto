@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_package = "com.nekgamebling.game.v1";
+option java_multiple_files = true;
+
+import "game/v1/dto/common.dto.proto";
+import "game/v1/dto/jackpot.dto.proto";
+
+// ---------------------------------------------------------------------------
+// Universal jackpot stream — an open (un-authenticated) server stream of the
+// currently active jackpot/draw, bridged from the provider's public jackpot
+// WebSocket. There is no session: the same frames are pushed to every client,
+// so a brand can render a live jackpot banner before a player buys in.
+//
+// Each frame describes one active jackpot: its identity, currency, the sales
+// window (start_at / end_at, epoch millis), a status, and one-or-more prizes
+// (amount in minor units as a string + the prize identity).
+// ---------------------------------------------------------------------------
+service JackpotService {
+  rpc Stream(Empty) returns (stream JackpotDto);
+}
