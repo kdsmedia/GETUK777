@@ -15,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.isActive
 import org.slf4j.LoggerFactory
@@ -36,30 +37,33 @@ class JackpotBroadcaster(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    /** One shared, reconnecting upstream flow per aggregator identity. */
+    /** One shared, reconnecting upstream flow per provider (all of that provider's jackpots). */
     private val streams = ConcurrentHashMap<String, Flow<JackpotState>>()
 
-    fun stream(aggregator: String): Flow<JackpotState> =
-        streams.computeIfAbsent(aggregator) { id -> build(id) }
+    /** Stream the [identity] jackpot of [provider]; blank [identity] = any of the provider's jackpots. */
+    fun stream(provider: String, identity: String): Flow<JackpotState> {
+        val upstream = streams.computeIfAbsent(provider) { build(it) }
+        return if (identity.isBlank()) upstream else upstream.filter { it.identity == identity }
+    }
 
-    private fun build(aggregator: String): Flow<JackpotState> = channelFlow {
+    private fun build(provider: String): Flow<JackpotState> = channelFlow {
         while (isActive) {
             try {
-                connectUpstream(aggregator).collect { send(it) }
+                connectUpstream(provider).collect { send(it) }
             } catch (e: Exception) {
-                logger.warn("jackpot upstream for aggregator '{}' failed; reconnecting in {}ms", aggregator, RECONNECT_DELAY_MS, e)
+                logger.warn("jackpot upstream for provider '{}' failed; reconnecting in {}ms", provider, RECONNECT_DELAY_MS, e)
             }
             delay(RECONNECT_DELAY_MS)
         }
     }.shareIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), replay = 1)
 
-    private suspend fun connectUpstream(aggregator: String): Flow<JackpotState> =
-        aggregatorFactory.createJackpotStreamAdapter(resolveAggregator(aggregator)).stream()
+    private suspend fun connectUpstream(provider: String): Flow<JackpotState> =
+        aggregatorFactory.createJackpotStreamAdapter(resolveProvider(provider)).stream()
 
-    private suspend fun resolveAggregator(aggregator: String): Aggregator {
-        if (aggregator.isNotBlank()) {
+    private suspend fun resolveProvider(provider: String): Aggregator {
+        if (provider.isNotBlank()) {
             return domainRequireNotNull(
-                aggregatorRepository.findByIdentity(Identity(aggregator))
+                aggregatorRepository.findByIdentity(Identity(provider))
             ) { AggregatorNotFoundException() }
         }
         // Backward-compat for callers that don't name a provider: the first aggregator that

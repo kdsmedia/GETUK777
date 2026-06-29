@@ -20,7 +20,7 @@ class JackpotGrpcService(
 ) : JackpotServiceGrpcKt.JackpotServiceCoroutineImplBase() {
 
     override fun stream(request: JackpotStreamRequest): Flow<JackpotDto> =
-        broadcaster.stream(request.aggregator).map { it.toProto() }
+        broadcaster.stream(request.provider, request.identity).map { it.toProto() }
 
     private fun JackpotState.toProto(): JackpotDto =
         JackpotDto.newBuilder()
