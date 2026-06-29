@@ -4,6 +4,7 @@ import application.port.external.JackpotState
 import application.port.factory.IAggregatorFactory
 import domain.exception.domainRequireNotNull
 import domain.exception.notfound.AggregatorNotFoundException
+import domain.model.Aggregator
 import domain.repository.IAggregatorRepository
 import domain.vo.Identity
 import java.util.concurrent.ConcurrentHashMap
@@ -52,12 +53,20 @@ class JackpotBroadcaster(
         }
     }.shareIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), replay = 1)
 
-    private suspend fun connectUpstream(aggregator: String): Flow<JackpotState> {
-        val resolved = domainRequireNotNull(
-            aggregatorRepository.findByIdentity(Identity(aggregator))
-        ) { AggregatorNotFoundException() }
+    private suspend fun connectUpstream(aggregator: String): Flow<JackpotState> =
+        aggregatorFactory.createJackpotStreamAdapter(resolveAggregator(aggregator)).stream()
 
-        return aggregatorFactory.createJackpotStreamAdapter(resolved).stream()
+    private suspend fun resolveAggregator(aggregator: String): Aggregator {
+        if (aggregator.isNotBlank()) {
+            return domainRequireNotNull(
+                aggregatorRepository.findByIdentity(Identity(aggregator))
+            ) { AggregatorNotFoundException() }
+        }
+        // Backward-compat for callers that don't name a provider: the first aggregator that
+        // actually exposes a jackpot adapter (dynamic — no provider is hardcoded).
+        return aggregatorRepository.findAll()
+            .firstOrNull { runCatching { aggregatorFactory.createJackpotStreamAdapter(it) }.isSuccess }
+            ?: throw AggregatorNotFoundException()
     }
 
     companion object {
