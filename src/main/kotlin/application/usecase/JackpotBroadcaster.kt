@@ -3,8 +3,10 @@ package application.usecase
 import application.port.external.JackpotState
 import application.port.factory.IAggregatorFactory
 import domain.exception.domainRequireNotNull
-import domain.exception.notfound.GameNotFoundException
-import domain.repository.IGameVariantRepository
+import domain.exception.notfound.AggregatorNotFoundException
+import domain.repository.IAggregatorRepository
+import domain.vo.Identity
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -17,14 +19,15 @@ import kotlinx.coroutines.isActive
 import org.slf4j.LoggerFactory
 
 /**
- * Bridges the provider's single public jackpot socket to many gRPC subscribers. The upstream
- * is resolved from the active lottery's aggregator and shared with `replay = 1`, so each new
- * gRPC client immediately gets the latest frame. `WhileSubscribed` keeps the upstream socket
- * open only while at least one client is connected; a drop/close is reconnected with a fixed
- * backoff. The frames themselves are opaque to everyone but the provider.
+ * Bridges each provider's public jackpot socket to many gRPC subscribers — UNIVERSAL and
+ * resolved PER AGGREGATOR. For a requested aggregator identity it resolves that aggregator and
+ * opens its [application.port.factory.IAggregatorFactory.createJackpotStreamAdapter]; the upstream
+ * is shared with `replay = 1` (one socket per aggregator, kept open only `WhileSubscribed`, with a
+ * fixed reconnect backoff), so different providers' jackpots stream independently and each new
+ * client gets the latest frame immediately. The frames are opaque to everyone but the provider.
  */
 class JackpotBroadcaster(
-    private val gameVariantRepository: IGameVariantRepository,
+    private val aggregatorRepository: IAggregatorRepository,
     private val aggregatorFactory: IAggregatorFactory,
 ) {
 
@@ -32,32 +35,32 @@ class JackpotBroadcaster(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val shared: Flow<JackpotState> = channelFlow {
+    /** One shared, reconnecting upstream flow per aggregator identity. */
+    private val streams = ConcurrentHashMap<String, Flow<JackpotState>>()
+
+    fun stream(aggregator: String): Flow<JackpotState> =
+        streams.computeIfAbsent(aggregator) { id -> build(id) }
+
+    private fun build(aggregator: String): Flow<JackpotState> = channelFlow {
         while (isActive) {
             try {
-                connectUpstream().collect { send(it) }
+                connectUpstream(aggregator).collect { send(it) }
             } catch (e: Exception) {
-                logger.warn("jackpot upstream failed; reconnecting in {}ms", RECONNECT_DELAY_MS, e)
+                logger.warn("jackpot upstream for aggregator '{}' failed; reconnecting in {}ms", aggregator, RECONNECT_DELAY_MS, e)
             }
             delay(RECONNECT_DELAY_MS)
         }
     }.shareIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), replay = 1)
 
-    fun stream(): Flow<JackpotState> = shared
+    private suspend fun connectUpstream(aggregator: String): Flow<JackpotState> {
+        val resolved = domainRequireNotNull(
+            aggregatorRepository.findByIdentity(Identity(aggregator))
+        ) { AggregatorNotFoundException() }
 
-    private suspend fun connectUpstream(): Flow<JackpotState> {
-        // Resolved by the stable provider-side symbol ("lottery"), not the generated game identity.
-        val gameVariant = domainRequireNotNull(
-            gameVariantRepository.findBySymbol(LOTTERY_SYMBOL)
-        ) { GameNotFoundException() }
-
-        val aggregator = gameVariant.game.provider.aggregator
-        return aggregatorFactory.createJackpotStreamAdapter(aggregator).stream()
+        return aggregatorFactory.createJackpotStreamAdapter(resolved).stream()
     }
 
     companion object {
-        private const val LOTTERY_SYMBOL = "lottery"
-
         private const val RECONNECT_DELAY_MS = 3_000L
 
         private const val STOP_TIMEOUT_MS = 5_000L

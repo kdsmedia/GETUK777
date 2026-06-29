@@ -27,7 +27,7 @@ val usecaseModule = module {
     }
     single {
         JackpotBroadcaster(
-            gameVariantRepository = get(),
+            aggregatorRepository = get(),
             aggregatorFactory = get(),
         )
     }
