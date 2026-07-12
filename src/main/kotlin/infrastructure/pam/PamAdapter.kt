@@ -22,15 +22,14 @@ class PamAdapter(
 
         val user = withContext(Dispatchers.IO) { stub.findUser(request) }.user
 
-        // `User.avatar` (proto3 optional) carries the player's real avatar — the miniapp
-        // writes the Telegram photo URL to PAM on provisioning. Pass it through as the
-        // TONGame profilePic so games render the real picture instead of an initial.
-        // A blank username (proto3 default for unset) falls back to the player id.
+        // The published user-grpc-client jar exposes User.username, but its Profile
+        // predates the avatar field, so an avatar can't be read here — return null
+        // (profilePic is optional in the TONGame contract). A blank username (proto3
+        // default for unset) falls back to the player id.
         val username = user.username
-        val avatar = if (user.hasAvatar()) user.avatar.takeIf { it.isNotBlank() } else null
         return IPlayerPort.Player(
             username = if (username.isNullOrBlank()) playerId.value else username,
-            profilePic = avatar,
+            profilePic = null,
         )
     }
 }
