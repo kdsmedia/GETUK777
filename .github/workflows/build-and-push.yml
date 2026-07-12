@@ -31,7 +31,9 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           # User-owned private packages can't be read with the auto GITHUB_TOKEN — use a PAT.
           GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
-        run: ./gradlew assemble --no-daemon -x test
+        # --refresh-dependencies: the gRPC client jars are mutable 1.0.0 (republished
+        # in place), so the gradle cache can hold a stale copy — force a re-resolve.
+        run: ./gradlew assemble --no-daemon -x test --refresh-dependencies
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

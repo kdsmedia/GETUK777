@@ -118,7 +118,7 @@ dependencies {
     implementation(libs.protobuf.kotlin)
 
     // Sibling gRPC clients published to GitHub Packages
-    implementation("com.nekgambling:user-grpc-client:1.0.1")
+    implementation("com.nekgambling:user-grpc-client:1.0.0")
     implementation("com.nekgamebling:wallet-grpc-client:1.0.0")
 
 
