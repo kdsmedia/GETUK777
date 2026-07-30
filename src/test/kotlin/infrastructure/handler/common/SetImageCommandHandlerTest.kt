@@ -66,6 +66,7 @@ class SetImageCommandHandlerTest : FunSpec({
         override suspend fun addGame(identity: Identity, gameIdentity: Identity) = Unit
         override suspend fun removeGame(identity: Identity, gameIdentity: Identity) = Unit
         override suspend fun updateGameOrder(identity: Identity, gameIdentity: Identity, order: Int) = Unit
+        override suspend fun deleteByIdentity(identity: Identity) = Unit
     }
 
     class FakeFileAdapter : FileAdapter {

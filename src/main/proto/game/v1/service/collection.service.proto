@@ -11,8 +11,7 @@ import "game/v1/dto/game_filter.dto.proto";
 import "game/v1/dto/game_page.dto.proto";
 
 // ---------------------------------------------------------------------------
-// Collection catalog service — read + upsert plus game-membership management.
-// Collections are contract artefacts and cannot be deleted once created.
+// Collection catalog service — full CRUD plus game-membership management.
 //
 // Every Save is a typed upsert (create-or-update) with explicit fields,
 // mirroring `application.command.collection.SaveCollectionCommand` on the
@@ -45,6 +44,8 @@ service CollectionService {
   rpc UpdateGameOrder(UpdateCollectionGameOrderCommand) returns (Empty);
 
   rpc UpdateImage(UpdateCollectionImageCommand) returns (Empty);
+
+  rpc Delete(DeleteCollectionCommand) returns (Empty);
 }
 
 // ---------------------------------------------------------------------------
@@ -90,6 +91,13 @@ message UpdateCollectionGameOrderCommand {
   string game_identity = 2;
 
   int32 order = 3;
+}
+
+// Delete a collection and every game membership it holds. Deleting a
+// collection never deletes games — only the rail and its ordering.
+// Fails with NOT_FOUND if the collection does not exist.
+message DeleteCollectionCommand {
+  string identity = 1;
 }
 
 message UpdateCollectionImageCommand {

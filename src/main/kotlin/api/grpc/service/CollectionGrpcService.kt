@@ -22,6 +22,7 @@ import domain.vo.LocaleName
 import domain.vo.Pageable
 import com.nekgamebling.game.v1.AddCollectionGameCommand as AddCollectionGameProto
 import com.nekgamebling.game.v1.BatchCollectionQuery as BatchCollectionProto
+import com.nekgamebling.game.v1.DeleteCollectionCommand as DeleteCollectionProto
 import com.nekgamebling.game.v1.FindAllCollectionQuery as FindAllCollectionProto
 import com.nekgamebling.game.v1.FindAllGameCollectionQuery as FindAllGameCollectionProto
 import com.nekgamebling.game.v1.FindCollectionQuery as FindCollectionProto
@@ -29,6 +30,7 @@ import com.nekgamebling.game.v1.RemoveCollectionGameCommand as RemoveCollectionG
 import com.nekgamebling.game.v1.SaveCollectionCommand as SaveCollectionProto
 import com.nekgamebling.game.v1.UpdateCollectionGameOrderCommand as UpdateCollectionGameOrderProto
 import application.command.collection.AddCollectionGameCommand as AddCollectionGameCqrs
+import application.command.collection.DeleteCollectionCommand as DeleteCollectionCqrs
 import application.command.collection.RemoveCollectionGameCommand as RemoveCollectionGameCqrs
 import application.command.collection.UpdateCollectionGameOrderCommand as UpdateCollectionGameOrderCqrs
 import application.query.collection.BatchCollectionQuery as BatchCollectionCqrs
@@ -144,6 +146,11 @@ class CollectionGrpcService(
                 ),
             )
         )
+        Empty.getDefaultInstance()
+    }
+
+    override suspend fun delete(request: DeleteCollectionProto): Empty = handleGrpcCall {
+        bus(DeleteCollectionCqrs(identity = Identity(request.identity)))
         Empty.getDefaultInstance()
     }
 }

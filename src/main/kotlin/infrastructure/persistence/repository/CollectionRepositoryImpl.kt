@@ -127,6 +127,17 @@ class CollectionRepositoryImpl : ICollectionRepository {
         }
     }
 
+    override suspend fun deleteByIdentity(identity: Identity) {
+        dbTransaction {
+            val collectionId = resolveCollectionId(identity)
+
+            // Memberships first — game_collections references collections, and the
+            // games on the other side of those rows must survive the delete.
+            GameCollectionTable.deleteWhere { GameCollectionTable.collection eq collectionId }
+            CollectionTable.deleteWhere { CollectionTable.id eq collectionId }
+        }
+    }
+
     private fun resolveCollectionId(identity: Identity) = domainRequireNotNull(
         CollectionTable
             .select(CollectionTable.id)

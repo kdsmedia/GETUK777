@@ -16,6 +16,14 @@ interface ICollectionRepository {
     suspend fun addImage(identity: Identity, key: String, url: String)
 
     /**
+     * Delete the collection and every game membership it holds. Games themselves
+     * are never touched — only the rail and its ordering disappear.
+     *
+     * Raises `CollectionNotFoundException` if [identity] does not exist.
+     */
+    suspend fun deleteByIdentity(identity: Identity)
+
+    /**
      * Add a single game to a collection. Idempotent: if [gameIdentity] is
      * already in [identity], no-op. On first insert, sort order is set to
      * `max(existing sort_order) + 1` (or `0` when the collection is empty).

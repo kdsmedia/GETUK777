@@ -5,6 +5,7 @@ import application.command.aggregator.DeleteAggregatorCommand
 import application.command.aggregator.SaveAggregatorCommand
 import application.command.aggregator.SyncAllActiveAggregatorCommand
 import application.command.collection.AddCollectionGameCommand
+import application.command.collection.DeleteCollectionCommand
 import application.command.collection.RemoveCollectionGameCommand
 import application.command.collection.SaveCollectionCommand
 import application.command.collection.SetCollectionImageCommand
@@ -50,6 +51,7 @@ import infrastructure.handler.aggregator.SaveAggregatorCommandHandler
 import infrastructure.handler.aggregator.SyncAllActiveAggregatorCommandHandler
 import infrastructure.handler.collection.AddCollectionGameCommandHandler
 import infrastructure.handler.collection.BatchCollectionQueryHandler
+import infrastructure.handler.collection.DeleteCollectionCommandHandler
 import infrastructure.handler.collection.FindAllCollectionQueryHandler
 import infrastructure.handler.collection.FindCollectionQueryHandler
 import infrastructure.handler.collection.RemoveCollectionGameCommandHandler
@@ -118,6 +120,7 @@ val busModule = module {
                 AddCollectionGameCommand::class.java to get<AddCollectionGameCommandHandler>(),
                 RemoveCollectionGameCommand::class.java to get<RemoveCollectionGameCommandHandler>(),
                 UpdateCollectionGameOrderCommand::class.java to get<UpdateCollectionGameOrderCommandHandler>(),
+                DeleteCollectionCommand::class.java to get<DeleteCollectionCommandHandler>(),
                 // Aggregator
                 SaveAggregatorCommand::class.java to get<SaveAggregatorCommandHandler>(),
                 DeleteAggregatorCommand::class.java to get<DeleteAggregatorCommandHandler>(),

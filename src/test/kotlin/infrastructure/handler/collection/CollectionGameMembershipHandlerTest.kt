@@ -56,6 +56,11 @@ class CollectionGameMembershipHandlerTest : FunSpec({
             if ((identity.value to gameIdentity.value) !in membership) throw GameNotFoundException()
             orderCalls += Triple(identity, gameIdentity, order)
         }
+
+        override suspend fun deleteByIdentity(identity: Identity) {
+            if (identity.value !in knownCollections) throw CollectionNotFoundException()
+            membership.removeAll { (collection, _) -> collection == identity.value }
+        }
     }
 
     // ---------------------------------------------------------------------
