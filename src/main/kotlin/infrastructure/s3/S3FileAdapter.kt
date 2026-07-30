@@ -32,6 +32,7 @@ class S3FileAdapter(
             this.key = key
             body = ByteStream.fromBytes(file.bytes)
             contentType = contentTypeFor(file.ext)
+            cacheControl = CACHE_CONTROL
         })
 
         // The object KEY is what callers store — the public host that serves the bucket
@@ -65,5 +66,13 @@ class S3FileAdapter(
     private fun buildKey(folder: String, fileName: String, ext: String): String {
         val name = fileName.ifBlank { UUID.randomUUID().toString() }
         return if (ext.isNotBlank()) "$folder/$name.$ext" else "$folder/$name"
+    }
+
+    private companion object {
+        /**
+         * Objects live under a stable key (`<folder>/<identity>/<image key>`), so a long
+         * browser cache is safe; replacing one means purging the CDN edge for that key.
+         */
+        const val CACHE_CONTROL = "public, max-age=86400"
     }
 }
