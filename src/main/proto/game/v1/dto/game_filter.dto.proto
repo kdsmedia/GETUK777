@@ -33,4 +33,9 @@ message GameFilter {
   optional bool demo_enable = 10;
 
   optional bool bonus_buy_enable = 11;
+
+  // Restricts the listing to one collection's members. `GameService.FindAll`
+  // additionally switches its ordering to that collection's curated position
+  // (`AddGame` order), so a lobby rail is one FindAll call.
+  optional string collection_identity = 12;
 }

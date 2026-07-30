@@ -1,15 +1,20 @@
 package infrastructure.handler.game
 
 import application.query.game.GameFilter
+import infrastructure.persistence.table.CollectionTable
+import infrastructure.persistence.table.GameCollectionTable
 import infrastructure.persistence.table.GameTable
 import infrastructure.persistence.table.GameVariantTable
 import infrastructure.persistence.table.ProviderTable
+import org.jetbrains.exposed.sql.Expression
 import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.TextColumnType
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.castTo
 import org.jetbrains.exposed.sql.exists
 import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.wrapAsExpression
 
 fun GameFilter.toCondition(): Op<Boolean> {
     val conditions = buildList<Op<Boolean>> {
@@ -38,6 +43,16 @@ fun GameFilter.toCondition(): Op<Boolean> {
                     ProviderTable
                         .select(ProviderTable.id)
                         .where { ProviderTable.identity eq providerIdentity.value }
+                )
+            })
+        }
+
+        collection?.let { collectionIdentity ->
+            add(Op.build {
+                GameTable.id inSubQuery (
+                    (GameCollectionTable innerJoin CollectionTable)
+                        .select(GameCollectionTable.game)
+                        .where { CollectionTable.identity eq collectionIdentity.value }
                 )
             })
         }
@@ -79,4 +94,26 @@ fun GameFilter.toCondition(): Op<Boolean> {
     }
 
     return conditions.reduceOrNull { acc, op -> acc and op } ?: Op.TRUE
+}
+
+/**
+ * Ordering that belongs with the filter: a collection-scoped listing IS a lobby rail,
+ * so it follows the curated per-collection position instead of the catalog-wide one.
+ * `game_collections` is keyed by (game, collection), so the correlated lookup resolves
+ * to at most one row per game and needs no aggregate or DISTINCT.
+ */
+fun GameFilter.toOrdering(): Array<Pair<Expression<*>, SortOrder>> {
+    val collectionIdentity = collection
+        ?: return arrayOf(GameTable.sortOrder to SortOrder.ASC)
+
+    val railPosition = wrapAsExpression<Int>(
+        (GameCollectionTable innerJoin CollectionTable)
+            .select(GameCollectionTable.sortOrder)
+            .where {
+                (GameCollectionTable.game eq GameTable.id) and
+                    (CollectionTable.identity eq collectionIdentity.value)
+            }
+    )
+
+    return arrayOf(railPosition to SortOrder.ASC, GameTable.id to SortOrder.ASC)
 }

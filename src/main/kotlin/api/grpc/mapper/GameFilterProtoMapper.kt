@@ -9,6 +9,7 @@ object GameFilterProtoMapper {
     fun GameFilterProto.toDomain(): GameFilter = GameFilter(
         query = query,
         provider = if (hasProviderIdentity()) Identity(providerIdentity) else null,
+        collection = if (hasCollectionIdentity()) Identity(collectionIdentity) else null,
         inTags = tagsList,
         bonusBetEnable = if (hasBonusBetEnable()) bonusBetEnable else null,
         bonusWageringEnabled = if (hasBonusWageringEnable()) bonusWageringEnable else null,

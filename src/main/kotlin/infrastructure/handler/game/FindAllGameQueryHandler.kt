@@ -9,20 +9,18 @@ import infrastructure.persistence.entity.GameEntity
 import infrastructure.persistence.entity.ProviderEntity
 import infrastructure.persistence.mapper.GameMapper.toDomain
 import infrastructure.persistence.mapper.GameVariantMapper.toDomain
-import infrastructure.persistence.table.GameTable
 import org.jetbrains.exposed.dao.with
-import org.jetbrains.exposed.sql.SortOrder
 
 class FindAllGameQueryHandler : IQueryHandler<FindAllGameQuery, Page<GameView>> {
 
     override suspend fun handle(query: FindAllGameQuery): Page<GameView> = dbRead {
-        val condition = query.filter.toCondition()
-        val baseQuery = GameEntity.find { condition }
+        val filter = query.filter
+        val baseQuery = GameEntity.find { filter.toCondition() }
         val totalItems = baseQuery.count()
         val pageable = query.pageable
 
         val entities = baseQuery
-            .orderBy(GameTable.sortOrder to SortOrder.ASC)
+            .orderBy(*filter.toOrdering())
             .limit(pageable.sizeReal)
             .offset(pageable.offset)
             .with(GameEntity::provider, GameEntity::collections, ProviderEntity::aggregator)

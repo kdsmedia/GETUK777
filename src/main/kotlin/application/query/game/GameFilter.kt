@@ -7,6 +7,8 @@ data class GameFilter(
 
     val provider: Identity?,
 
+    val collection: Identity?,
+
     val inTags: List<String>,
 
     val bonusBetEnable: Boolean?,

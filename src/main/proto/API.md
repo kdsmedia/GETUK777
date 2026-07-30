@@ -749,8 +749,11 @@ message GameFilter {
   optional bool jackpot_enable = 9;
   optional bool demo_enable = 10;
   optional bool bonus_buy_enable = 11;
+  optional string collection_identity = 12;   // Restrict to one collection's members
 }
 ```
+
+`collection_identity` restricts the listing to the games that belong to that collection. In `GameService.FindAll` it also switches the ordering: instead of the catalog-wide `sort_order`, results come back in the collection's own curated order — the position set by `CollectionService.AddGame` / `UpdateGameOrder` — so rendering a lobby rail is a single `FindAll` call.
 
 ### GamePageDto
 
