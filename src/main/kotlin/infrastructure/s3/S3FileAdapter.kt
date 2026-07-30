@@ -33,7 +33,9 @@ class S3FileAdapter(
             body = ByteStream.fromBytes(file.bytes)
         })
 
-        publicUrl(key)
+        // The object KEY is what callers store — the public host that serves the bucket
+        // (cdn.<domain>) is a deployment concern the consumer prepends, not ours.
+        key
     }
 
     override suspend fun delete(path: String): Result<Boolean> = runCatching {
@@ -43,14 +45,6 @@ class S3FileAdapter(
         })
         true
     }
-
-    /**
-     * Stored image values must be usable by a client as-is — the aggregator's own images
-     * are absolute URLs, so ours are too. Without a CDN host configured (local MinIO) the
-     * raw key is returned, which is all a local setup can resolve anyway.
-     */
-    private fun publicUrl(key: String): String =
-        if (config.cdnHost.isBlank()) key else "https://${config.cdnHost.trimEnd('/')}/$key"
 
     private fun buildKey(folder: String, fileName: String, ext: String): String {
         val name = fileName.ifBlank { UUID.randomUUID().toString() }
