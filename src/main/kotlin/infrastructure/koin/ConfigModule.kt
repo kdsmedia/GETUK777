@@ -42,7 +42,8 @@ val configModule = module {
             region = System.getenv("S3_REGION") ?: "us-east-1",
             accessKey = System.getenv("S3_ACCESS_KEY") ?: "minioadmin",
             secretKey = System.getenv("S3_SECRET_KEY") ?: "minioadmin",
-            bucket = System.getenv("S3_BUCKET") ?: "casino-engine"
+            bucket = System.getenv("S3_BUCKET") ?: "casino-engine",
+            cdnHost = System.getenv("S3_CDN_HOST") ?: ""
         )
     }
     single {
