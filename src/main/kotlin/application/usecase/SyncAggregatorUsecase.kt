@@ -68,12 +68,14 @@ class SyncAggregatorUsecase(
 
             val gameIdentity = Identity.generate("${providerIdentity}_${aggregatorGame.name}")
 
+            val existingGame = existingGames[gameIdentity]
+
             // Catalog metadata (tags, artwork) is refreshed on every sync, but operator-owned
             // state — active, order, custom image keys — is carried over untouched.
-            val game = updateGames[gameIdentity] ?: existingGames[gameIdentity]
-                ?.copy(
-                    tags = aggregatorGame.tags.ifEmpty { existingGames.getValue(gameIdentity).tags },
-                    images = ImageMap(existingGames.getValue(gameIdentity).images.data + aggregatorGame.images),
+            val game = updateGames[gameIdentity]
+                ?: existingGame?.copy(
+                    tags = aggregatorGame.tags.ifEmpty { existingGame.tags },
+                    images = ImageMap(existingGame.images.data + aggregatorGame.images),
                 )
                 ?: Game(
                     identity = gameIdentity,
