@@ -10,6 +10,7 @@ import domain.model.GameVariant
 import domain.model.Provider
 import domain.vo.GameSymbol
 import domain.vo.Identity
+import domain.vo.ImageMap
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
@@ -39,31 +40,16 @@ class SyncAggregatorUsecase(
         val aggregatorGames = aggregatorGamesAsync.await()
         logger.info("[{}] adapter returned {} games", id, aggregatorGames.size)
 
-        val updateGames = mutableListOf<Game>()
+        val existingGames = gamesAsync.await().associateBy { it.identity }
+        val existingVariants = variantsAsync.await()
+
+        val updateGames = LinkedHashMap<Identity, Game>()
         val updatedVariants = mutableListOf<GameVariant>()
         var newProviders = 0
         var newGames = 0
         var updatedVariantsCount = 0
 
         for (aggregatorGame in aggregatorGames) {
-            var variant = variantsAsync.await()
-                .find { it.symbol.value == aggregatorGame.symbol && it.integration == aggregator.integration }
-
-            if (variant != null) {
-                updatedVariantsCount++
-                updatedVariants.add(variant.copy(
-                    freeSpinEnable = aggregatorGame.freeSpinEnable,
-                    freeChipEnable = aggregatorGame.freeChipEnable,
-                    jackpotEnable = aggregatorGame.jackpotEnable,
-                    demoEnable = aggregatorGame.demoEnable,
-                    bonusBuyEnable = aggregatorGame.bonusBuyEnable,
-                    platforms = aggregatorGame.platforms,
-                    locales = aggregatorGame.locales,
-                    playLines = aggregatorGame.playLines,
-                ))
-                continue
-            }
-
             val providerIdentity = Identity.generate(aggregatorGame.providerName)
 
             var provider = allProvidersAsync.await().firstOrNull { it.identity == providerIdentity }
@@ -71,7 +57,7 @@ class SyncAggregatorUsecase(
             if (provider == null) {
                 provider = Provider(
                     identity = providerIdentity,
-                    name = aggregatorGame.name,
+                    name = aggregatorGame.providerName,
                     aggregator = aggregator
                 ).let { providerRepository.save(it) }
 
@@ -82,34 +68,54 @@ class SyncAggregatorUsecase(
 
             val gameIdentity = Identity.generate("${providerIdentity}_${aggregatorGame.name}")
 
-            var game = gamesAsync.await().find { it.identity == gameIdentity }
-
-            if (game == null) {
-                game = Game(
+            // Catalog metadata (tags, artwork) is refreshed on every sync, but operator-owned
+            // state — active, order, custom image keys — is carried over untouched.
+            val game = updateGames[gameIdentity] ?: existingGames[gameIdentity]
+                ?.copy(
+                    tags = aggregatorGame.tags.ifEmpty { existingGames.getValue(gameIdentity).tags },
+                    images = ImageMap(existingGames.getValue(gameIdentity).images.data + aggregatorGame.images),
+                )
+                ?: Game(
                     identity = gameIdentity,
                     name = aggregatorGame.name,
                     provider = provider,
+                    tags = aggregatorGame.tags,
+                    images = ImageMap(aggregatorGame.images),
+                ).also { newGames++ }
+
+            updateGames[gameIdentity] = game
+
+            val existingVariant = existingVariants
+                .find { it.symbol.value == aggregatorGame.symbol && it.integration == aggregator.integration }
+
+            val variant = existingVariant
+                ?.copy(
+                    providerName = aggregatorGame.providerName,
+                    freeSpinEnable = aggregatorGame.freeSpinEnable,
+                    freeChipEnable = aggregatorGame.freeChipEnable,
+                    jackpotEnable = aggregatorGame.jackpotEnable,
+                    demoEnable = aggregatorGame.demoEnable,
+                    bonusBuyEnable = aggregatorGame.bonusBuyEnable,
+                    platforms = aggregatorGame.platforms,
+                    locales = aggregatorGame.locales,
+                    playLines = aggregatorGame.playLines,
                 )
-
-                updateGames.add(game)
-                newGames++
-            }
-
-            variant = GameVariant(
-                symbol = GameSymbol(aggregatorGame.symbol),
-                name = aggregatorGame.name,
-                integration = aggregator.integration,
-                game = game,
-                providerName = aggregatorGame.providerName,
-                freeSpinEnable = aggregatorGame.freeSpinEnable,
-                freeChipEnable = aggregatorGame.freeChipEnable,
-                jackpotEnable = aggregatorGame.jackpotEnable,
-                demoEnable = aggregatorGame.demoEnable,
-                bonusBuyEnable = aggregatorGame.bonusBuyEnable,
-                locales = aggregatorGame.locales,
-                platforms = aggregatorGame.platforms,
-                playLines = aggregatorGame.playLines,
-            )
+                ?.also { updatedVariantsCount++ }
+                ?: GameVariant(
+                    symbol = GameSymbol(aggregatorGame.symbol),
+                    name = aggregatorGame.name,
+                    integration = aggregator.integration,
+                    game = game,
+                    providerName = aggregatorGame.providerName,
+                    freeSpinEnable = aggregatorGame.freeSpinEnable,
+                    freeChipEnable = aggregatorGame.freeChipEnable,
+                    jackpotEnable = aggregatorGame.jackpotEnable,
+                    demoEnable = aggregatorGame.demoEnable,
+                    bonusBuyEnable = aggregatorGame.bonusBuyEnable,
+                    locales = aggregatorGame.locales,
+                    platforms = aggregatorGame.platforms,
+                    playLines = aggregatorGame.playLines,
+                )
 
             updatedVariants.add(variant)
         }
@@ -119,7 +125,7 @@ class SyncAggregatorUsecase(
             id, aggregatorGames.size, newGames, newProviders, updatedVariantsCount, updatedVariants.size,
         )
 
-        gameRepository.saveAll(updateGames)
+        gameRepository.saveAll(updateGames.values.toList())
         gameVariantRepository.saveAll(updatedVariants)
 
         logger.info("[{}] persisted: {} games, {} variants", id, updateGames.size, updatedVariants.size)

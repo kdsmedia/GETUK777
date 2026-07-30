@@ -7,6 +7,7 @@ import domain.vo.Currency
 import domain.vo.Locale
 import infrastructure.aggregator.onegamehub.OneGameHubConfig
 import infrastructure.aggregator.onegamehub.client.OneGameHubHttpClient
+import infrastructure.aggregator.onegamehub.client.dto.MediaDto
 
 class OneGameHubGameAdapter(
     config: OneGameHubConfig,
@@ -22,20 +23,42 @@ class OneGameHubGameAdapter(
         val games = response.response ?: emptyList()
 
         return games.map { game ->
+            val tags = (game.categories + game.subcategories)
+                .flatMap { it.split(TAG_SEPARATOR) }
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinct()
+
             IGamePort.AggregatorGame(
                 symbol = game.id,
                 name = game.name,
-                providerName = game.brand,
+                providerName = game.provider.ifBlank { game.brand },
                 freeSpinEnable = game.freespinEnable,
                 freeChipEnable = false,
                 jackpotEnable = false,
                 demoEnable = game.demoEnable,
-                bonusBuyEnable = false,
+                bonusBuyEnable = tags.any { it.startsWith(BUY_BONUS_TAG_PREFIX) },
                 locales = emptyList(),
                 platforms = listOf(Platform.DESKTOP, Platform.MOBILE),
-                playLines = game.paylines
+                playLines = game.paylines,
+                tags = tags,
+                images = game.media.toImageMap(),
             )
         }
+    }
+
+    private fun MediaDto?.toImageMap(): Map<String, String> {
+        if (this == null) return emptyMap()
+
+        val images = LinkedHashMap<String, String>()
+
+        icon?.takeIf { it.isNotBlank() }?.let { images[ICON_KEY] = it }
+        thumbnails.filterValues { it.isNotBlank() }.forEach { (size, url) -> images[size] = url }
+
+        val thumbnail = thumbnails[PREFERRED_THUMBNAIL_SIZE] ?: thumbnails.values.firstOrNull() ?: icon
+        thumbnail?.takeIf { it.isNotBlank() }?.let { images[THUMBNAIL_KEY] = it }
+
+        return images
     }
 
     override suspend fun getDemoUrl(
@@ -78,5 +101,17 @@ class OneGameHubGameAdapter(
 
         return response.response?.gameUrl
             ?: error("No game URL returned from OneGameHub")
+    }
+
+    private companion object {
+        const val TAG_SEPARATOR = ","
+
+        const val BUY_BONUS_TAG_PREFIX = "buy-bonus"
+
+        const val ICON_KEY = "icon"
+
+        const val THUMBNAIL_KEY = "thumbnail"
+
+        const val PREFERRED_THUMBNAIL_SIZE = "500x500"
     }
 }

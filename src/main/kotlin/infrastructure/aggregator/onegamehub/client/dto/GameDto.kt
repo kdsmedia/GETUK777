@@ -11,6 +11,14 @@ data class GameDto(
 
     val brand: String,
 
+    val provider: String = "",
+
+    val categories: List<String> = emptyList(),
+
+    val subcategories: List<String> = emptyList(),
+
+    val media: MediaDto? = null,
+
     @SerialName("is_free_rounds_supported")
     val freespinEnable: Boolean,
 
@@ -18,4 +26,11 @@ data class GameDto(
     val demoEnable: Boolean,
 
     val paylines: Int = 0
+)
+
+@Serializable
+data class MediaDto(
+    val icon: String? = null,
+
+    val thumbnails: Map<String, String> = emptyMap(),
 )
