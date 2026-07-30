@@ -19,7 +19,6 @@ interface IGamePort {
         val platforms: List<Platform>,
         val playLines: Int = 0,
         val tags: List<String> = emptyList(),
-        val images: Map<String, String> = emptyMap(),
     )
 
     suspend fun getAggregatorGames(): List<AggregatorGame>

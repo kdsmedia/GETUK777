@@ -10,7 +10,6 @@ import domain.model.GameVariant
 import domain.model.Provider
 import domain.vo.GameSymbol
 import domain.vo.Identity
-import domain.vo.ImageMap
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
@@ -70,19 +69,17 @@ class SyncAggregatorUsecase(
 
             val existingGame = existingGames[gameIdentity]
 
-            // Catalog metadata (tags, artwork) is refreshed on every sync, but operator-owned
-            // state — active, order, custom image keys — is carried over untouched.
+            // Tags are refreshed on every sync. Images are NOT the aggregator's to set —
+            // artwork is uploaded by the operator through GameService.UpdateImage.
             val game = updateGames[gameIdentity]
                 ?: existingGame?.copy(
                     tags = aggregatorGame.tags.ifEmpty { existingGame.tags },
-                    images = ImageMap(existingGame.images.data + aggregatorGame.images),
                 )
                 ?: Game(
                     identity = gameIdentity,
                     name = aggregatorGame.name,
                     provider = provider,
                     tags = aggregatorGame.tags,
-                    images = ImageMap(aggregatorGame.images),
                 ).also { newGames++ }
 
             updateGames[gameIdentity] = game

@@ -7,7 +7,6 @@ import domain.vo.Currency
 import domain.vo.Locale
 import infrastructure.aggregator.onegamehub.OneGameHubConfig
 import infrastructure.aggregator.onegamehub.client.OneGameHubHttpClient
-import infrastructure.aggregator.onegamehub.client.dto.MediaDto
 
 class OneGameHubGameAdapter(
     config: OneGameHubConfig,
@@ -42,23 +41,8 @@ class OneGameHubGameAdapter(
                 platforms = listOf(Platform.DESKTOP, Platform.MOBILE),
                 playLines = game.paylines,
                 tags = tags,
-                images = game.media.toImageMap(),
             )
         }
-    }
-
-    private fun MediaDto?.toImageMap(): Map<String, String> {
-        if (this == null) return emptyMap()
-
-        val images = LinkedHashMap<String, String>()
-
-        icon?.takeIf { it.isNotBlank() }?.let { images[ICON_KEY] = it }
-        thumbnails.filterValues { it.isNotBlank() }.forEach { (size, url) -> images[size] = url }
-
-        val thumbnail = thumbnails[PREFERRED_THUMBNAIL_SIZE] ?: thumbnails.values.firstOrNull() ?: icon
-        thumbnail?.takeIf { it.isNotBlank() }?.let { images[THUMBNAIL_KEY] = it }
-
-        return images
     }
 
     override suspend fun getDemoUrl(

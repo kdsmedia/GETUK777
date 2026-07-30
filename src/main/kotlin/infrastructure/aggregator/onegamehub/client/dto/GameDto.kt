@@ -17,8 +17,6 @@ data class GameDto(
 
     val subcategories: List<String> = emptyList(),
 
-    val media: MediaDto? = null,
-
     @SerialName("is_free_rounds_supported")
     val freespinEnable: Boolean,
 
@@ -28,9 +26,3 @@ data class GameDto(
     val paylines: Int = 0
 )
 
-@Serializable
-data class MediaDto(
-    val icon: String? = null,
-
-    val thumbnails: Map<String, String> = emptyMap(),
-)
