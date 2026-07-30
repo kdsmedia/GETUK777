@@ -31,6 +31,7 @@ class S3FileAdapter(
             bucket = config.bucket
             this.key = key
             body = ByteStream.fromBytes(file.bytes)
+            contentType = contentTypeFor(file.ext)
         })
 
         // The object KEY is what callers store — the public host that serves the bucket
@@ -44,6 +45,21 @@ class S3FileAdapter(
             key = path
         })
         true
+    }
+
+    /**
+     * Objects are served straight from the bucket over cdn.<domain>, so the stored
+     * Content-Type is what a browser sees. Without it S3 falls back to
+     * application/octet-stream and clients get an image they may refuse to render.
+     */
+    private fun contentTypeFor(ext: String): String = when (ext.lowercase()) {
+        "webp" -> "image/webp"
+        "png" -> "image/png"
+        "jpg", "jpeg" -> "image/jpeg"
+        "gif" -> "image/gif"
+        "svg" -> "image/svg+xml"
+        "avif" -> "image/avif"
+        else -> "application/octet-stream"
     }
 
     private fun buildKey(folder: String, fileName: String, ext: String): String {
