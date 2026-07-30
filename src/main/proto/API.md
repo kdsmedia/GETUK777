@@ -20,6 +20,7 @@ Game catalog management, launching, and player favorites. Games are contract art
 | `AddFavourite` | `GameFavouriteCommand` | `Empty` | Add game to player favorites |
 | `RemoveFavourite` | `GameFavouriteCommand` | `Empty` | Remove game from player favorites |
 | `FindAllPlayerFavourite` | `FindAllGamePlayerFavouriteQuery` | `GamePageDto` | List a player's favourite games with the same filter/shape as `FindAll` |
+| `FindAllPlayerLast` | `FindAllGamePlayerLastQuery` | `GamePageDto` | List the games a player recently played (deduplicated, newest session first) |
 
 ### Save
 
@@ -166,6 +167,21 @@ message FindAllGamePlayerFavouriteQuery {
   GameFilter filter = 2;     // Shared filter — see Shared game-listing DTOs
   int32 page_num = 3;
   int32 page_size = 4;
+}
+```
+
+Response: `GamePageDto` (see [Shared game-listing DTOs](#shared-game-listing-dtos)).
+
+### FindAllPlayerLast
+
+Paginated listing of the games a specific player has recently played, derived from the player's sessions. Games are de-duplicated (one row per game) and ordered by the most recent session first.
+
+```protobuf
+// Request
+message FindAllGamePlayerLastQuery {
+  string player_id = 1;      // Player UUID whose recent games to read
+  int32 page_num = 2;
+  int32 page_size = 3;
 }
 ```
 

@@ -46,6 +46,8 @@ service GameService {
   rpc RemoveFavourite(GameFavouriteCommand) returns (Empty);
 
   rpc FindAllPlayerFavourite(FindAllGamePlayerFavouriteQuery) returns (GamePageDto);
+
+  rpc FindAllPlayerLast(FindAllGamePlayerLastQuery) returns (GamePageDto);
 }
 
 // ---------------------------------------------------------------------------
@@ -157,6 +159,17 @@ message FindAllGamePlayerFavouriteQuery {
   int32 page_num = 3;
 
   int32 page_size = 4;
+}
+
+// Paged listing of the games a player has recently played, derived from the
+// player's sessions. Games are de-duplicated (one row per game) and ordered by
+// the most recent session first. Returns the shared `GamePageDto`.
+message FindAllGamePlayerLastQuery {
+  string player_id = 1;
+
+  int32 page_num = 2;
+
+  int32 page_size = 3;
 }
 
 message OpenDemoQuery {

@@ -21,6 +21,7 @@ import infrastructure.handler.game.AddGameFavouriteCommandHandler
 import infrastructure.handler.game.BatchGameQueryHandler
 import infrastructure.handler.game.FindAllGameCollectionQueryHandler
 import infrastructure.handler.game.FindAllGamePlayerFavoriteQueryHandler
+import infrastructure.handler.game.FindAllGamePlayerLastQueryHandler
 import infrastructure.handler.game.FindAllGameQueryHandler
 import infrastructure.handler.game.FindGameQueryHandler
 import infrastructure.handler.game.GetFreespinPresetsQueryHandler
@@ -66,6 +67,7 @@ val handlerModule = module {
     single { BatchGameQueryHandler() }
     single { GetGameDemoUrlQueryHandler(gameVariantRepository = get(), aggregatorFactory = get()) }
     single { FindAllGamePlayerFavoriteQueryHandler() }
+    single { FindAllGamePlayerLastQueryHandler() }
     single { FindAllGameCollectionQueryHandler() }
     single { AddGameFavouriteCommandHandler() }
     single { RemoveGameFavouriteCommandHandler() }

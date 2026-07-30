@@ -12,6 +12,7 @@ import application.Bus
 import application.command.game.AddGameFavouriteCommand
 import application.query.game.BatchGameQuery
 import application.query.game.FindAllGamePlayerFavoriteQuery
+import application.query.game.FindAllGamePlayerLastQuery
 import application.query.game.FindAllGameQuery
 import application.query.game.FindGameQuery
 import application.query.game.GetGameDemoUrlQuery
@@ -37,6 +38,7 @@ import domain.vo.Pageable
 import domain.vo.PlayerId
 import com.nekgamebling.game.v1.BatchGameQuery as BatchGameProto
 import com.nekgamebling.game.v1.FindAllGamePlayerFavouriteQuery as FindAllGamePlayerFavouriteProto
+import com.nekgamebling.game.v1.FindAllGamePlayerLastQuery as FindAllGamePlayerLastProto
 import com.nekgamebling.game.v1.FindAllGameQuery as FindAllGameProto
 import com.nekgamebling.game.v1.FindGameQuery as FindGameProto
 import com.nekgamebling.game.v1.PlayGameCommand as PlayGameProto
@@ -175,6 +177,17 @@ class GameGrpcService(
             FindAllGamePlayerFavoriteQuery(
                 playerId = PlayerId(request.playerId),
                 filter = request.filter.toDomain(),
+                pageable = Pageable(request.pageNum, request.pageSize),
+            )
+        )
+
+        page.toGamePageDto()
+    }
+
+    override suspend fun findAllPlayerLast(request: FindAllGamePlayerLastProto): GamePageDto = handleGrpcCall {
+        val page = bus(
+            FindAllGamePlayerLastQuery(
+                playerId = PlayerId(request.playerId),
                 pageable = Pageable(request.pageNum, request.pageSize),
             )
         )
