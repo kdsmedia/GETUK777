@@ -60,6 +60,7 @@ class GameGrpcService(
                 tags = request.tagsList,
                 providerIdentity = Identity(request.providerIdentity),
                 active = request.active,
+                order = request.order,
             )
         )
         Empty.getDefaultInstance()

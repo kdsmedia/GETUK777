@@ -16,4 +16,6 @@ data class SaveGameCommand(
     val providerIdentity: Identity,
 
     val active: Boolean,
+
+    val order: Int,
 ) : ICommand<Unit>

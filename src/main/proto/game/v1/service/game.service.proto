@@ -68,6 +68,10 @@ message SaveGameCommand {
   string provider_identity = 6;
 
   bool active = 7;
+
+  // Catalog-wide position: FindAll without a collection filter sorts by it ASC.
+  // A collection-scoped listing keeps using the curated per-collection order.
+  int32 order = 8;
 }
 
 message UpdateGameImageCommand {

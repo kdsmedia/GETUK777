@@ -103,8 +103,10 @@ fun GameFilter.toCondition(): Op<Boolean> {
  * to at most one row per game and needs no aggregate or DISTINCT.
  */
 fun GameFilter.toOrdering(): Array<Pair<Expression<*>, SortOrder>> {
+    // id tiebreaker: sortOrder is not unique (bulk-synced games share 0), and equal keys
+    // give unstable pagination — a game could repeat or vanish across pages.
     val collectionIdentity = collection
-        ?: return arrayOf(GameTable.sortOrder to SortOrder.ASC)
+        ?: return arrayOf(GameTable.sortOrder to SortOrder.ASC, GameTable.id to SortOrder.ASC)
 
     val railPosition = wrapAsExpression<Int>(
         (GameCollectionTable innerJoin CollectionTable)
