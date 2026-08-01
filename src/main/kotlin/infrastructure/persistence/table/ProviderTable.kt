@@ -26,4 +26,9 @@ object ProviderTable : LongIdTable("providers") {
         { Json.encodeToString(stringListSerializer, it) },
         { Json.decodeFromString(stringListSerializer, it) }
     ).default(emptyList())
+    val tags = json<List<String>>(
+        "tags",
+        { Json.encodeToString(stringListSerializer, it) },
+        { Json.decodeFromString(stringListSerializer, it) }
+    ).default(emptyList())
 }

@@ -36,6 +36,7 @@ class ProviderRepositoryImpl : IProviderRepository {
             it[active] = provider.active
             it[aggregator] = aggregatorId
             it[blockedCountry] = provider.blockedCountry.map { it.value }
+            it[tags] = provider.tags
         }
 
         provider
@@ -59,6 +60,7 @@ class ProviderRepositoryImpl : IProviderRepository {
             this[ProviderTable.active] = provider.active
             this[ProviderTable.aggregator] = aggregatorId
             this[ProviderTable.blockedCountry] = provider.blockedCountry.map { it.value }
+            this[ProviderTable.tags] = provider.tags
         }
 
         providers

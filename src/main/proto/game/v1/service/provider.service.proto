@@ -45,6 +45,8 @@ message SaveProviderCommand {
   string aggregator_identity = 5;
 
   repeated string blocked_country = 6;
+
+  repeated string tags = 7;
 }
 
 message UpdateProviderImageCommand {
@@ -79,6 +81,8 @@ message ProviderFilter {
   optional string aggregator_identity = 3;
 
   repeated string in_collection_identities = 4;
+
+  repeated string tags = 5;
 }
 
 message FindAllProviderQuery {

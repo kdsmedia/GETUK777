@@ -16,4 +16,6 @@ data class SaveProviderCommand(
     val aggregatorIdentity: Identity,
 
     val blockedCountry: List<Country> = emptyList(),
+
+    val tags: List<String> = emptyList(),
 ) : ICommand<Unit>

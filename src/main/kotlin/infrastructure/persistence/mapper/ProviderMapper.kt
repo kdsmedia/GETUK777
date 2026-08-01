@@ -20,6 +20,7 @@ object ProviderMapper {
         active = active,
         aggregator = aggregator.toDomain(),
         blockedCountry = blockedCountry.map { Country(it) },
+        tags = tags,
     )
 
     fun ResultRow.toProvider(): Provider = Provider(
@@ -30,5 +31,6 @@ object ProviderMapper {
         active = this[ProviderTable.active],
         aggregator = toAggregator(),
         blockedCountry = this[ProviderTable.blockedCountry].map { Country(it) },
+        tags = this[ProviderTable.tags],
     )
 }

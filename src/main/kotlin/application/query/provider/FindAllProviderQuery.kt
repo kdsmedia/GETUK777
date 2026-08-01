@@ -15,5 +15,7 @@ data class FindAllProviderQuery(
 
     val inCollectionIdentities: List<Identity> = emptyList(),
 
+    val inTags: List<String> = emptyList(),
+
     val pageable: Pageable,
 ) : IQuery<Page<Provider>>

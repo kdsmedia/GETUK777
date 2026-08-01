@@ -15,4 +15,5 @@ class ProviderEntity(id: EntityID<Long>) : LongEntity(id) {
     var active by ProviderTable.active
     var aggregator by AggregatorEntity referencedOn ProviderTable.aggregator
     var blockedCountry by ProviderTable.blockedCountry
+    var tags by ProviderTable.tags
 }

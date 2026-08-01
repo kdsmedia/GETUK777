@@ -23,4 +23,6 @@ data class Provider(
     val aggregator: Aggregator,
 
     val blockedCountry: List<Country> = emptyList(),
+
+    val tags: List<String> = emptyList(),
 ) : Activatable, Imageable, Orderable

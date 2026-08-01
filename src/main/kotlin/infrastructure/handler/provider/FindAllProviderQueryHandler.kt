@@ -14,7 +14,9 @@ import infrastructure.persistence.table.ProviderTable
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.TextColumnType
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.castTo
 import org.jetbrains.exposed.sql.exists
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
@@ -74,6 +76,12 @@ class FindAllProviderQueryHandler : IQueryHandler<FindAllProviderQuery, Page<Pro
                                             ))
                         }
                 ))
+            }
+
+            if (query.inTags.isNotEmpty()) {
+                add(query.inTags.map { tag ->
+                    Op.build { ProviderTable.tags.castTo<String>(TextColumnType()) like "%\"$tag\"%" }
+                }.reduce { acc, op -> acc or op })
             }
         }
         return conditions.reduceOrNull { acc, op -> acc and op } ?: Op.TRUE

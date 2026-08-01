@@ -38,6 +38,7 @@ class ProviderGrpcService(
                 active = request.active,
                 aggregatorIdentity = Identity(request.aggregatorIdentity),
                 blockedCountry = request.blockedCountryList.map { Country(it) },
+                tags = request.tagsList,
             )
         )
         Empty.getDefaultInstance()
@@ -61,6 +62,7 @@ class ProviderGrpcService(
                 active = if (filter.hasActive()) filter.active else null,
                 aggregatorId = if (filter.hasAggregatorIdentity()) filter.aggregatorIdentity else null,
                 inCollectionIdentities = filter.inCollectionIdentitiesList.map { Identity(it) },
+                inTags = filter.tagsList,
                 pageable = Pageable(request.pageNum, request.pageSize),
             )
         )

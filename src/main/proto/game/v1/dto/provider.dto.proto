@@ -19,4 +19,6 @@ message ProviderDto {
   string aggregator_identity = 6;
 
   repeated string blocked_country = 7;
+
+  repeated string tags = 8;
 }

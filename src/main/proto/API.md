@@ -215,6 +215,7 @@ message SaveProviderCommand {
   bool active = 4;                  // Active status
   string aggregator_identity = 5;   // Parent aggregator identity
   repeated string blocked_country = 6; // ISO country codes blocked for this provider
+  repeated string tags = 7;         // Free-form tags (e.g. "live")
 }
 ```
 
@@ -246,6 +247,7 @@ message ProviderFilter {
   optional string aggregator_identity = 3;       // Filter by aggregator
   repeated string in_collection_identities = 4;  // Filter by collection identities
                                                  // (providers having games in these collections)
+  repeated string tags = 5;                      // Match any of these tags
 }
 
 // Request
@@ -702,6 +704,7 @@ message ProviderDto {
   bool active = 5;
   string aggregator_identity = 6;
   repeated string blocked_country = 7; // ISO country codes blocked for this provider
+  repeated string tags = 8;            // Free-form tags (e.g. "live")
 }
 ```
 

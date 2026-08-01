@@ -25,6 +25,7 @@ class SaveProviderCommandHandler(
             active = command.active,
             aggregator = aggregator,
             blockedCountry = command.blockedCountry,
+            tags = command.tags,
         ) ?: Provider(
             identity = command.identity,
             name = command.name,
@@ -32,6 +33,7 @@ class SaveProviderCommandHandler(
             active = command.active,
             aggregator = aggregator,
             blockedCountry = command.blockedCountry,
+            tags = command.tags,
         )
 
         providerRepository.save(provider)
