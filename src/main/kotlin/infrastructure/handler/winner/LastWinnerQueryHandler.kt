@@ -3,6 +3,7 @@ package infrastructure.handler.winner
 import application.IQueryHandler
 import application.query.winner.LastWin
 import application.query.winner.LastWinnerQuery
+import application.query.winner.WinnerSort
 import domain.model.Game
 import domain.model.GameVariant
 import domain.model.Platform
@@ -13,6 +14,7 @@ import domain.vo.GameSymbol
 import domain.vo.Locale
 import domain.vo.Page
 import domain.vo.PlayerId
+import infrastructure.handler.game.toCondition
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.mapper.GameMapper.toGame
 import infrastructure.persistence.table.AggregatorTable
@@ -22,6 +24,7 @@ import infrastructure.persistence.table.ProviderTable
 import infrastructure.persistence.table.RoundTable
 import infrastructure.persistence.table.SessionTable
 import infrastructure.persistence.table.SpinTable
+import org.jetbrains.exposed.sql.Expression
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
@@ -78,7 +81,10 @@ class LastWinnerQueryHandler : IQueryHandler<LastWinnerQuery, Page<LastWin>> {
                 (SpinTable.type eq SpinType.SETTLE) and (RoundTable.freespinId.isNull())
             }
 
-        query.gameIdentity?.let { baseQuery.andWhere { GameTable.identity eq it.value } }
+        // Тот же предикат, что и у листингов игр: провайдер/коллекция/теги/флаги.
+        // Условия по варианту он вешает коррелированным EXISTS, поэтому уже
+        // присоединённый GameVariantTable ему не мешает.
+        query.filter?.let { filter -> baseQuery.andWhere { filter.toCondition() } }
         query.minAmount?.let { baseQuery.andWhere { SpinTable.amount greaterEq it.value } }
         query.maxAmount?.let { baseQuery.andWhere { SpinTable.amount lessEq it.value } }
         query.currency?.let { baseQuery.andWhere { SessionTable.currency eq it.value } }
@@ -89,8 +95,23 @@ class LastWinnerQueryHandler : IQueryHandler<LastWinnerQuery, Page<LastWin>> {
         val totalItems = baseQuery.count()
         val pageable = query.pageable
 
+        // Всегда по убыванию. Хвостовой ключ — id спина: createdAt и amount не
+        // уникальны, а на равных ключах страницы «плывут» (строка повторяется
+        // на следующей странице или пропадает).
+        val ordering: Array<Pair<Expression<*>, SortOrder>> = when (query.sort) {
+            WinnerSort.AMOUNT -> arrayOf(
+                SpinTable.amount to SortOrder.DESC,
+                SpinTable.id to SortOrder.DESC,
+            )
+
+            WinnerSort.DATE -> arrayOf(
+                RoundTable.createdAt to SortOrder.DESC,
+                SpinTable.id to SortOrder.DESC,
+            )
+        }
+
         val rows = baseQuery
-            .orderBy(RoundTable.createdAt, SortOrder.DESC)
+            .orderBy(*ordering)
             .limit(pageable.sizeReal)
             .offset(pageable.offset)
             .toList()

@@ -7,13 +7,27 @@ option java_multiple_files = true;
 
 import "game/v1/dto/game.dto.proto";
 import "game/v1/dto/common.dto.proto";
+import "game/v1/dto/game_filter.dto.proto";
 
 service WinnerService {
   rpc FindAll(FindAllWinnersQuery) returns (FindAllWinnersQuery.Result);
 }
 
+// Ordering of the winners feed. Always DESCENDING — a winners board is either
+// "latest wins" or "biggest wins"; ascending has no product meaning, so there is
+// deliberately no direction flag. Ties break on the spin id so paging is stable.
+enum WinnerSortDto {
+  WINNER_SORT_UNSPECIFIED = 0;  // treated as WINNER_SORT_DATE
+
+  WINNER_SORT_DATE = 1;
+
+  WINNER_SORT_AMOUNT = 2;
+}
+
 message FindAllWinnersQuery {
-  optional string game_identity = 1;
+  // Was `optional string game_identity` — superseded by the full `filter` below.
+  reserved 1;
+  reserved "game_identity";
 
   optional int64 min_amount = 2;
 
@@ -30,6 +44,13 @@ message FindAllWinnersQuery {
   int32 page_num = 8;
 
   int32 page_size = 9;
+
+  // Restricts the feed to wins on games matching this filter — the same
+  // GameFilter every game listing takes (provider, collection, tags, flags).
+  // Unset = wins on any game.
+  GameFilter filter = 10;
+
+  WinnerSortDto sort = 11;
 
   message Result {
     repeated WinnerItemDto items = 1;

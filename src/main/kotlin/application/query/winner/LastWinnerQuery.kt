@@ -1,11 +1,11 @@
 package application.query.winner
 
 import application.IQuery
+import application.query.game.GameFilter
 import domain.model.Game
 import domain.model.GameVariant
 import domain.vo.Amount
 import domain.vo.Currency
-import domain.vo.Identity
 import domain.vo.Page
 import domain.vo.Pageable
 import domain.vo.PlayerId
@@ -20,8 +20,12 @@ data class LastWin(
     val date: Instant,
 )
 
+/** Чем сортируется лента победителей. Всегда по убыванию — см. WinnerSortDto. */
+enum class WinnerSort { DATE, AMOUNT }
+
 data class LastWinnerQuery(
-    val gameIdentity: Identity? = null,
+    /** Ограничивает ленту выигрышами на играх, подходящих под фильтр каталога. */
+    val filter: GameFilter? = null,
 
     val minAmount: Amount? = null,
     val maxAmount: Amount? = null,
@@ -32,6 +36,8 @@ data class LastWinnerQuery(
 
     val fromDate: Instant? = null,
     val toDate: Instant? = null,
+
+    val sort: WinnerSort = WinnerSort.DATE,
 
     val pageable: Pageable
 ) : IQuery<Page<LastWin>>

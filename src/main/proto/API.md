@@ -619,7 +619,7 @@ Paginated list of game winners. Returns settled spin results with game, amount, 
 ```protobuf
 // Request
 message FindAllWinnersQuery {
-  optional string game_identity = 1;    // Filter by game identity
+  reserved 1;                           // was game_identity — use `filter` instead
   optional int64 min_amount = 2;        // Minimum win amount (minor units)
   optional int64 max_amount = 3;        // Maximum win amount (minor units)
   optional string currency = 4;         // Filter by currency code
@@ -628,6 +628,17 @@ message FindAllWinnersQuery {
   optional string to_date = 7;          // End date (ISO 8601 LocalDateTime)
   int32 page_num = 8;                   // Page number (1-based)
   int32 page_size = 9;                  // Items per page
+  GameFilter filter = 10;               // Restrict to wins on games matching this filter
+  WinnerSortDto sort = 11;              // Ordering (always descending)
+}
+
+// Ordering of the feed. Always DESCENDING — a winners board is either "latest"
+// or "biggest"; ascending has no product meaning, so there is no direction flag.
+// Ties break on the spin id so paging is stable.
+enum WinnerSortDto {
+  WINNER_SORT_UNSPECIFIED = 0;          // treated as WINNER_SORT_DATE
+  WINNER_SORT_DATE = 1;                 // newest wins first
+  WINNER_SORT_AMOUNT = 2;               // biggest wins first
 }
 
 // Response
