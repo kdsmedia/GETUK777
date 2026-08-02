@@ -13,6 +13,8 @@ data class Collection(
 
     val name: LocaleName,
 
+    val tags: List<String> = emptyList(),
+
     override var images: ImageMap = ImageMap.EMPTY,
 
     override var active: Boolean = true,

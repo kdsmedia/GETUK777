@@ -61,6 +61,9 @@ message SaveCollectionCommand {
   bool active = 3;
 
   int32 order = 4;
+
+  // Collection's own tags (same free-form vocabulary as Game.tags). Full replace on every Save.
+  repeated string tags = 5;
 }
 
 // Add a single game to a collection. Idempotent — if the game is already
@@ -127,8 +130,11 @@ message CollectionFilter {
 
   optional bool active = 2;
 
+  // Matches collections carrying ANY of these tags (the collection's OWN tags — same semantics as
+  // GameFilter.tags for games; previously this matched the tags of member games, unused by any caller).
   repeated string in_tags = 3;
 
+  // Matches collections that CONTAIN at least one game of any of these providers.
   repeated string in_provider_identities = 4;
 }
 

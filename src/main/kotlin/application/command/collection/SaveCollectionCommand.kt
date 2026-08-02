@@ -9,6 +9,8 @@ data class SaveCollectionCommand(
 
     val name: LocaleName,
 
+    val tags: List<String> = emptyList(),
+
     val active: Boolean = true,
 
     val order: Int = 100

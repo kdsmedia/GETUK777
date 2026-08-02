@@ -31,6 +31,7 @@ class CollectionRepositoryImpl : ICollectionRepository {
         CollectionTable.upsert(keys = arrayOf(CollectionTable.identity)) {
             it[identity] = collection.identity.value
             it[name] = collection.name.data
+            it[tags] = collection.tags
             it[images] = collection.images.data
             it[active] = collection.active
             it[sortOrder] = collection.order

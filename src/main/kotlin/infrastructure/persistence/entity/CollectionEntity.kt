@@ -10,6 +10,7 @@ class CollectionEntity(id: EntityID<Long>) : LongEntity(id) {
 
     var identity by CollectionTable.identity
     var name by CollectionTable.name
+    var tags by CollectionTable.tags
     var images by CollectionTable.images
     var active by CollectionTable.active
     var sortOrder by CollectionTable.sortOrder

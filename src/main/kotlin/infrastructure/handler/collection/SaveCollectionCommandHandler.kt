@@ -13,11 +13,13 @@ class SaveCollectionCommandHandler(
         val existing = collectionRepository.findByIdentity(command.identity)
         val collection = existing?.copy(
             name = command.name,
+            tags = command.tags,
             active = command.active,
             order = command.order,
         ) ?: Collection(
             identity = command.identity,
             name = command.name,
+            tags = command.tags,
             active = command.active,
             order = command.order,
         )

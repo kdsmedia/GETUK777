@@ -13,6 +13,7 @@ object CollectionMapper {
     fun CollectionEntity.toDomain(): Collection = Collection(
         identity = Identity(identity),
         name = LocaleName(name),
+        tags = tags,
         images = ImageMap(images.toMutableMap()),
         active = active,
         order = sortOrder,
@@ -21,6 +22,7 @@ object CollectionMapper {
     fun ResultRow.toCollection(): Collection = Collection(
         identity = Identity(this[CollectionTable.identity]),
         name = LocaleName(this[CollectionTable.name]),
+        tags = this[CollectionTable.tags],
         images = ImageMap(this[CollectionTable.images].toMutableMap()),
         active = this[CollectionTable.active],
         order = this[CollectionTable.sortOrder],

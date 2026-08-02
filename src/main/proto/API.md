@@ -440,6 +440,7 @@ message SaveCollectionCommand {
   map<string, string> name = 2;     // Locale → display name (e.g. {"en": "Hot Games", "de": "Heisse Spiele"})
   bool active = 3;
   int32 order = 4;                  // Sort order
+  repeated string tags = 5;         // Collection's own tags (full replace on every Save)
 }
 ```
 
@@ -465,8 +466,8 @@ Paginated collection listing. Filter criteria live in a dedicated `CollectionFil
 message CollectionFilter {
   string query = 1;                              // Free-text search
   optional bool active = 2;                      // Filter by status
-  repeated string in_tags = 3;                   // Filter by game tags
-                                                 // (collections containing games with these tags)
+  repeated string in_tags = 3;                   // Filter by the collection's OWN tags
+                                                 // (ANY-of match, same semantics as GameFilter.tags)
   repeated string in_provider_identities = 4;    // Filter by provider identities
                                                  // (collections containing games from these providers)
 }
@@ -762,6 +763,7 @@ message CollectionDto {
   map<string, string> images = 3;
   bool active = 4;
   int32 order = 5;
+  repeated string tags = 6;          // Collection's own tags
 }
 ```
 

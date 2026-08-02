@@ -55,18 +55,11 @@ class FindAllCollectionQueryHandler : IQueryHandler<FindAllCollectionQuery, Page
             }
             query.active?.let { add(Op.build { CollectionTable.active eq it }) }
 
+            // The collection's OWN tags (same ANY-of semantics and JSON-LIKE trick as the game filter).
             if (query.inTags.isNotEmpty()) {
-                add(exists(
-                    GameCollectionTable
-                        .join(GameTable, JoinType.INNER, GameCollectionTable.game, GameTable.id)
-                        .select(GameCollectionTable.collection)
-                        .where {
-                            (GameCollectionTable.collection eq CollectionTable.id) and
-                                    query.inTags.map { tag ->
-                                        Op.build { GameTable.tags.castTo<String>(TextColumnType()) like "%\"$tag\"%" }
-                                    }.reduce { acc, op -> acc or op }
-                        }
-                ))
+                add(query.inTags.map { tag ->
+                    Op.build { CollectionTable.tags.castTo<String>(TextColumnType()) like "%\"$tag\"%" }
+                }.reduce { acc, op -> acc or op })
             }
 
             if (query.inProviderIdentities.isNotEmpty()) {

@@ -46,6 +46,7 @@ class CollectionGrpcService(
             SaveCollectionCommand(
                 identity = Identity(request.identity),
                 name = LocaleName(request.nameMap),
+                tags = request.tagsList,
                 active = request.active,
                 order = request.order,
             )
