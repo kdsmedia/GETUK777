@@ -13,6 +13,7 @@ Game catalog management, launching, and player favorites. Games are contract art
 | `Save` | `SaveGameCommand` | `Empty` | Create or update a game |
 | `Find` | `FindGameQuery` | `FindGameQuery.Result` | Get a single game by identity |
 | `FindAll` | `FindAllGameQuery` | `GamePageDto` | List/filter games with pagination |
+| `FindAllActiveRtp` | `FindAllActiveRtpGameQuery` | `GamePageDto` | List active games by RTP bucket (HOT/COLD) |
 | `Batch` | `BatchGameQuery` | `BatchGameQuery.Result` | Batch fetch games |
 | `UpdateImage` | `UpdateGameImageCommand` | `Empty` | Upload/replace a game image |
 | `Play` | `PlayGameCommand` | `PlayGameCommand.Result` | Open a real-money game session |
@@ -71,6 +72,28 @@ message FindAllGameQuery {
 ```
 
 `GameFilter` and `GamePageDto` both live in `game/v1/dto/` — see [Shared game-listing DTOs](#shared-game-listing-dtos) below.
+
+### FindAllActiveRtp
+
+Paginated listing of ACTIVE games bucketed by RTP relative to the default (96).
+`TYPE_HOT` = rtp > 96 ordered rtp DESC, `TYPE_COLD` = rtp < 96 ordered rtp ASC;
+catalog `order` is the secondary sort key (ASC) in both cases. `TYPE_UNSPECIFIED`
+is rejected with `INVALID_ARGUMENT`.
+
+```protobuf
+// Request
+message FindAllActiveRtpGameQuery {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_HOT = 1;
+    TYPE_COLD = 2;
+  }
+  Type type = 1;                                 // RTP bucket
+  GameFilter filter = 2;                         // Extra filter criteria
+  int32 page_num = 3;                            // Page number (0-based)
+  int32 page_size = 4;                           // Items per page
+}
+```
 
 ### Batch
 

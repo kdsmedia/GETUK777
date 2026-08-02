@@ -31,6 +31,7 @@ import application.query.collection.FindAllCollectionQuery
 import application.query.collection.FindCollectionQuery
 import application.query.freespin.GetFreespinPresetsQuery
 import application.query.game.BatchGameQuery
+import application.query.game.FindAllActiveRtpGameQuery
 import application.query.game.FindAllGameCollectionQuery
 import application.query.game.FindAllGamePlayerFavoriteQuery
 import application.query.game.FindAllGamePlayerLastQuery
@@ -64,6 +65,7 @@ import infrastructure.handler.freespin.CancelFreespinCommandHandler
 import infrastructure.handler.freespin.CreateFreespinCommandHandler
 import infrastructure.handler.game.AddGameFavouriteCommandHandler
 import infrastructure.handler.game.BatchGameQueryHandler
+import infrastructure.handler.game.FindAllActiveRtpGameQueryHandler
 import infrastructure.handler.game.FindAllGameCollectionQueryHandler
 import infrastructure.handler.game.FindAllGamePlayerFavoriteQueryHandler
 import infrastructure.handler.game.FindAllGamePlayerLastQueryHandler
@@ -136,6 +138,7 @@ val busModule = module {
                 FindSessionBalanceQuery::class.java to get<FindSessionBalanceHandler>(),
                 FindGameQuery::class.java to get<FindGameQueryHandler>(),
                 FindAllGameQuery::class.java to get<FindAllGameQueryHandler>(),
+                FindAllActiveRtpGameQuery::class.java to get<FindAllActiveRtpGameQueryHandler>(),
                 BatchGameQuery::class.java to get<BatchGameQueryHandler>(),
                 FindAllGamePlayerFavoriteQuery::class.java to get<FindAllGamePlayerFavoriteQueryHandler>(),
                 FindAllGamePlayerLastQuery::class.java to get<FindAllGamePlayerLastQueryHandler>(),

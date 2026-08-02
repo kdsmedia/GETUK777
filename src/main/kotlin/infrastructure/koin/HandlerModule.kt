@@ -19,6 +19,7 @@ import infrastructure.handler.freespin.CancelFreespinCommandHandler
 import infrastructure.handler.freespin.CreateFreespinCommandHandler
 import infrastructure.handler.game.AddGameFavouriteCommandHandler
 import infrastructure.handler.game.BatchGameQueryHandler
+import infrastructure.handler.game.FindAllActiveRtpGameQueryHandler
 import infrastructure.handler.game.FindAllGameCollectionQueryHandler
 import infrastructure.handler.game.FindAllGamePlayerFavoriteQueryHandler
 import infrastructure.handler.game.FindAllGamePlayerLastQueryHandler
@@ -66,6 +67,7 @@ val handlerModule = module {
     single { RecalculateGameRtpCommandHandler(recalculateGameRtpUsecase = get()) }
     single { FindGameQueryHandler() }
     single { FindAllGameQueryHandler() }
+    single { FindAllActiveRtpGameQueryHandler() }
     single { BatchGameQueryHandler() }
     single { GetGameDemoUrlQueryHandler(gameVariantRepository = get(), aggregatorFactory = get()) }
     single { FindAllGamePlayerFavoriteQueryHandler() }

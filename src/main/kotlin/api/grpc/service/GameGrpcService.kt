@@ -11,6 +11,8 @@ import api.grpc.mapper.ProviderProtoMapper.toProto
 import application.Bus
 import application.command.game.AddGameFavouriteCommand
 import application.query.game.BatchGameQuery
+import application.query.game.FindAllActiveRtpGameQuery
+import application.query.game.GameRtpType
 import application.query.game.FindAllGamePlayerFavoriteQuery
 import application.query.game.FindAllGamePlayerLastQuery
 import application.query.game.FindAllGameQuery
@@ -28,6 +30,7 @@ import com.nekgamebling.game.v1.OpenDemoQuery
 import com.nekgamebling.game.v1.OpenDemoQueryKt
 import com.nekgamebling.game.v1.PlayGameCommandKt
 import com.nekgamebling.game.v1.UpdateGameImageCommand
+import domain.exception.badrequest.UnspecifiedRtpTypeException
 import domain.exception.notfound.GameNotFoundException
 import domain.vo.Amount
 import domain.vo.Currency
@@ -39,6 +42,7 @@ import domain.vo.PlayerId
 import com.nekgamebling.game.v1.BatchGameQuery as BatchGameProto
 import com.nekgamebling.game.v1.FindAllGamePlayerFavouriteQuery as FindAllGamePlayerFavouriteProto
 import com.nekgamebling.game.v1.FindAllGamePlayerLastQuery as FindAllGamePlayerLastProto
+import com.nekgamebling.game.v1.FindAllActiveRtpGameQuery as FindAllActiveRtpGameProto
 import com.nekgamebling.game.v1.FindAllGameQuery as FindAllGameProto
 import com.nekgamebling.game.v1.FindGameQuery as FindGameProto
 import com.nekgamebling.game.v1.PlayGameCommand as PlayGameProto
@@ -81,6 +85,24 @@ class GameGrpcService(
     override suspend fun findAll(request: FindAllGameProto): GamePageDto = handleGrpcCall {
         val page = bus(
             FindAllGameQuery(
+                filter = request.filter.toDomain(),
+                pageable = Pageable(request.pageNum, request.pageSize),
+            )
+        )
+
+        page.toGamePageDto()
+    }
+
+    override suspend fun findAllActiveRtp(request: FindAllActiveRtpGameProto): GamePageDto = handleGrpcCall {
+        val type = when (request.type) {
+            FindAllActiveRtpGameProto.Type.TYPE_HOT -> GameRtpType.HOT
+            FindAllActiveRtpGameProto.Type.TYPE_COLD -> GameRtpType.COLD
+            else -> throw UnspecifiedRtpTypeException()
+        }
+
+        val page = bus(
+            FindAllActiveRtpGameQuery(
+                type = type,
                 filter = request.filter.toDomain(),
                 pageable = Pageable(request.pageNum, request.pageSize),
             )
