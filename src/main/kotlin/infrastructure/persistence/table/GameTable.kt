@@ -28,4 +28,5 @@ object GameTable : LongIdTable("games") {
         { Json.decodeFromString(stringMapSerializer, it) }
     )
     val sortOrder = integer("sort_order")
+    val rtp = double("rtp").default(96.0)
 }

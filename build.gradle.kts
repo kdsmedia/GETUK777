@@ -29,6 +29,14 @@ tasks.register<JavaExec>("runSync") {
     classpath = sourceSets.main.get().runtimeClasspath
 }
 
+// Task to run the daily RTP recalculation job locally
+tasks.register<JavaExec>("runDailyRtp") {
+    group = "application"
+    description = "Run the daily game RTP recalculation job"
+    mainClass.set("DailyRtpJobKt")
+    classpath = sourceSets.main.get().runtimeClasspath
+}
+
 // Task to run the DB migration job (creates `casino` DB if missing, applies Flyway)
 tasks.register<JavaExec>("runMigrate") {
     group = "application"
@@ -49,6 +57,13 @@ val syncStartScripts by tasks.registering(CreateStartScripts::class) {
     classpath = tasks.named<Jar>("jar").get().outputs.files + configurations.runtimeClasspath.get()
 }
 
+val dailyRtpStartScripts by tasks.registering(CreateStartScripts::class) {
+    applicationName = "daily-rtp"
+    mainClass.set("DailyRtpJobKt")
+    outputDir = layout.buildDirectory.dir("dailyRtpScripts").get().asFile
+    classpath = tasks.named<Jar>("jar").get().outputs.files + configurations.runtimeClasspath.get()
+}
+
 val dbMigrateStartScripts by tasks.registering(CreateStartScripts::class) {
     applicationName = "db-migrate"
     mainClass.set("DbMigrateJobKt")
@@ -60,6 +75,9 @@ distributions {
     main {
         contents {
             from(syncStartScripts) {
+                into("bin")
+            }
+            from(dailyRtpStartScripts) {
                 into("bin")
             }
             from(dbMigrateStartScripts) {

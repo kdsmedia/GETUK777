@@ -5,6 +5,7 @@ import application.usecase.FinishRoundUsecase
 import application.usecase.JackpotBroadcaster
 import application.usecase.OpenSessionUsecase
 import application.usecase.ProcessSpinUsecase
+import application.usecase.RecalculateGameRtpUsecase
 import application.usecase.SyncAggregatorUsecase
 import org.koin.dsl.module
 
@@ -40,6 +41,12 @@ val usecaseModule = module {
     single {
         DecreasePlayerLimitUsecase(
             playerLimitPort = get(),
+        )
+    }
+    single {
+        RecalculateGameRtpUsecase(
+            spinRepository = get(),
+            gameRepository = get(),
         )
     }
     single {

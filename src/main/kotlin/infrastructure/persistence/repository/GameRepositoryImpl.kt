@@ -41,6 +41,7 @@ class GameRepositoryImpl : IGameRepository {
                 bonusBetEnable = game.bonusBetEnable
                 bonusWageringEnable = game.bonusWageringEnable
                 tags = game.tags
+                rtp = game.rtp
                 active = game.active
                 images = game.images.data
                 sortOrder = game.order
@@ -53,6 +54,7 @@ class GameRepositoryImpl : IGameRepository {
                 bonusBetEnable = game.bonusBetEnable
                 bonusWageringEnable = game.bonusWageringEnable
                 tags = game.tags
+                rtp = game.rtp
                 active = game.active
                 images = game.images.data
                 sortOrder = game.order
@@ -83,6 +85,7 @@ class GameRepositoryImpl : IGameRepository {
             this[GameTable.bonusBetEnable] = game.bonusBetEnable
             this[GameTable.bonusWageringEnable] = game.bonusWageringEnable
             this[GameTable.tags] = game.tags
+            this[GameTable.rtp] = game.rtp
             this[GameTable.active] = game.active
             this[GameTable.images] = game.images.data
             this[GameTable.sortOrder] = game.order

@@ -18,5 +18,6 @@ class GameEntity(id: EntityID<Long>) : LongEntity(id) {
     var active by GameTable.active
     var images by GameTable.images
     var sortOrder by GameTable.sortOrder
+    var rtp by GameTable.rtp
     var collections by CollectionEntity via GameCollectionTable
 }

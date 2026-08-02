@@ -54,6 +54,7 @@ class LastWinnerQueryHandler : IQueryHandler<LastWinnerQuery, Page<LastWin>> {
                 GameTable.active,
                 GameTable.images,
                 GameTable.sortOrder,
+                GameTable.rtp,
                 // Список колонок обязан покрывать ВСЁ, что читают row-мапперы
                 // (GameMapper.toGame -> ProviderMapper.toProvider -> toAggregator):
                 // недостающая колонка роняет запрос в рантайме на первой же строке,

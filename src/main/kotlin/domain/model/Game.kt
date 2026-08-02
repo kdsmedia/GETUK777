@@ -23,9 +23,16 @@ data class Game(
 
     val tags: List<String> = emptyList(),
 
+    val rtp: Double = DEFAULT_RTP,
+
     override var active: Boolean = false,
 
     override var images: ImageMap = ImageMap.EMPTY,
 
     override var order: Int = 0,
-) : Activatable, Imageable, Orderable
+) : Activatable, Imageable, Orderable {
+
+    companion object {
+        const val DEFAULT_RTP = 96.0
+    }
+}

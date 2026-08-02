@@ -24,6 +24,7 @@ object GameProtoMapper {
         active = this@toProto.active
         images.putAll(this@toProto.images.data)
         order = this@toProto.order
+        rtp = this@toProto.rtp
         if (variant != null) {
             symbol = variant.symbol.value
             integration = variant.integration

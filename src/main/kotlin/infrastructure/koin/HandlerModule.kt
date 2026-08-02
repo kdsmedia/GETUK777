@@ -27,6 +27,7 @@ import infrastructure.handler.game.FindGameQueryHandler
 import infrastructure.handler.game.GetFreespinPresetsQueryHandler
 import infrastructure.handler.game.GetGameDemoUrlQueryHandler
 import infrastructure.handler.game.PlayGameCommandHandler
+import infrastructure.handler.game.RecalculateGameRtpCommandHandler
 import infrastructure.handler.game.RemoveGameFavouriteCommandHandler
 import infrastructure.handler.game.SaveGameCommandHandler
 import infrastructure.handler.provider.BatchProviderQueryHandler
@@ -62,6 +63,7 @@ val handlerModule = module {
     // Game
     single { PlayGameCommandHandler(gameVariantRepository = get(), playerLimitPort = get(), openSessionUsecase = get()) }
     single { SaveGameCommandHandler(gameRepository = get(), providerRepository = get()) }
+    single { RecalculateGameRtpCommandHandler(recalculateGameRtpUsecase = get()) }
     single { FindGameQueryHandler() }
     single { FindAllGameQueryHandler() }
     single { BatchGameQueryHandler() }

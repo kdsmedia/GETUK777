@@ -52,4 +52,8 @@ message GameDto {
   repeated PlatformDto platforms = 20;
 
   int32 play_lines = 21;
+
+  // Return-to-player percentage. Defaults to 96; recalculated daily from the
+  // last 24h of spins by the daily-rtp job for games that had bets in that window.
+  double rtp = 22;
 }

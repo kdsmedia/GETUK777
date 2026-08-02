@@ -14,6 +14,7 @@ import application.command.freespin.CancelFreespinCommand
 import application.command.freespin.CreateFreespinCommand
 import application.command.game.AddGameFavouriteCommand
 import application.command.game.PlayGameCommand
+import application.command.game.RecalculateGameRtpCommand
 import application.command.game.RemoveGameFavouriteCommand
 import application.command.game.SaveGameCommand
 import application.command.game.SetGameImageCommand
@@ -71,6 +72,7 @@ import infrastructure.handler.game.FindGameQueryHandler
 import infrastructure.handler.game.GetFreespinPresetsQueryHandler
 import infrastructure.handler.game.GetGameDemoUrlQueryHandler
 import infrastructure.handler.game.PlayGameCommandHandler
+import infrastructure.handler.game.RecalculateGameRtpCommandHandler
 import infrastructure.handler.game.RemoveGameFavouriteCommandHandler
 import infrastructure.handler.game.SaveGameCommandHandler
 import infrastructure.handler.provider.BatchProviderQueryHandler
@@ -107,6 +109,7 @@ val busModule = module {
                 // Game
                 PlayGameCommand::class.java to get<PlayGameCommandHandler>(),
                 SaveGameCommand::class.java to get<SaveGameCommandHandler>(),
+                RecalculateGameRtpCommand::class.java to get<RecalculateGameRtpCommandHandler>(),
                 SetGameImageCommand::class.java to setImageHandler,
                 AddGameFavouriteCommand::class.java to get<AddGameFavouriteCommandHandler>(),
                 RemoveGameFavouriteCommand::class.java to get<RemoveGameFavouriteCommandHandler>(),
