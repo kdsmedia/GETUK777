@@ -119,9 +119,6 @@ dependencies {
     // Messaging - RabbitMQ
     implementation(libs.rabbitmq)
 
-    // AWS S3
-    implementation(libs.aws.s3)
-
     // Redis
     implementation(libs.lettuce)
     // Required at runtime by Lettuce's coroutines API (RedisCoroutinesCommands).

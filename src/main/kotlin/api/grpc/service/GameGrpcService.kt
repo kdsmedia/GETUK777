@@ -34,7 +34,6 @@ import domain.exception.badrequest.UnspecifiedRtpTypeException
 import domain.exception.notfound.GameNotFoundException
 import domain.vo.Amount
 import domain.vo.Currency
-import domain.vo.FileUpload
 import domain.vo.Identity
 import domain.vo.Locale
 import domain.vo.Pageable
@@ -133,10 +132,7 @@ class GameGrpcService(
             SetGameImageCommand(
                 identity = Identity(request.identity),
                 key = request.key,
-                file = FileUpload(
-                    name = "image.${request.extension}",
-                    content = request.file.toByteArray(),
-                ),
+                url = request.url,
             )
         )
         Empty.getDefaultInstance()

@@ -91,11 +91,5 @@ class OneGameHubGameAdapter(
         const val TAG_SEPARATOR = ","
 
         const val BUY_BONUS_TAG_PREFIX = "buy-bonus"
-
-        const val ICON_KEY = "icon"
-
-        const val THUMBNAIL_KEY = "thumbnail"
-
-        const val PREFERRED_THUMBNAIL_SIZE = "500x500"
     }
 }

@@ -28,14 +28,14 @@ betting model.
 │  │   Aggregators  │  │  Persistence │  │  Adapters             │    │
 │  │  (Pragmatic,   │  │  (Exposed    │  │  - WalletAdapter      │    │
 │  │   OneGameHub,  │  │   ORM)       │  │  - PlayerLimitAdapter │    │
-│  │   Pateplay)    │  │              │  │  - S3FileAdapter      │    │
+│  │   Pateplay)    │  │              │  │  - PamAdapter         │    │
 │  └────────────────┘  └──────────────┘  └───────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
 The domain layer has no dependencies on application or infrastructure.
 The application layer depends only on domain and on port interfaces. All
-external concerns (DB, RabbitMQ, Redis, S3, HTTP clients for aggregators)
+external concerns (DB, RabbitMQ, Redis, HTTP clients for aggregators)
 live in infrastructure and implement port interfaces.
 
 ## Source structure
@@ -67,7 +67,6 @@ src/main/kotlin/
     ├── persistence/    # Exposed ORM: tables, entities, mappers, repositories
     ├── rabbitmq/       # Event publisher + consumer + event mappers
     ├── redis/          # PlayerLimitRedis
-    ├── s3/             # S3FileAdapter
     └── wallet/         # WalletAdapter (gRPC client to wallet-service)
 ```
 

@@ -26,7 +26,7 @@ Test framework: **Kotest 5.9.1** (`FunSpec`) on the JUnit 5 platform, with mockk
 
 ```bash
 # 1. Start infrastructure
-docker-compose up -d postgres rabbitmq redis minio minio-init
+docker-compose up -d postgres rabbitmq redis
 
 # 2. Configure environment
 cp .env.example .env           # Defaults point to localhost
@@ -47,7 +47,7 @@ Two application entrypoints in Docker:
 
 ## Architecture
 
-Hexagonal Architecture + DDD + CQRS. Kotlin 2.0.21, JDK 21, Ktor 3.0.3 (CIO), Exposed ORM, Koin DI, gRPC + protobuf, RabbitMQ, Redis (Lettuce), AWS S3. Dependency versions managed in `gradle/libs.versions.toml`.
+Hexagonal Architecture + DDD + CQRS. Kotlin 2.0.21, JDK 21, Ktor 3.0.3 (CIO), Exposed ORM, Koin DI, gRPC + protobuf, RabbitMQ, Redis (Lettuce). Dependency versions managed in `gradle/libs.versions.toml`.
 
 Four layers: `api/` (gRPC services + REST webhooks) → `application/` (commands/queries, use cases, application ports, events, projections) → `domain/` (models, value objects, factories, repositories, exceptions, events) → `infrastructure/` (adapters, persistence, aggregators, messaging).
 
@@ -70,7 +70,7 @@ application/
 ├── command/<feature>/     # Write-side: command DTOs (no handlers — those live in infra)
 ├── query/<feature>/       # Read-side: query DTOs + their View result types side-by-side
 ├── usecase/               # Application services / use cases (orchestrators)
-├── port/external/         # Driven ports for external systems (FileAdapter, IWalletPort, IPlayerLimitPort, IEventPublisherPort, ...)
+├── port/external/         # Driven ports for external systems (IWalletPort, IPlayerLimitPort, IEventPublisherPort, ...)
 └── port/factory/          # Driven ports for adapter factories (AggregatorAdapterProvider, IAggregatorFactory)
 
 infrastructure/
@@ -79,7 +79,6 @@ infrastructure/
 ├── aggregator/<vendor>/   # Aggregator integration adapters
 ├── rabbitmq/              # AppEventBus.kt (RabbitAppEventPublisher impl of IEventPublisherPort, NoOpAppEventPublisher, AppEventConsumer base, appJson, EVENT_EXCHANGE) + consumers
 ├── redis/                 # Player limit cache
-├── s3/                    # File storage adapter
 ├── wallet/                # Wallet gRPC client
 └── koin/                  # DI module wiring
 
@@ -248,7 +247,7 @@ The `grpcModule` is defined in `api/grpc/config/` and registers gRPC service sin
 
 **`BusModule`**: tiny (~13 lines). It constructs a `HandlerRegistry`, populates it from `getAll<CqrsHandler>()`, and wraps the result in `BusImpl`. Never needs to be touched when adding handlers.
 
-**`ExternalModule`**: `AggregatorAdapterProvider`s are bound with named qualifiers and `bind AggregatorAdapterProvider::class` so `AggregatorRegistry(providers = getAll())` collects them all. It also binds `single<Connection> { rabbitMqConnection(get()) }`, `single<Channel> { get<Connection>().createChannel() }` (consumer/topology channel), `single<IEventPublisherPort> { RabbitAppEventPublisher(connection = get()) }`, and the `PlaceSpinEventConsumer`. (Note: there is no `ImageAttachmentService` — `SetImageCommandHandler` calls `FileAdapter.upload(...)` directly.)
+**`ExternalModule`**: `AggregatorAdapterProvider`s are bound with named qualifiers and `bind AggregatorAdapterProvider::class` so `AggregatorRegistry(providers = getAll())` collects them all. It also binds `single<Connection> { rabbitMqConnection(get()) }`, `single<Channel> { get<Connection>().createChannel() }` (consumer/topology channel), `single<IEventPublisherPort> { RabbitAppEventPublisher(connection = get()) }`, and the `PlaceSpinEventConsumer`.
 
 **SyncJob** (SyncJob.kt): Same modules minus `grpcModule`, no `Application` registration, includes `syncOverrideModule` which binds `single<IEventPublisherPort> { NoOpAppEventPublisher }` so sync never publishes events or opens a RabbitMQ channel.
 
@@ -266,8 +265,8 @@ The `grpcModule` is defined in `api/grpc/config/` and registers gRPC service sin
 - **Round.finish()**: returns the finished `Round` (sets `finishedAt`); `FinishRoundUsecase` publishes `RoundEvent(round)` with `finished = true` after the write commits
 - **Read-side projections**: query handlers that join across aggregates return `application/projection/<ctx>/<X>Projection` DTOs (e.g. `CollectionProjection` with game counts), never polluting domain models with denormalized fields
 - **Wallet dependency**: wallet proto resolved via direct `srcDir("../wallete-engine/proto")` source reference in `build.gradle.kts` (note the "wallete" spelling — intentional carve-out, do NOT fix)
-- **File storage interface**: Named `FileAdapter` (not `FilePort`), located in `application/port/external/FilePort.kt` — intentional carve-out, do NOT rename
+- **Images are URLs, not files**: the engine never touches file content or object storage. `Update*Image` RPCs carry a full public URL; callers (backoffice/admin apps) upload to S3 themselves and construct the URL from their CDN host env.
 
 ## CI/CD
 
-GitHub Actions workflow (`publish-grpc-client.yml`) publishes `com.nekgamebling:game-grpc-client` to GitHub Packages on tag push (`v*`) or manual dispatch. Version can be overridden with `-PgrpcClientVersion=x.y.z`.
+GitHub Actions workflow (`publish-grpc-client.yml`) publishes `com.nekgamebling:game-grpc-client` to GitHub Packages on bare-semver tag push (`1.0.0`, no `v` prefix) or manual dispatch. Version can be overridden with `-PgrpcClientVersion=x.y.z`. `publish-grpc-clients.yml` (same tag trigger) publishes the TS client `@nekzabirov/game-grpc-client` + raw protos `@nekzabirov/game-proto` via the shared `IGaming-gRPC-Actions` workflow.

@@ -3,20 +3,17 @@ package infrastructure.handler.common
 import application.command.collection.SetCollectionImageCommand
 import application.command.game.SetGameImageCommand
 import application.command.provider.SetProviderImageCommand
-import domain.repository.ICollectionRepository
-import domain.repository.IGameRepository
-import domain.repository.IGameVariantRepository
-import domain.repository.IProviderRepository
-import application.port.external.FileAdapter
-import application.port.external.MediaFile
+import domain.exception.badrequest.BlankImageUrlException
 import domain.model.Collection
 import domain.model.Game
-import domain.model.GameVariant
 import domain.model.Provider
-import domain.vo.FileUpload
+import domain.repository.ICollectionRepository
+import domain.repository.IGameRepository
+import domain.repository.IProviderRepository
 import domain.vo.Identity
 import domain.vo.Page
 import domain.vo.Pageable
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
@@ -29,7 +26,7 @@ import io.kotest.matchers.shouldBe
  */
 class SetImageCommandHandlerTest : FunSpec({
 
-    val sampleFile = FileUpload(name = "banner.png", content = byteArrayOf(1, 2, 3))
+    val sampleUrl = "https://cdn.example.com/casino/game/game_a/main.webp"
 
     class FakeGameRepo : IGameRepository {
         val calls = mutableListOf<Triple<Identity, String, String>>()
@@ -69,76 +66,66 @@ class SetImageCommandHandlerTest : FunSpec({
         override suspend fun deleteByIdentity(identity: Identity) = Unit
     }
 
-    class FakeFileAdapter : FileAdapter {
-        var lastFolder: String = ""
-        override suspend fun upload(folder: String, fileName: String, file: MediaFile): Result<String> {
-            lastFolder = folder
-            return Result.success("https://cdn/$folder/$fileName")
-        }
-        override suspend fun delete(path: String): Result<Boolean> = Result.success(true)
-    }
+    fun handler(
+        gameRepo: FakeGameRepo = FakeGameRepo(),
+        providerRepo: FakeProviderRepo = FakeProviderRepo(),
+        collectionRepo: FakeCollectionRepo = FakeCollectionRepo(),
+    ) = SetImageCommandHandler(
+        gameRepository = gameRepo,
+        providerRepository = providerRepo,
+        collectionRepository = collectionRepo,
+    )
 
-    test("SetGameImageCommand uploads with folder=casino/game and hits game repository") {
+    test("SetGameImageCommand stores the URL via the game repository") {
         val gameRepo = FakeGameRepo()
         val providerRepo = FakeProviderRepo()
         val collectionRepo = FakeCollectionRepo()
-        val fileAdapter = FakeFileAdapter()
-        val handler = SetImageCommandHandler(
-            fileAdapter = fileAdapter,
-            gameRepository = gameRepo,
-            providerRepository = providerRepo,
-            collectionRepository = collectionRepo,
-        )
 
-        val result = handler.handle(SetGameImageCommand(Identity("game_a"), "main", sampleFile))
+        val result = handler(gameRepo, providerRepo, collectionRepo)
+            .handle(SetGameImageCommand(Identity("game_a"), "main", sampleUrl))
 
         result.isSuccess shouldBe true
-        fileAdapter.lastFolder shouldBe "casino/game"
-        gameRepo.calls.size shouldBe 1
-        gameRepo.calls.single() shouldBe Triple(Identity("game_a"), "main", "https://cdn/casino/game/game_a/main")
+        gameRepo.calls.single() shouldBe Triple(Identity("game_a"), "main", sampleUrl)
         providerRepo.calls.size shouldBe 0
         collectionRepo.calls.size shouldBe 0
     }
 
-    test("SetProviderImageCommand uploads with folder=casino/provider and hits provider repository") {
+    test("SetProviderImageCommand stores the URL via the provider repository") {
         val gameRepo = FakeGameRepo()
         val providerRepo = FakeProviderRepo()
         val collectionRepo = FakeCollectionRepo()
-        val fileAdapter = FakeFileAdapter()
-        val handler = SetImageCommandHandler(
-            fileAdapter = fileAdapter,
-            gameRepository = gameRepo,
-            providerRepository = providerRepo,
-            collectionRepository = collectionRepo,
-        )
 
-        val result = handler.handle(SetProviderImageCommand(Identity("prov_a"), "logo", sampleFile))
+        val result = handler(gameRepo, providerRepo, collectionRepo)
+            .handle(SetProviderImageCommand(Identity("prov_a"), "logo", sampleUrl))
 
         result.isSuccess shouldBe true
-        fileAdapter.lastFolder shouldBe "casino/provider"
-        providerRepo.calls.single() shouldBe Triple(Identity("prov_a"), "logo", "https://cdn/casino/provider/prov_a/logo")
+        providerRepo.calls.single() shouldBe Triple(Identity("prov_a"), "logo", sampleUrl)
         gameRepo.calls.size shouldBe 0
         collectionRepo.calls.size shouldBe 0
     }
 
-    test("SetCollectionImageCommand uploads with folder=casino/collection and hits collection repository") {
+    test("SetCollectionImageCommand stores the URL via the collection repository") {
         val gameRepo = FakeGameRepo()
         val providerRepo = FakeProviderRepo()
         val collectionRepo = FakeCollectionRepo()
-        val fileAdapter = FakeFileAdapter()
-        val handler = SetImageCommandHandler(
-            fileAdapter = fileAdapter,
-            gameRepository = gameRepo,
-            providerRepository = providerRepo,
-            collectionRepository = collectionRepo,
-        )
 
-        val result = handler.handle(SetCollectionImageCommand(Identity("coll_a"), "cover", sampleFile))
+        val result = handler(gameRepo, providerRepo, collectionRepo)
+            .handle(SetCollectionImageCommand(Identity("coll_a"), "cover", sampleUrl))
 
         result.isSuccess shouldBe true
-        fileAdapter.lastFolder shouldBe "casino/collection"
-        collectionRepo.calls.single() shouldBe Triple(Identity("coll_a"), "cover", "https://cdn/casino/collection/coll_a/cover")
+        collectionRepo.calls.single() shouldBe Triple(Identity("coll_a"), "cover", sampleUrl)
         gameRepo.calls.size shouldBe 0
         providerRepo.calls.size shouldBe 0
+    }
+
+    test("blank URL is rejected with BlankImageUrlException and nothing is stored") {
+        val gameRepo = FakeGameRepo()
+
+        val result = handler(gameRepo = gameRepo)
+            .handle(SetGameImageCommand(Identity("game_a"), "main", "  "))
+
+        result.isFailure shouldBe true
+        shouldThrow<BlankImageUrlException> { result.getOrThrow() }
+        gameRepo.calls.size shouldBe 0
     }
 })

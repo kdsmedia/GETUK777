@@ -14,7 +14,6 @@ import com.nekgamebling.game.v1.ProviderServiceGrpcKt
 import com.nekgamebling.game.v1.UpdateProviderImageCommand
 import domain.exception.notfound.ProviderNotFoundException
 import domain.vo.Country
-import domain.vo.FileUpload
 import domain.vo.Identity
 import domain.vo.Pageable
 import com.nekgamebling.game.v1.BatchProviderQuery as BatchProviderProto
@@ -98,10 +97,7 @@ class ProviderGrpcService(
             SetProviderImageCommand(
                 identity = Identity(request.identity),
                 key = request.key,
-                file = FileUpload(
-                    name = "image.${request.extension}",
-                    content = request.file.toByteArray(),
-                ),
+                url = request.url,
             )
         )
         Empty.getDefaultInstance()

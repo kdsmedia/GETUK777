@@ -81,9 +81,15 @@ message UpdateGameImageCommand {
 
   string key = 2;
 
-  bytes file = 3;
+  // Was `bytes file` + `string extension` — the engine no longer accepts file
+  // content. Callers upload to object storage themselves and pass the final
+  // public URL.
+  reserved 3, 4;
 
-  string extension = 4;
+  reserved "file", "extension";
+
+  // Full public URL of the image; stored verbatim as the map value for `key`.
+  string url = 5;
 }
 
 message PlayGameCommand {

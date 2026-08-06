@@ -16,7 +16,6 @@ import com.nekgamebling.game.v1.FindCollectionQueryKt
 import com.nekgamebling.game.v1.GamePageDto
 import com.nekgamebling.game.v1.UpdateCollectionImageCommand
 import domain.exception.notfound.CollectionNotFoundException
-import domain.vo.FileUpload
 import domain.vo.Identity
 import domain.vo.LocaleName
 import domain.vo.Pageable
@@ -141,10 +140,7 @@ class CollectionGrpcService(
             SetCollectionImageCommand(
                 identity = Identity(request.identity),
                 key = request.key,
-                file = FileUpload(
-                    name = "image.${request.extension}",
-                    content = request.file.toByteArray(),
-                ),
+                url = request.url,
             )
         )
         Empty.getDefaultInstance()

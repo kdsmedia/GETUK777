@@ -13,11 +13,6 @@
 | `WALLET_GRPC_PORT` | Wallet service gRPC port | `5555` |
 | `REDIS_HOST` | Redis host | `localhost` |
 | `REDIS_PORT` | Redis port | `6379` |
-| `S3_ENDPOINT` | S3-compatible storage endpoint | — |
-| `S3_REGION` | S3 region | — |
-| `S3_ACCESS_KEY` | S3 access key | — |
-| `S3_SECRET_KEY` | S3 secret key | — |
-| `S3_BUCKET` | S3 bucket name | — |
 | `RABBITMQ_URL` | RabbitMQ AMQP URL | `amqp://guest:guest@localhost:5672` |
 | `RABBITMQ_EXCHANGE` | RabbitMQ exchange name | `casino-engine` |
 
@@ -34,7 +29,6 @@ management (Kubernetes secrets, Vault, AWS Secrets Manager, etc.).
 | PostgreSQL 16 | 5432 | Database |
 | RabbitMQ 3 | 5672, 15672 | Message broker + management UI |
 | Redis 7 | 6379 | Player limits cache |
-| MinIO | 9000, 9001 | S3-compatible file storage + console |
 
 For production:
 
@@ -43,8 +37,6 @@ For production:
 - **RabbitMQ** — clustered for HA; consider CloudAMQP or Amazon MQ
 - **Redis** — single primary is fine for player limits (TTL-bounded);
   upgrade to cluster only if you scale past one node
-- **S3** — actual AWS S3, GCS, or any S3-compatible service. MinIO is
-  for local only
 
 ## Build
 

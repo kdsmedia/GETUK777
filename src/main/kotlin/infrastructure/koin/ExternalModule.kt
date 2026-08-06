@@ -1,6 +1,5 @@
 package infrastructure.koin
 
-import application.port.external.FileAdapter
 import application.port.external.IBackgroundTaskPort
 import application.port.external.ICurrencyPort
 import application.port.external.IEventPublisherPort
@@ -22,7 +21,6 @@ import infrastructure.rabbitmq.PlaceSpinEventConsumer
 import infrastructure.rabbitmq.RabbitAppEventPublisher
 import infrastructure.rabbitmq.rabbitMqConnection
 import infrastructure.redis.PlayerLimitRedis
-import infrastructure.s3.S3FileAdapter
 import infrastructure.util.BackgroundWorker
 import infrastructure.wallet.CurrencyAdapter
 import infrastructure.wallet.WalletAdapter
@@ -36,7 +34,6 @@ val externalModule = module {
     // One shared gRPC channel to wallet-engine for both wallet + currency adapters.
     single<ManagedChannel> { walletChannel(get()) }
     single<IWalletPort> { WalletAdapter(channel = get()) }
-    single<FileAdapter> { S3FileAdapter(config = get()) }
     single<IPlayerLimitPort> { PlayerLimitRedis(config = get()) }
     single<ICurrencyPort> { CurrencyAdapter(channel = get()) }
     // Separate gRPC channel to pam-engine (user-engine) for player profile lookups.

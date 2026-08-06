@@ -15,7 +15,7 @@ Game catalog management, launching, and player favorites. Games are contract art
 | `FindAll` | `FindAllGameQuery` | `GamePageDto` | List/filter games with pagination |
 | `FindAllActiveRtp` | `FindAllActiveRtpGameQuery` | `GamePageDto` | List active games by RTP bucket (HOT/COLD) |
 | `Batch` | `BatchGameQuery` | `BatchGameQuery.Result` | Batch fetch games |
-| `UpdateImage` | `UpdateGameImageCommand` | `Empty` | Upload/replace a game image |
+| `UpdateImage` | `UpdateGameImageCommand` | `Empty` | Attach/replace a game image URL |
 | `Play` | `PlayGameCommand` | `PlayGameCommand.Result` | Open a real-money game session |
 | `OpenDemo` | `OpenDemoQuery` | `OpenDemoQuery.Result` | Open a demo game session |
 | `AddFavourite` | `GameFavouriteCommand` | `Empty` | Add game to player favorites |
@@ -116,14 +116,15 @@ message BatchGameQuery.Result {
 
 ### UpdateImage
 
-Upload or replace a game image by key (e.g. `"thumbnail"`, `"banner"`).
+Attach or replace a game image URL by key (e.g. `"thumbnail"`, `"banner"`).
+The engine stores the URL verbatim — callers upload the file to object storage
+themselves and pass the final public URL.
 
 ```protobuf
 message UpdateGameImageCommand {
   string identity = 1;     // Game identity
   string key = 2;          // Image key (e.g. "thumbnail")
-  bytes file = 3;          // Raw image bytes
-  string extension = 4;    // File extension (e.g. "png", "jpg")
+  string url = 5;          // Full public URL of the image
 }
 ```
 
@@ -222,7 +223,7 @@ Game provider management (e.g. "Pragmatic Play", "NetEnt").
 | `Find` | `FindProviderQuery` | `FindProviderQuery.Result` | Get provider with denormalized aggregator |
 | `FindAll` | `FindAllProviderQuery` | `FindAllProviderQuery.Result` | List/filter providers with pagination |
 | `Batch` | `BatchProviderQuery` | `BatchProviderQuery.Result` | Batch fetch providers by identities |
-| `UpdateImage` | `UpdateProviderImageCommand` | `Empty` | Upload/replace a provider image |
+| `UpdateImage` | `UpdateProviderImageCommand` | `Empty` | Attach/replace a provider image URL |
 
 Providers are contract artefacts and cannot be deleted once registered.
 
@@ -311,8 +312,7 @@ message BatchProviderQuery.Result {
 message UpdateProviderImageCommand {
   string identity = 1;
   string key = 2;
-  bytes file = 3;
-  string extension = 4;
+  string url = 5;   // Full public URL of the image
 }
 ```
 
@@ -426,7 +426,7 @@ Game collection management (e.g. "Hot Games", "New Releases") with multi-languag
 | `AddGame` | `AddCollectionGameCommand` | `Empty` | Add one game to a collection (idempotent; appended at end) |
 | `RemoveGame` | `RemoveCollectionGameCommand` | `Empty` | Remove one game from a collection (idempotent) |
 | `UpdateGameOrder` | `UpdateCollectionGameOrderCommand` | `Empty` | Set one game's per-collection sort position |
-| `UpdateImage` | `UpdateCollectionImageCommand` | `Empty` | Upload/replace a collection image |
+| `UpdateImage` | `UpdateCollectionImageCommand` | `Empty` | Attach/replace a collection image URL |
 
 Collections are contract artefacts and cannot be deleted once created.
 
@@ -566,8 +566,7 @@ message UpdateCollectionGameOrderCommand {
 message UpdateCollectionImageCommand {
   string identity = 1;
   string key = 2;
-  bytes file = 3;
-  string extension = 4;
+  string url = 5;   // Full public URL of the image
 }
 ```
 
@@ -702,7 +701,7 @@ message GameDto {
   bool bonus_wagering_enable = 6;
   repeated string tags = 7;
   bool active = 8;
-  map<string, string> images = 9;       // Key → CDN URL
+  map<string, string> images = 9;       // Key → full public image URL
   int32 order = 10;
   string symbol = 11;                   // Aggregator game symbol/code
   string integration = 12;             // Aggregator integration type

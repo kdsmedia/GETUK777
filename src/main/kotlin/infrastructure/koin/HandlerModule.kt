@@ -100,7 +100,6 @@ val handlerModule = module {
     // Common (polymorphic — serves SetGameImageCommand / SetProviderImageCommand / SetCollectionImageCommand)
     single {
         SetImageCommandHandler(
-            fileAdapter = get(),
             gameRepository = get(),
             providerRepository = get(),
             collectionRepository = get(),
