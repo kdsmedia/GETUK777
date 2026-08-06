@@ -24,6 +24,7 @@ import infrastructure.handler.game.FindAllGameCollectionQueryHandler
 import infrastructure.handler.game.FindAllGamePlayerFavoriteQueryHandler
 import infrastructure.handler.game.FindAllGamePlayerLastQueryHandler
 import infrastructure.handler.game.FindAllGameQueryHandler
+import infrastructure.handler.game.FindAllGameTagQueryHandler
 import infrastructure.handler.game.FindGameQueryHandler
 import infrastructure.handler.game.GetFreespinPresetsQueryHandler
 import infrastructure.handler.game.GetGameDemoUrlQueryHandler
@@ -33,6 +34,7 @@ import infrastructure.handler.game.RemoveGameFavouriteCommandHandler
 import infrastructure.handler.game.SaveGameCommandHandler
 import infrastructure.handler.provider.BatchProviderQueryHandler
 import infrastructure.handler.provider.FindAllProviderQueryHandler
+import infrastructure.handler.provider.FindAllProviderTagQueryHandler
 import infrastructure.handler.provider.FindProviderQueryHandler
 import infrastructure.handler.provider.SaveProviderCommandHandler
 import infrastructure.handler.round.FindAllRoundQueryHandler
@@ -67,6 +69,7 @@ val handlerModule = module {
     single { RecalculateGameRtpCommandHandler(recalculateGameRtpUsecase = get()) }
     single { FindGameQueryHandler() }
     single { FindAllGameQueryHandler() }
+    single { FindAllGameTagQueryHandler() }
     single { FindAllActiveRtpGameQueryHandler() }
     single { BatchGameQueryHandler() }
     single { GetGameDemoUrlQueryHandler(gameVariantRepository = get(), aggregatorFactory = get()) }
@@ -85,6 +88,7 @@ val handlerModule = module {
     single { SaveProviderCommandHandler(providerRepository = get(), aggregatorRepository = get()) }
     single { FindProviderQueryHandler() }
     single { FindAllProviderQueryHandler() }
+    single { FindAllProviderTagQueryHandler() }
     single { BatchProviderQueryHandler() }
 
     // Collection

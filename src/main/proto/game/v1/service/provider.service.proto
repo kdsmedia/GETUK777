@@ -24,6 +24,8 @@ service ProviderService {
 
   rpc FindAll(FindAllProviderQuery) returns (FindAllProviderQuery.Result);
 
+  rpc FindTagsAll(FindAllProviderTagQuery) returns (FindAllProviderTagQuery.Result);
+
   rpc Batch(BatchProviderQuery) returns (BatchProviderQuery.Result);
 
   rpc UpdateImage(UpdateProviderImageCommand) returns (Empty);
@@ -105,6 +107,21 @@ message FindAllProviderQuery {
     repeated AggregatorDto aggregators = 2;
 
     int32 total_items = 3;
+  }
+}
+
+// Paged alphabetical listing of the distinct tags across ACTIVE providers.
+// Mirrors `GameService.FindTagsAll` for the provider-level tag vocabulary
+// (e.g. `live`).
+message FindAllProviderTagQuery {
+  int32 page_num = 1;
+
+  int32 page_size = 2;
+
+  message Result {
+    repeated string items = 1;
+
+    int32 total_items = 2;
   }
 }
 

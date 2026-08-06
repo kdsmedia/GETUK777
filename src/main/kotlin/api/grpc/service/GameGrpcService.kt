@@ -16,12 +16,14 @@ import application.query.game.GameRtpType
 import application.query.game.FindAllGamePlayerFavoriteQuery
 import application.query.game.FindAllGamePlayerLastQuery
 import application.query.game.FindAllGameQuery
+import application.query.game.FindAllGameTagQuery
 import application.query.game.FindGameQuery
 import application.query.game.GetGameDemoUrlQuery
 import application.command.game.RemoveGameFavouriteCommand
 import application.command.game.SetGameImageCommand
 import com.nekgamebling.game.v1.BatchGameQueryKt
 import com.nekgamebling.game.v1.Empty
+import com.nekgamebling.game.v1.FindAllGameTagQueryKt
 import com.nekgamebling.game.v1.FindGameQueryKt
 import com.nekgamebling.game.v1.GamePageDto
 import com.nekgamebling.game.v1.GameFavouriteCommand
@@ -43,6 +45,7 @@ import com.nekgamebling.game.v1.FindAllGamePlayerFavouriteQuery as FindAllGamePl
 import com.nekgamebling.game.v1.FindAllGamePlayerLastQuery as FindAllGamePlayerLastProto
 import com.nekgamebling.game.v1.FindAllActiveRtpGameQuery as FindAllActiveRtpGameProto
 import com.nekgamebling.game.v1.FindAllGameQuery as FindAllGameProto
+import com.nekgamebling.game.v1.FindAllGameTagQuery as FindAllGameTagProto
 import com.nekgamebling.game.v1.FindGameQuery as FindGameProto
 import com.nekgamebling.game.v1.PlayGameCommand as PlayGameProto
 import com.nekgamebling.game.v1.SaveGameCommand as SaveGameProto
@@ -108,6 +111,19 @@ class GameGrpcService(
         )
 
         page.toGamePageDto()
+    }
+
+    override suspend fun findTagsAll(request: FindAllGameTagProto): FindAllGameTagProto.Result = handleGrpcCall {
+        val page = bus(
+            FindAllGameTagQuery(
+                pageable = Pageable(request.pageNum, request.pageSize),
+            )
+        )
+
+        FindAllGameTagQueryKt.result {
+            items.addAll(page.items)
+            totalItems = page.totalItems.toInt()
+        }
     }
 
     override suspend fun batch(request: BatchGameProto): BatchGameProto.Result = handleGrpcCall {

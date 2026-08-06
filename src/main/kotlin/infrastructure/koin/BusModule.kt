@@ -36,10 +36,12 @@ import application.query.game.FindAllGameCollectionQuery
 import application.query.game.FindAllGamePlayerFavoriteQuery
 import application.query.game.FindAllGamePlayerLastQuery
 import application.query.game.FindAllGameQuery
+import application.query.game.FindAllGameTagQuery
 import application.query.game.FindGameQuery
 import application.query.game.GetGameDemoUrlQuery
 import application.query.provider.BatchProviderQuery
 import application.query.provider.FindAllProviderQuery
+import application.query.provider.FindAllProviderTagQuery
 import application.query.provider.FindProviderQuery
 import application.query.round.FindAllRoundQuery
 import application.query.round.FindRoundQuery
@@ -70,6 +72,7 @@ import infrastructure.handler.game.FindAllGameCollectionQueryHandler
 import infrastructure.handler.game.FindAllGamePlayerFavoriteQueryHandler
 import infrastructure.handler.game.FindAllGamePlayerLastQueryHandler
 import infrastructure.handler.game.FindAllGameQueryHandler
+import infrastructure.handler.game.FindAllGameTagQueryHandler
 import infrastructure.handler.game.FindGameQueryHandler
 import infrastructure.handler.game.GetFreespinPresetsQueryHandler
 import infrastructure.handler.game.GetGameDemoUrlQueryHandler
@@ -79,6 +82,7 @@ import infrastructure.handler.game.RemoveGameFavouriteCommandHandler
 import infrastructure.handler.game.SaveGameCommandHandler
 import infrastructure.handler.provider.BatchProviderQueryHandler
 import infrastructure.handler.provider.FindAllProviderQueryHandler
+import infrastructure.handler.provider.FindAllProviderTagQueryHandler
 import infrastructure.handler.provider.FindProviderQueryHandler
 import infrastructure.handler.provider.SaveProviderCommandHandler
 import infrastructure.handler.round.FindAllRoundQueryHandler
@@ -138,6 +142,7 @@ val busModule = module {
                 FindSessionBalanceQuery::class.java to get<FindSessionBalanceHandler>(),
                 FindGameQuery::class.java to get<FindGameQueryHandler>(),
                 FindAllGameQuery::class.java to get<FindAllGameQueryHandler>(),
+                FindAllGameTagQuery::class.java to get<FindAllGameTagQueryHandler>(),
                 FindAllActiveRtpGameQuery::class.java to get<FindAllActiveRtpGameQueryHandler>(),
                 BatchGameQuery::class.java to get<BatchGameQueryHandler>(),
                 FindAllGamePlayerFavoriteQuery::class.java to get<FindAllGamePlayerFavoriteQueryHandler>(),
@@ -147,6 +152,7 @@ val busModule = module {
                 GetFreespinPresetsQuery::class.java to get<GetFreespinPresetsQueryHandler>(),
                 FindProviderQuery::class.java to get<FindProviderQueryHandler>(),
                 FindAllProviderQuery::class.java to get<FindAllProviderQueryHandler>(),
+                FindAllProviderTagQuery::class.java to get<FindAllProviderTagQueryHandler>(),
                 BatchProviderQuery::class.java to get<BatchProviderQueryHandler>(),
                 FindCollectionQuery::class.java to get<FindCollectionQueryHandler>(),
                 FindAllCollectionQuery::class.java to get<FindAllCollectionQueryHandler>(),

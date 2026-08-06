@@ -35,6 +35,8 @@ service GameService {
 
   rpc FindAllActiveRtp(FindAllActiveRtpGameQuery) returns (GamePageDto);
 
+  rpc FindTagsAll(FindAllGameTagQuery) returns (FindAllGameTagQuery.Result);
+
   rpc Batch(BatchGameQuery) returns (BatchGameQuery.Result);
 
   rpc UpdateImage(UpdateGameImageCommand) returns (Empty);
@@ -164,6 +166,21 @@ message FindAllActiveRtpGameQuery {
   int32 page_num = 3;
 
   int32 page_size = 4;
+}
+
+// Paged alphabetical listing of the distinct tags across ACTIVE games. Tags are
+// stored denormalized per game, so this is the only way for a client to
+// enumerate them (filter sheets, tag pickers).
+message FindAllGameTagQuery {
+  int32 page_num = 1;
+
+  int32 page_size = 2;
+
+  message Result {
+    repeated string items = 1;
+
+    int32 total_items = 2;
+  }
 }
 
 message BatchGameQuery {

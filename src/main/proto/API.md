@@ -14,6 +14,7 @@ Game catalog management, launching, and player favorites. Games are contract art
 | `Find` | `FindGameQuery` | `FindGameQuery.Result` | Get a single game by identity |
 | `FindAll` | `FindAllGameQuery` | `GamePageDto` | List/filter games with pagination |
 | `FindAllActiveRtp` | `FindAllActiveRtpGameQuery` | `GamePageDto` | List active games by RTP bucket (HOT/COLD) |
+| `FindTagsAll` | `FindAllGameTagQuery` | `FindAllGameTagQuery.Result` | Paged alphabetical list of distinct tags across active games |
 | `Batch` | `BatchGameQuery` | `BatchGameQuery.Result` | Batch fetch games |
 | `UpdateImage` | `UpdateGameImageCommand` | `Empty` | Attach/replace a game image URL |
 | `Play` | `PlayGameCommand` | `PlayGameCommand.Result` | Open a real-money game session |
@@ -222,6 +223,7 @@ Game provider management (e.g. "Pragmatic Play", "NetEnt").
 | `Save` | `SaveProviderCommand` | `Empty` | Create or update a provider |
 | `Find` | `FindProviderQuery` | `FindProviderQuery.Result` | Get provider with denormalized aggregator |
 | `FindAll` | `FindAllProviderQuery` | `FindAllProviderQuery.Result` | List/filter providers with pagination |
+| `FindTagsAll` | `FindAllProviderTagQuery` | `FindAllProviderTagQuery.Result` | Paged alphabetical list of distinct tags across active providers |
 | `Batch` | `BatchProviderQuery` | `BatchProviderQuery.Result` | Batch fetch providers by identities |
 | `UpdateImage` | `UpdateProviderImageCommand` | `Empty` | Attach/replace a provider image URL |
 

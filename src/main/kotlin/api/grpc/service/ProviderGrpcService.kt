@@ -9,6 +9,7 @@ import application.command.provider.SetProviderImageCommand
 import com.nekgamebling.game.v1.BatchProviderQueryKt
 import com.nekgamebling.game.v1.Empty
 import com.nekgamebling.game.v1.FindAllProviderQueryKt
+import com.nekgamebling.game.v1.FindAllProviderTagQueryKt
 import com.nekgamebling.game.v1.FindProviderQueryKt
 import com.nekgamebling.game.v1.ProviderServiceGrpcKt
 import com.nekgamebling.game.v1.UpdateProviderImageCommand
@@ -18,10 +19,12 @@ import domain.vo.Identity
 import domain.vo.Pageable
 import com.nekgamebling.game.v1.BatchProviderQuery as BatchProviderProto
 import com.nekgamebling.game.v1.FindAllProviderQuery as FindAllProviderProto
+import com.nekgamebling.game.v1.FindAllProviderTagQuery as FindAllProviderTagProto
 import com.nekgamebling.game.v1.FindProviderQuery as FindProviderProto
 import com.nekgamebling.game.v1.SaveProviderCommand as SaveProviderProto
 import application.query.provider.BatchProviderQuery as BatchProviderCqrs
 import application.query.provider.FindAllProviderQuery as FindAllProviderCqrs
+import application.query.provider.FindAllProviderTagQuery as FindAllProviderTagCqrs
 import application.query.provider.FindProviderQuery as FindProviderCqrs
 
 class ProviderGrpcService(
@@ -73,6 +76,19 @@ class ProviderGrpcService(
         FindAllProviderQueryKt.result {
             items.addAll(page.items.map { it.toProto() })
             aggregators.addAll(uniqueAggregators.map { it.toProto() })
+            totalItems = page.totalItems.toInt()
+        }
+    }
+
+    override suspend fun findTagsAll(request: FindAllProviderTagProto): FindAllProviderTagProto.Result = handleGrpcCall {
+        val page = bus(
+            FindAllProviderTagCqrs(
+                pageable = Pageable(request.pageNum, request.pageSize),
+            )
+        )
+
+        FindAllProviderTagQueryKt.result {
+            items.addAll(page.items)
             totalItems = page.totalItems.toInt()
         }
     }
