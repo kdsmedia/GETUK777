@@ -75,9 +75,19 @@ object SpinBalanceCalculator {
         return SpinResult(newBalance, processedSpin)
     }
 
+    /**
+     * A rollback moves money opposite to the spin it reverses: refunding a bet credits the player,
+     * clawing back a win debits them. Both directions restore the original real/bonus split, so a
+     * bonus-funded bet is refunded to the bonus pool rather than to real money.
+     */
     private fun rollback(balance: PlayerBalance, spin: Spin): SpinResult {
         val reference = domainRequireNotNull(spin.reference) { SpinReferenceRequiredException() }
 
+        return if (reference.isSettle) reclaim(balance, spin, reference)
+               else refund(balance, spin, reference)
+    }
+
+    private fun refund(balance: PlayerBalance, spin: Spin, reference: Spin): SpinResult {
         val toReal = reference.realAmount
         val toBonus = reference.bonusAmount
 
@@ -89,6 +99,26 @@ object SpinBalanceCalculator {
             amount = toReal + toBonus,
             realAmount = toReal,
             bonusAmount = toBonus
+        )
+
+        return SpinResult(newBalance, processedSpin)
+    }
+
+    private fun reclaim(balance: PlayerBalance, spin: Spin, reference: Spin): SpinResult {
+        // Clamped to what is still there: a provider can give up on a transaction long after the
+        // player has spent the win, and a balance cannot go negative. The spin records the amount
+        // actually reclaimed, so any shortfall stays visible downstream instead of being implied.
+        val fromReal = minOf(balance.realAmount, reference.realAmount)
+        val fromBonus = minOf(balance.bonusAmount, reference.bonusAmount)
+
+        val newBalance = balance.copy(
+            realAmount = balance.realAmount - fromReal,
+            bonusAmount = balance.bonusAmount - fromBonus
+        )
+        val processedSpin = spin.copy(
+            amount = fromReal + fromBonus,
+            realAmount = fromReal,
+            bonusAmount = fromBonus
         )
 
         return SpinResult(newBalance, processedSpin)

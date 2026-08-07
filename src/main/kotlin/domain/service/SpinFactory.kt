@@ -30,11 +30,18 @@ object SpinFactory {
         )
     }
 
-    fun rollback(round: Round, externalId: ExternalSpinId, amount: Amount): Spin =
+    /**
+     * A rollback always undoes a specific spin, so [reference] is required rather than optional —
+     * [SpinBalanceCalculator] reads the original real/bonus split off it and cannot work without it.
+     * A finished round is no obstacle: a provider may give up on a transaction long after the round
+     * closed, and the money still has to move back.
+     */
+    fun rollback(round: Round, externalId: ExternalSpinId, reference: Spin): Spin =
         Spin(
             externalId = externalId,
             round = round,
+            reference = reference,
             type = SpinType.ROLLBACK,
-            amount = amount,
+            amount = reference.amount,
         )
 }

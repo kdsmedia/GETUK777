@@ -1,5 +1,6 @@
 package api.webhook
 
+import infrastructure.aggregator.gamingflow.webhook.GamingFlowWebhook
 import infrastructure.aggregator.onegamehub.webhook.OneGameHubWebhook
 import infrastructure.aggregator.pragmatic.webhook.PragmaticWebhook
 import infrastructure.aggregator.tongame.webhook.TongameWebhook
@@ -16,12 +17,14 @@ fun Application.configureWebhook() {
     val oneGameHubWebhook = get<OneGameHubWebhook>()
     val pragmaticWebhook = get<PragmaticWebhook>()
     val tongameWebhook = get<TongameWebhook>()
+    val gamingFlowWebhook = get<GamingFlowWebhook>()
 
     routing {
         route("/api/webhook") {
             with(oneGameHubWebhook) { route() }
             with(pragmaticWebhook) { route() }
             with(tongameWebhook) { route() }
+            with(gamingFlowWebhook) { route() }
         }
     }
 }

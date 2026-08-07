@@ -6,6 +6,7 @@ import application.port.external.IEventPublisherPort
 import application.port.external.IPlayerLimitPort
 import application.port.external.IPlayerPort
 import application.port.external.IWalletPort
+import application.port.external.IWebhookGuardPort
 import application.port.factory.AggregatorAdapterProvider
 import application.port.factory.IAggregatorFactory
 import com.rabbitmq.client.Channel
@@ -22,6 +23,7 @@ import infrastructure.rabbitmq.PlaceSpinEventConsumer
 import infrastructure.rabbitmq.RabbitAppEventPublisher
 import infrastructure.rabbitmq.rabbitMqConnection
 import infrastructure.redis.PlayerLimitRedis
+import infrastructure.redis.WebhookGuardRedis
 import infrastructure.util.BackgroundWorker
 import infrastructure.wallet.CurrencyAdapter
 import infrastructure.wallet.WalletAdapter
@@ -36,6 +38,7 @@ val externalModule = module {
     single<ManagedChannel> { walletChannel(get()) }
     single<IWalletPort> { WalletAdapter(channel = get()) }
     single<IPlayerLimitPort> { PlayerLimitRedis(config = get()) }
+    single<IWebhookGuardPort> { WebhookGuardRedis(config = get()) }
     single<ICurrencyPort> { CurrencyAdapter(channel = get()) }
     // Separate gRPC channel to pam-engine (user-engine) for player profile lookups.
     single<IPlayerPort> { PamAdapter(channel = pamChannel(get())) }

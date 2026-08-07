@@ -43,6 +43,7 @@ import infrastructure.handler.session.EndRoundSessionHandler
 import infrastructure.handler.session.FindSessionBalanceHandler
 import infrastructure.handler.session.FindSessionHandler
 import infrastructure.handler.session.PlaceSpinSessionHandler
+import infrastructure.handler.session.RollbackSpinSessionHandler
 import infrastructure.handler.session.SettleSpinSessionHandler
 import infrastructure.handler.winner.LastWinnerQueryHandler
 import org.koin.dsl.module
@@ -60,6 +61,7 @@ val handlerModule = module {
     single { FindSessionHandler(sessionRepository = get()) }
     single { PlaceSpinSessionHandler(roundRepository = get(), spinRepository = get(), processSpinUsecase = get(), walletPort = get()) }
     single { SettleSpinSessionHandler(roundRepository = get(), spinRepository = get(), processSpinUsecase = get(), walletPort = get()) }
+    single { RollbackSpinSessionHandler(spinRepository = get(), processSpinUsecase = get(), walletPort = get()) }
     single { EndRoundSessionHandler(roundRepository = get(), finishRoundUsecase = get()) }
     single { FindSessionBalanceHandler(walletAdapter = get()) }
 

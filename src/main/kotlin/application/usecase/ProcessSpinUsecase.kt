@@ -93,7 +93,10 @@ class ProcessSpinUsecase(
 
     private suspend fun updateBalance(spin: Spin) {
         val session = spin.round.session
-        if (spin.isPlace) {
+        // PLACE takes money, SETTLE gives it back. A ROLLBACK moves it opposite to the spin it
+        // reverses, so rolling back a win is a withdrawal, not a deposit.
+        val takesMoney = spin.isPlace || (spin.isRollback && spin.reference?.isSettle == true)
+        if (takesMoney) {
             walletPort.withdraw(
                 playerId = session.playerId,
                 transactionId = session.id.toString(),

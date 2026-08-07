@@ -22,6 +22,7 @@ import application.command.provider.SaveProviderCommand
 import application.command.provider.SetProviderImageCommand
 import application.command.session.EndRoundSessionCommand
 import application.command.session.PlaceSpinSessionCommand
+import application.command.session.RollbackSpinSessionCommand
 import application.command.session.SettleSpinSessionCommand
 import application.query.aggregator.BatchAggregatorQuery
 import application.query.aggregator.FindAggregatorQuery
@@ -91,6 +92,7 @@ import infrastructure.handler.session.EndRoundSessionHandler
 import infrastructure.handler.session.FindSessionBalanceHandler
 import infrastructure.handler.session.FindSessionHandler
 import infrastructure.handler.session.PlaceSpinSessionHandler
+import infrastructure.handler.session.RollbackSpinSessionHandler
 import infrastructure.handler.session.SettleSpinSessionHandler
 import infrastructure.handler.winner.LastWinnerQueryHandler
 import org.koin.dsl.module
@@ -111,6 +113,7 @@ val busModule = module {
                 // Session
                 PlaceSpinSessionCommand::class.java to get<PlaceSpinSessionHandler>(),
                 SettleSpinSessionCommand::class.java to get<SettleSpinSessionHandler>(),
+                RollbackSpinSessionCommand::class.java to get<RollbackSpinSessionHandler>(),
                 EndRoundSessionCommand::class.java to get<EndRoundSessionHandler>(),
                 // Game
                 PlayGameCommand::class.java to get<PlayGameCommandHandler>(),

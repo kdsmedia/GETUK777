@@ -1,6 +1,7 @@
 package infrastructure.aggregator.gamingflow.client
 
 import java.nio.ByteBuffer
+import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicLong
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -39,6 +40,22 @@ class GamingFlowSigner(
         mac.update(body.toByteArray(Charsets.UTF_8))
 
         return "$keyId$KEY_SEPARATOR${mac.doFinal().joinToString("") { "%02x".format(it) }}"
+    }
+
+    /**
+     * Checks an inbound signature. Compared in constant time so a caller cannot recover the expected
+     * value byte by byte from response timing. A malformed nonce fails rather than throws — the
+     * header is attacker-controlled.
+     */
+    fun verify(body: String, nonce: String, timestamp: Long, signature: String?): Boolean {
+        if (signature == null) return false
+
+        val expected = runCatching { sign(body, nonce, timestamp) }.getOrNull() ?: return false
+
+        return MessageDigest.isEqual(
+            expected.toByteArray(Charsets.UTF_8),
+            signature.toByteArray(Charsets.UTF_8),
+        )
     }
 
     private companion object {

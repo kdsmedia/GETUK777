@@ -43,8 +43,14 @@ class SpinFactoryTest : FunSpec({
 
     test("rollback creates a ROLLBACK spin — allowed after round finish") {
         val finished = TestFixtures.round().finish()
-        val spin = SpinFactory.rollback(finished, ExternalSpinId("spin_3"), Amount(100))
+        val original = TestFixtures.spin(round = finished, externalId = "spin_1", amount = Amount(100))
+
+        val spin = SpinFactory.rollback(finished, ExternalSpinId("spin_3"), original)
+
         spin.type shouldBe SpinType.ROLLBACK
         spin.isRollback shouldBe true
+        // The amount is taken from the reference — a rollback cannot reverse a different sum.
+        spin.amount shouldBe Amount(100)
+        spin.reference shouldBe original
     }
 })
