@@ -1,0 +1,190 @@
+package application.usecase
+
+import application.port.external.IGamePort
+import application.port.factory.IAggregatorFactory
+import domain.model.Aggregator
+import domain.model.Game
+import domain.model.GameVariant
+import domain.model.Platform
+import domain.model.Provider
+import domain.repository.IGameRepository
+import domain.repository.IGameVariantRepository
+import domain.repository.IProviderRepository
+import domain.vo.Identity
+import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.shouldBe
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import support.TestFixtures
+
+/**
+ * The sync must never mint a second copy of a vendor that is already in the catalogue. Matching is by
+ * provider identity, and identity comes from whatever the aggregator calls the vendor — so the same
+ * studio spelled differently by two aggregators only collapses through the alias map.
+ */
+class SyncAggregatorUsecaseTest : FunSpec({
+
+    fun aggregatorGame(
+        symbol: String,
+        name: String,
+        providerName: String,
+    ) = IGamePort.AggregatorGame(
+        symbol = symbol,
+        name = name,
+        providerName = providerName,
+        freeSpinEnable = false,
+        freeChipEnable = false,
+        jackpotEnable = false,
+        demoEnable = true,
+        bonusBuyEnable = false,
+        locales = emptyList(),
+        platforms = listOf(Platform.DESKTOP),
+    )
+
+    class Harness(
+        existingProviders: List<Provider>,
+        existingGames: List<Game>,
+        val aggregator: Aggregator,
+        games: List<IGamePort.AggregatorGame>,
+    ) {
+        val savedProviders = mutableListOf<Provider>()
+        val savedGames = mutableListOf<List<Game>>()
+        val savedVariants = mutableListOf<List<GameVariant>>()
+
+        private val providerRepository = mockk<IProviderRepository>()
+        private val gameRepository = mockk<IGameRepository>()
+        private val variantRepository = mockk<IGameVariantRepository>()
+        private val factory = mockk<IAggregatorFactory>()
+
+        init {
+            val port = mockk<IGamePort>()
+            coEvery { port.getAggregatorGames() } returns games
+            coEvery { factory.createGameAdapter(any()) } returns port
+
+            coEvery { providerRepository.findAll() } returns existingProviders
+            coEvery { providerRepository.save(any()) } answers {
+                firstArg<Provider>().also { savedProviders += it }
+            }
+            coEvery { gameRepository.findAll() } returns existingGames
+            coEvery { gameRepository.saveAll(any()) } answers {
+                firstArg<List<Game>>().also { savedGames += it }
+            }
+            coEvery { variantRepository.findAllByIntegration(any()) } returns emptyList()
+            coEvery { variantRepository.saveAll(any()) } answers {
+                firstArg<List<GameVariant>>().also { savedVariants += it }
+            }
+        }
+
+        suspend fun run() = SyncAggregatorUsecase(
+            aggregatorFactory = factory,
+            gameRepository = gameRepository,
+            gameVariantRepository = variantRepository,
+            providerRepository = providerRepository,
+        ).invoke(aggregator)
+
+        val persistedGames: List<Game> get() = savedGames.flatten()
+        val persistedVariants: List<GameVariant> get() = savedVariants.flatten()
+    }
+
+    test("an aliased provider reuses the existing provider and its games, adding only a variant") {
+        val incumbent = TestFixtures.aggregator(identity = "onegamehub", integration = "ONEGAMEHUB")
+        val amusnet = TestFixtures.provider(identity = "amusnet", aggregator = incumbent)
+        val existingGame = TestFixtures.game(identity = "amusnet_100_burning_hot", provider = amusnet)
+
+        val harness = Harness(
+            existingProviders = listOf(amusnet),
+            existingGames = listOf(existingGame),
+            // The new aggregator calls the very same studio "EGT".
+            aggregator = TestFixtures.aggregator(
+                identity = "gamingflow",
+                integration = "GAMINGFLOW",
+                config = mapOf("providerAliases" to mapOf("egt" to "amusnet")),
+            ),
+            games = listOf(aggregatorGame("bhot_100", "100 Burning Hot", "EGT")),
+        )
+
+        harness.run()
+
+        // No second studio, no second game — only the variant that makes it launchable.
+        harness.savedProviders.shouldBeEmpty()
+        harness.persistedGames.map { it.identity.value } shouldContainExactly listOf("amusnet_100_burning_hot")
+        harness.persistedVariants.map { it.integration } shouldContainExactly listOf("GAMINGFLOW")
+        harness.persistedVariants.single().game.identity shouldBe existingGame.identity
+
+        // The game keeps the provider that already serves it.
+        harness.persistedGames.single().provider.identity.value shouldBe "amusnet"
+    }
+
+    test("without an alias the same studio is duplicated — this is what the alias map prevents") {
+        val incumbent = TestFixtures.aggregator(identity = "onegamehub", integration = "ONEGAMEHUB")
+        val amusnet = TestFixtures.provider(identity = "amusnet", aggregator = incumbent)
+        val existingGame = TestFixtures.game(identity = "amusnet_100_burning_hot", provider = amusnet)
+
+        val harness = Harness(
+            existingProviders = listOf(amusnet),
+            existingGames = listOf(existingGame),
+            aggregator = TestFixtures.aggregator(identity = "gamingflow", integration = "GAMINGFLOW"),
+            games = listOf(aggregatorGame("bhot_100", "100 Burning Hot", "EGT")),
+        )
+
+        harness.run()
+
+        harness.savedProviders.map { it.identity.value } shouldContainExactly listOf("egt")
+        harness.persistedGames.map { it.identity.value } shouldContainExactly listOf("egt_100_burning_hot")
+    }
+
+    test("a provider already present under its own name is reused without an alias") {
+        val incumbent = TestFixtures.aggregator(identity = "onegamehub", integration = "ONEGAMEHUB")
+        val bgaming = TestFixtures.provider(identity = "bgaming", aggregator = incumbent)
+        val existingGame = TestFixtures.game(identity = "bgaming_lucky_lady", provider = bgaming)
+
+        val harness = Harness(
+            existingProviders = listOf(bgaming),
+            existingGames = listOf(existingGame),
+            aggregator = TestFixtures.aggregator(identity = "gamingflow", integration = "GAMINGFLOW"),
+            games = listOf(aggregatorGame("lucky_lady_gf", "Lucky Lady", "bgaming")),
+        )
+
+        harness.run()
+
+        harness.savedProviders.shouldBeEmpty()
+        harness.persistedGames.map { it.identity.value } shouldContainExactly listOf("bgaming_lucky_lady")
+        harness.persistedVariants.single().symbol.value shouldBe "lucky_lady_gf"
+    }
+
+    test("punctuation differences in a game title do not create a second game") {
+        val incumbent = TestFixtures.aggregator(identity = "onegamehub", integration = "ONEGAMEHUB")
+        val booongo = TestFixtures.provider(identity = "booongo", aggregator = incumbent)
+        val existingGame = TestFixtures.game(identity = "booongo_book_of_sun_multichance", provider = booongo)
+
+        val harness = Harness(
+            existingProviders = listOf(booongo),
+            existingGames = listOf(existingGame),
+            aggregator = TestFixtures.aggregator(identity = "gamingflow", integration = "GAMINGFLOW"),
+            // Same title, colon instead of nothing.
+            games = listOf(aggregatorGame("bos_mc", "Book of Sun: Multichance", "booongo")),
+        )
+
+        harness.run()
+
+        harness.persistedGames.map { it.identity.value } shouldContainExactly
+            listOf("booongo_book_of_sun_multichance")
+    }
+
+    test("a genuinely new studio is still created") {
+        val harness = Harness(
+            existingProviders = emptyList(),
+            existingGames = emptyList(),
+            aggregator = TestFixtures.aggregator(identity = "gamingflow", integration = "GAMINGFLOW"),
+            games = listOf(aggregatorGame("starburst", "Starburst", "netent")),
+        )
+
+        harness.run()
+
+        harness.savedProviders.map { it.identity.value } shouldContainExactly listOf("netent")
+        harness.persistedGames.map { it.identity.value } shouldContainExactly listOf("netent_starburst")
+    }
+})

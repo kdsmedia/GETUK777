@@ -42,14 +42,17 @@ class SyncAggregatorUsecase(
         val existingGames = gamesAsync.await().associateBy { it.identity }
         val existingVariants = variantsAsync.await()
 
+        val aliases = providerAliases(aggregator)
+
         val updateGames = LinkedHashMap<Identity, Game>()
         val updatedVariants = mutableListOf<GameVariant>()
         var newProviders = 0
         var newGames = 0
+        var reusedGames = 0
         var updatedVariantsCount = 0
 
         for (aggregatorGame in aggregatorGames) {
-            val providerIdentity = Identity.generate(aggregatorGame.providerName)
+            val providerIdentity = resolveProviderIdentity(aggregatorGame.providerName, aliases)
 
             var provider = allProvidersAsync.await().firstOrNull { it.identity == providerIdentity }
 
@@ -71,10 +74,13 @@ class SyncAggregatorUsecase(
 
             // Tags are refreshed on every sync. Images are NOT the aggregator's to set —
             // artwork is uploaded by the operator through GameService.UpdateImage.
+            // An existing game is reused as-is — same row, same provider, same artwork — and this
+            // aggregator only contributes another variant below. Re-pointing its provider would
+            // yank the game away from whichever aggregator currently serves it.
             val game = updateGames[gameIdentity]
                 ?: existingGame?.copy(
                     tags = aggregatorGame.tags.ifEmpty { existingGame.tags },
-                )
+                )?.also { reusedGames++ }
                 ?: Game(
                     identity = gameIdentity,
                     name = aggregatorGame.name,
@@ -120,8 +126,10 @@ class SyncAggregatorUsecase(
         }
 
         logger.info(
-            "[{}] summary: {} fetched, {} new games, {} new providers, {} existing variants refreshed, {} variants total",
-            id, aggregatorGames.size, newGames, newProviders, updatedVariantsCount, updatedVariants.size,
+            "[{}] summary: {} fetched, {} new games, {} reused games, {} new providers, " +
+                "{} existing variants refreshed, {} variants total",
+            id, aggregatorGames.size, newGames, reusedGames, newProviders,
+            updatedVariantsCount, updatedVariants.size,
         )
 
         gameRepository.saveAll(updateGames.values.toList())
@@ -130,4 +138,33 @@ class SyncAggregatorUsecase(
         logger.info("[{}] persisted: {} games, {} variants", id, updateGames.size, updatedVariants.size)
     }
 
+    /**
+     * Canonical provider identity for a name as this aggregator spells it.
+     *
+     * Providers are matched by identity, and identity is derived from the aggregator's own spelling
+     * — so the same vendor listed as `egt` by one aggregator and `amusnet` by another looks like two
+     * vendors, and every one of its games gets duplicated under a second provider. No amount of
+     * identity comparison can see through that, because the names genuinely differ. The alias map
+     * (aggregator config key `providerAliases`, e.g. `{"egt": "amusnet"}`) is what collapses them:
+     * once the identity resolves to the one already in the database, the existing provider and its
+     * games are reused and this aggregator only adds variants.
+     */
+    private fun resolveProviderIdentity(providerName: String, aliases: Map<String, String>): Identity {
+        val declared = Identity.generate(providerName)
+        return aliases[declared.value]?.let { Identity(it) } ?: declared
+    }
+
+    private fun providerAliases(aggregator: Aggregator): Map<String, String> {
+        val configured = aggregator.config[PROVIDER_ALIASES] as? Map<*, *> ?: return emptyMap()
+
+        return configured.entries.mapNotNull { (key, value) ->
+            val from = key?.toString()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val to = value?.toString()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            from to to
+        }.toMap()
+    }
+
+    private companion object {
+        const val PROVIDER_ALIASES = "providerAliases"
+    }
 }
