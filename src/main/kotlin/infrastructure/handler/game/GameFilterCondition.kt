@@ -1,12 +1,14 @@
 package infrastructure.handler.game
 
 import application.query.game.GameFilter
+import infrastructure.persistence.table.AggregatorTable
 import infrastructure.persistence.table.CollectionTable
 import infrastructure.persistence.table.GameCollectionTable
 import infrastructure.persistence.table.GameTable
 import infrastructure.persistence.table.GameVariantTable
 import infrastructure.persistence.table.ProviderTable
 import org.jetbrains.exposed.sql.Expression
+import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.TextColumnType
@@ -16,8 +18,29 @@ import org.jetbrains.exposed.sql.exists
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.wrapAsExpression
 
+/**
+ * A game is only listable through the variant its provider's aggregator serves. Everything the
+ * storefront renders about a game — symbol, platforms, demo, paylines — is read off that variant,
+ * and launching resolves it the same way. With no matching variant there is nothing to show and
+ * nothing to open: the game would render with every variant field at its default (demo false,
+ * empty platforms, zero paylines) and answer `Game not found` on click. Moving a provider to an
+ * aggregator that does not carry part of its catalog is exactly when this happens.
+ */
+private fun servedByItsAggregator(): Op<Boolean> = exists(
+    GameVariantTable
+        .join(ProviderTable, JoinType.INNER, GameTable.provider, ProviderTable.id)
+        .join(AggregatorTable, JoinType.INNER, ProviderTable.aggregator, AggregatorTable.id)
+        .select(GameVariantTable.id)
+        .where {
+            (GameVariantTable.game eq GameTable.id) and
+                (GameVariantTable.integration eq AggregatorTable.integration)
+        }
+)
+
 fun GameFilter.toCondition(): Op<Boolean> {
     val conditions = buildList<Op<Boolean>> {
+        add(servedByItsAggregator())
+
         if (query.isNotBlank()) {
             val pattern = "%${query.lowercase()}%"
             add(Op.build {
