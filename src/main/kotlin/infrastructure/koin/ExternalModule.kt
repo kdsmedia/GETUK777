@@ -11,6 +11,7 @@ import application.port.factory.IAggregatorFactory
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import infrastructure.aggregator.AggregatorRegistry
+import infrastructure.aggregator.gamingflow.GamingFlowAdapterProvider
 import infrastructure.aggregator.onegamehub.OneGameHubAdapterProvider
 import infrastructure.aggregator.pateplay.PateplayAdapterProvider
 import infrastructure.aggregator.pragmatic.PragmaticAdapterProvider
@@ -51,6 +52,7 @@ val externalModule = module {
     single(named("pragmatic")) { PragmaticAdapterProvider() } bind AggregatorAdapterProvider::class
     single(named("pateplay")) { PateplayAdapterProvider() } bind AggregatorAdapterProvider::class
     single(named("tongame")) { TongameAdapterProvider() } bind AggregatorAdapterProvider::class
+    single(named("gamingflow")) { GamingFlowAdapterProvider() } bind AggregatorAdapterProvider::class
     single<IAggregatorFactory> {
         AggregatorRegistry(providers = getAll<AggregatorAdapterProvider>())
     }
