@@ -20,6 +20,7 @@ RUN tar -xf /tmp/casino-engine-*.tar -C /app --strip-components=1 && \
     chmod +x /app/bin/casino-engine && \
     chmod +x /app/bin/sync-aggregators && \
     chmod +x /app/bin/db-migrate && \
+    chmod +x /app/bin/daily-rtp && \
     chown -R appuser:appgroup /app
 
 # Switch to non-root user
