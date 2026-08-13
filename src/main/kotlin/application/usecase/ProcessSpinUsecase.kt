@@ -31,8 +31,11 @@ class ProcessSpinUsecase(
             spin.type, spin.round.session.id, spin.round.id, spin.amount, spin.round.freespinId,
         )
 
-        val result = if (spin.round.freespinId != null) {
-            processFreespin(spin)
+        // A free round's BET costs nothing, so it neither checks nor moves the balance. Its
+        // WINNINGS are ordinary money and go through the normal path — skipping those too would
+        // mean the player never receives what the bonus paid out.
+        val result = if (spin.round.freespinId != null && spin.isPlace) {
+            freeBet(spin)
         } else {
             process(spin)
         }
@@ -64,7 +67,7 @@ class ProcessSpinUsecase(
         }
     }
 
-    private suspend fun processFreespin(spin: Spin): SpinResult {
+    private suspend fun freeBet(spin: Spin): SpinResult {
         val balance = walletPort.findBalance(
             playerId = spin.round.session.playerId,
             currency = spin.round.session.currency,

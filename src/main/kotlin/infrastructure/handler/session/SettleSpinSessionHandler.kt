@@ -11,6 +11,7 @@ import domain.repository.ISpinRepository
 import domain.service.SpinFactory
 import domain.vo.ExternalRoundId
 import domain.vo.ExternalSpinId
+import domain.vo.FreespinId
 
 class SettleSpinSessionHandler(
     private val roundRepository: IRoundRepository,
@@ -39,7 +40,12 @@ class SettleSpinSessionHandler(
         val round = roundRepository.findByExternalIdAndSessionId(
             externalId = externalRoundId,
             sessionId = session.id,
-        )?.copy(session = session) ?: roundRepository.save(session.openRound(externalId = externalRoundId))
+        )?.copy(session = session) ?: roundRepository.save(
+            session.openRound(
+                externalId = externalRoundId,
+                freespinId = command.freespinId?.let { FreespinId(it) },
+            )
+        )
 
         val spin = SpinFactory.settle(
             round = round,

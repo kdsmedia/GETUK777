@@ -1,6 +1,7 @@
 package infrastructure.aggregator.pragmatic.adapter
 
 import application.port.external.IGamePort
+import domain.model.Freespin
 import domain.model.Platform
 import domain.model.Session
 import domain.vo.Currency
@@ -56,7 +57,7 @@ class PragmaticGameAdapter(
         )
     }
 
-    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): IGamePort.Launch {
+    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String, freespin: Freespin?): IGamePort.Launch {
         val url = client.getLaunchUrl(
             LaunchUrlRequestDto(
                 gameSymbol = session.gameVariant.symbol.value,

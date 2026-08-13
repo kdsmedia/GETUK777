@@ -22,6 +22,7 @@ val usecaseModule = module {
         OpenSessionUsecase(
             aggregatorFactory = get(),
             sessionRepository = get(),
+            freespinRepository = get(),
             eventPublisher = get(),
         )
     }

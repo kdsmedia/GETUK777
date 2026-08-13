@@ -1,6 +1,7 @@
 package infrastructure.aggregator.onegamehub.adapter
 
 import application.port.external.IGamePort
+import domain.model.Freespin
 import domain.model.Platform
 import domain.model.Session
 import domain.vo.Currency
@@ -69,7 +70,7 @@ class OneGameHubGameAdapter(
             ?: error("No game URL returned from OneGameHub for demo")
     }
 
-    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): IGamePort.Launch {
+    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String, freespin: Freespin?): IGamePort.Launch {
         val response = client.getLaunchUrl(
             gameSymbol = session.gameVariant.symbol.value,
             sessionToken = session.token.value,

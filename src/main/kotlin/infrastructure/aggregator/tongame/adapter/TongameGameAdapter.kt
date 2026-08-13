@@ -2,6 +2,7 @@ package infrastructure.aggregator.tongame.adapter
 
 import application.port.external.IGamePort
 import domain.exception.conflict.DemoNotSupportedException
+import domain.model.Freespin
 import domain.model.Platform
 import domain.model.Session
 import domain.vo.Currency
@@ -42,7 +43,7 @@ class TongameGameAdapter(
         lobbyUrl: String,
     ): String = throw DemoNotSupportedException()
 
-    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): IGamePort.Launch {
+    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String, freespin: Freespin?): IGamePort.Launch {
         check(config.gameHost.isNotBlank()) { "TONGame game host not configured" }
 
         val gameSymbol = session.gameVariant.symbol.value

@@ -5,12 +5,15 @@ import application.port.factory.IAggregatorFactory
 import domain.event.SessionEvent
 import domain.exception.DomainException
 import domain.model.Session
+import domain.repository.IFreespinRepository
 import domain.repository.ISessionRepository
+import domain.util.ext.InstantExt
 import org.slf4j.LoggerFactory
 
 class OpenSessionUsecase(
     private val aggregatorFactory: IAggregatorFactory,
     private val sessionRepository: ISessionRepository,
+    private val freespinRepository: IFreespinRepository,
     private val eventPublisher: IEventPublisherPort,
 ) {
 
@@ -34,7 +37,22 @@ class OpenSessionUsecase(
         // UNKNOWN_SESSION, surfacing here as a 500.
         val savedSession = sessionRepository.save(session)
 
-        val launch = gameAdapter.getLaunchUrl(savedSession, lobbyUrl)
+        // Resolved here rather than asked for by the caller: whether the next round is free is a
+        // fact about the player's grants, not something the lobby should have to know and pass in.
+        val freespin = freespinRepository.findRedeemable(
+            playerId = session.playerId,
+            gameVariantId = session.gameVariant.id,
+            now = InstantExt.now(),
+        )
+
+        if (freespin != null) {
+            logger.info(
+                "Session opens on freespin: reference={} left={}",
+                freespin.referenceId.value, freespin.remainingCount,
+            )
+        }
+
+        val launch = gameAdapter.getLaunchUrl(savedSession, lobbyUrl, freespin)
 
         // Providers that mint their own session id report it back here. Persisting it lets an
         // inbound webhook resolve the session by the provider's identifier as well as by ours.

@@ -11,6 +11,7 @@ import application.command.collection.SaveCollectionCommand
 import application.command.collection.SetCollectionImageCommand
 import application.command.collection.UpdateCollectionGameOrderCommand
 import application.command.freespin.CancelFreespinCommand
+import application.command.freespin.ChargeFreespinCommand
 import application.command.freespin.CreateFreespinCommand
 import application.command.game.AddGameFavouriteCommand
 import application.command.game.PlayGameCommand
@@ -30,6 +31,7 @@ import application.query.aggregator.FindAllAggregatorQuery
 import application.query.collection.BatchCollectionQuery
 import application.query.collection.FindAllCollectionQuery
 import application.query.collection.FindCollectionQuery
+import application.query.freespin.FindRedeemableFreespinQuery
 import application.query.freespin.GetFreespinPresetsQuery
 import application.query.game.BatchGameQuery
 import application.query.game.FindAllActiveRtpGameQuery
@@ -66,7 +68,9 @@ import infrastructure.handler.collection.SaveCollectionCommandHandler
 import infrastructure.handler.collection.UpdateCollectionGameOrderCommandHandler
 import infrastructure.handler.common.SetImageCommandHandler
 import infrastructure.handler.freespin.CancelFreespinCommandHandler
+import infrastructure.handler.freespin.ChargeFreespinCommandHandler
 import infrastructure.handler.freespin.CreateFreespinCommandHandler
+import infrastructure.handler.freespin.FindRedeemableFreespinQueryHandler
 import infrastructure.handler.game.AddGameFavouriteCommandHandler
 import infrastructure.handler.game.BatchGameQueryHandler
 import infrastructure.handler.game.FindAllActiveRtpGameQueryHandler
@@ -127,6 +131,7 @@ val busModule = module {
                 // Freespin
                 CreateFreespinCommand::class.java to get<CreateFreespinCommandHandler>(),
                 CancelFreespinCommand::class.java to get<CancelFreespinCommandHandler>(),
+                ChargeFreespinCommand::class.java to get<ChargeFreespinCommandHandler>(),
                 // Provider
                 SaveProviderCommand::class.java to get<SaveProviderCommandHandler>(),
                 SetProviderImageCommand::class.java to setImageHandler,
@@ -156,6 +161,7 @@ val busModule = module {
                 FindAllGameCollectionQuery::class.java to get<FindAllGameCollectionQueryHandler>(),
                 GetGameDemoUrlQuery::class.java to get<GetGameDemoUrlQueryHandler>(),
                 GetFreespinPresetsQuery::class.java to get<GetFreespinPresetsQueryHandler>(),
+                FindRedeemableFreespinQuery::class.java to get<FindRedeemableFreespinQueryHandler>(),
                 FindProviderQuery::class.java to get<FindProviderQueryHandler>(),
                 FindAllProviderQuery::class.java to get<FindAllProviderQueryHandler>(),
                 FindAllProviderTagQuery::class.java to get<FindAllProviderTagQueryHandler>(),

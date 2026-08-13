@@ -1,6 +1,7 @@
 package infrastructure.aggregator.pateplay.adapter
 
 import application.port.external.IGamePort
+import domain.model.Freespin
 import domain.model.Platform
 import domain.model.Session
 import domain.vo.Currency
@@ -48,7 +49,7 @@ class PateplayGameAdapter(
         )
     }
 
-    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): IGamePort.Launch {
+    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String, freespin: Freespin?): IGamePort.Launch {
         check(config.gameLaunchUrl.isNotBlank()) { "PatePlay game launch URL not configured" }
 
         return IGamePort.Launch(

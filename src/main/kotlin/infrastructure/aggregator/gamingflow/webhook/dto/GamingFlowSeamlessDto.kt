@@ -78,6 +78,10 @@ data class RollbackTransactionParams(
 @Serializable
 data class BalanceResult(
     val balance: Long,
+
+    /** Omitted when the player holds no free rounds on this game — the field is optional and a
+     *  zero would read as "a bonus exists and is spent". */
+    val freeroundsLeft: Int? = null,
 )
 
 @Serializable
@@ -85,4 +89,10 @@ data class TransactionResult(
     val newBalance: Long,
 
     val transactionId: String,
+
+    val freeroundsLeft: Int? = null,
+
+    /** Tells the provider the round was played off the bonus, which is what makes it echo
+     *  `freeround: true` back on that round. */
+    val freeroundWasCharged: Boolean? = null,
 )

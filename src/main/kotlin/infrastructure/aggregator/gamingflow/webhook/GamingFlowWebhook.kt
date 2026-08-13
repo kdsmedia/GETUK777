@@ -1,6 +1,7 @@
 package infrastructure.aggregator.gamingflow.webhook
 
 import application.Bus
+import application.command.freespin.ChargeFreespinCommand
 import application.command.session.EndRoundSessionCommand
 import application.command.session.PlaceSpinSessionCommand
 import application.command.session.RollbackSpinSessionCommand
@@ -8,12 +9,14 @@ import application.command.session.SettleSpinSessionCommand
 import application.port.external.ICurrencyPort
 import application.port.external.IWebhookGuardPort
 import application.query.aggregator.FindAggregatorQuery
+import application.query.freespin.FindRedeemableFreespinQuery
 import application.query.session.FindSessionBalanceQuery
 import application.query.session.FindSessionByExternalTokenQuery
 import application.query.session.FindSessionQuery
 import domain.exception.forbidden.InsufficientBalanceException
 import domain.exception.forbidden.MaxPlaceSpinException
 import domain.exception.notfound.SessionNotFoundException
+import domain.model.Freespin
 import domain.model.PlayerBalance
 import domain.model.Session
 import domain.vo.Amount
@@ -59,9 +62,10 @@ import kotlin.math.roundToLong
  * already recognise a committed spin and answer with the current balance instead of moving money
  * twice.
  *
- * Free rounds are not served here. The provider keeps only a bonus id and expects the operator to own
- * the remaining-round counter, which casino-engine has no store for — so a call that tries to charge
- * one is refused rather than silently billed as a normal bet.
+ * Free rounds are split across the two sides: the provider stores only the promotion id, while the
+ * remaining-round count is ours. So `getBalance` reports `freeroundsLeft` from our own `Freespin`
+ * grant and `withdrawAndDeposit` spends it — and, exactly as the provider specifies, charging a free
+ * round REPLACES the bet rather than preceding it. Winnings are paid normally either way.
  *
  * The aggregator row must be registered under identity [AGGREGATOR_IDENTITY]; its config supplies the
  * signing key and casino id.
@@ -152,17 +156,25 @@ class GamingFlowWebhook(
         val session = resolveSession(params.sessionAlternativeId, params.sessionId, params.currency)
         val balance = bus(FindSessionBalanceQuery(session))
 
-        // freeroundsLeft is deliberately absent — see the class comment.
         return json.encodeToJsonElement(
             BalanceResult.serializer(),
-            BalanceResult(balance = balance.toMinorUnits(session.currency))
+            BalanceResult(
+                balance = balance.toMinorUnits(session.currency),
+                freeroundsLeft = redeemableFreespin(session)?.remainingCount,
+            )
         )
     }
 
+    /** The free-round balance is ours to keep for this provider: it stores the promotion id and
+     *  nothing else, and asks us for the count on every call. */
+    private suspend fun redeemableFreespin(session: Session) = bus(
+        FindRedeemableFreespinQuery(
+            playerId = session.playerId,
+            gameVariantId = session.gameVariant.id,
+        )
+    )
+
     private suspend fun withdrawAndDeposit(params: WithdrawAndDepositParams): JsonElement {
-        if ((params.chargeFreerounds ?: 0) > 0) {
-            throw SeamlessException(ERR_UNKNOWN, "Free rounds are not enabled for this integration")
-        }
         if (params.deposit < 0) throw SeamlessException(ERR_NEGATIVE_DEPOSIT, "Negative deposit")
         if (params.withdraw < 0) throw SeamlessException(ERR_NEGATIVE_WITHDRAWAL, "Negative withdrawal")
 
@@ -185,9 +197,14 @@ class GamingFlowWebhook(
         // A round id is optional on the wire; the transaction ref keeps single-shot rounds distinct.
         val roundId = params.gameRoundRef ?: params.transactionRef
 
+        // Per the provider's own order of operations: charging free rounds REPLACES the bet, it
+        // does not precede it. A win is still paid either way.
+        val charged = chargeFreerounds(session, params)
+        val freespinId = charged?.referenceId?.value
+
         var balance: PlayerBalance? = null
 
-        if (params.withdraw > 0) {
+        if (charged == null && params.withdraw > 0) {
             balance = bus(
                 PlaceSpinSessionCommand(
                     session = session,
@@ -195,6 +212,7 @@ class GamingFlowWebhook(
                     externalRoundId = roundId,
                     externalSpinId = params.transactionRef.placeSpinId(),
                     amount = params.withdraw.toSystemUnits(session.currency),
+                    freespinId = freespinId,
                 )
             )
         }
@@ -207,6 +225,7 @@ class GamingFlowWebhook(
                     externalRoundId = roundId,
                     externalSpinId = params.transactionRef.settleSpinId(),
                     amount = params.deposit.toSystemUnits(session.currency),
+                    freespinId = freespinId,
                 )
             )
         }
@@ -221,8 +240,36 @@ class GamingFlowWebhook(
             TransactionResult(
                 newBalance = newBalance.toMinorUnits(session.currency),
                 transactionId = params.transactionRef,
+                freeroundsLeft = charged?.remainingCount,
+                freeroundWasCharged = charged?.let { true },
             )
         )
+    }
+
+    /**
+     * Spends free rounds off the grant the provider names, or answers null when this call is an
+     * ordinary paid bet.
+     *
+     * The grant is looked up by the `bonusId` the provider quotes rather than by player and game,
+     * so a charge can only ever hit the promotion the session was opened against.
+     */
+    private suspend fun chargeFreerounds(session: Session, params: WithdrawAndDepositParams): Freespin? {
+        val count = params.chargeFreerounds ?: 0
+        val bonusId = params.bonusId
+
+        if (count <= 0 || bonusId.isNullOrBlank()) return null
+
+        return runCatching {
+            bus(ChargeFreespinCommand(referenceId = bonusId, count = count))
+        }.getOrElse { cause ->
+            logger.warn(
+                "GamingFlow free round not charged: bonus={} count={} session={}: {}",
+                bonusId, count, session.id, cause.message,
+            )
+            // Refusing outright is the safe answer: silently billing the player for a round the
+            // game believes is free would take money they never agreed to stake.
+            throw SeamlessException(ERR_UNKNOWN, "Free rounds are not available for bonus $bonusId")
+        }
     }
 
     private suspend fun rollbackTransaction(params: RollbackTransactionParams): JsonElement {

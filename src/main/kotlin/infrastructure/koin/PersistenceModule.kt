@@ -2,6 +2,7 @@ package infrastructure.koin
 
 import domain.repository.IAggregatorRepository
 import domain.repository.ICollectionRepository
+import domain.repository.IFreespinRepository
 import domain.repository.IGameRepository
 import domain.repository.IGameVariantRepository
 import domain.repository.IProviderRepository
@@ -10,6 +11,7 @@ import domain.repository.ISessionRepository
 import domain.repository.ISpinRepository
 import infrastructure.persistence.repository.AggregatorRepositoryImpl
 import infrastructure.persistence.repository.CollectionRepositoryImpl
+import infrastructure.persistence.repository.FreespinRepositoryImpl
 import infrastructure.persistence.repository.GameRepositoryImpl
 import infrastructure.persistence.repository.GameVariantRepositoryImpl
 import infrastructure.persistence.repository.ProviderRepositoryImpl
@@ -22,6 +24,7 @@ val persistenceModule = module {
     single<ISessionRepository> { SessionRepositoryImpl() }
     single<IRoundRepository> { RoundRepositoryImpl() }
     single<ISpinRepository> { SpinRepositoryImpl() }
+    single<IFreespinRepository> { FreespinRepositoryImpl() }
     single<IGameRepository> { GameRepositoryImpl() }
     single<IGameVariantRepository> { GameVariantRepositoryImpl() }
     single<IProviderRepository> { ProviderRepositoryImpl() }

@@ -1,5 +1,6 @@
 package application.port.external
 
+import domain.model.Freespin
 import domain.model.Platform
 import domain.model.Session
 import domain.vo.Currency
@@ -41,5 +42,10 @@ interface IGamePort {
         lobbyUrl: String,
     ): String
 
-    suspend fun getLaunchUrl(session: Session, lobbyUrl: String): Launch
+    /**
+     * [freespin] is the grant the player is about to play through, when there is one. Providers
+     * that attach free rounds at session creation need it here — the round is decided when the
+     * session opens, not when the first spin arrives.
+     */
+    suspend fun getLaunchUrl(session: Session, lobbyUrl: String, freespin: Freespin? = null): Launch
 }

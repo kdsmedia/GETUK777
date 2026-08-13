@@ -1,6 +1,7 @@
 package infrastructure.aggregator.gamingflow
 
 import application.Bus
+import application.command.freespin.ChargeFreespinCommand
 import application.command.session.EndRoundSessionCommand
 import application.command.session.PlaceSpinSessionCommand
 import application.command.session.RollbackSpinSessionCommand
@@ -8,14 +9,18 @@ import application.command.session.SettleSpinSessionCommand
 import application.port.external.ICurrencyPort
 import application.port.external.IWebhookGuardPort
 import application.query.aggregator.FindAggregatorQuery
+import application.query.freespin.FindRedeemableFreespinQuery
 import application.query.session.FindSessionBalanceQuery
 import application.query.session.FindSessionByExternalTokenQuery
 import application.query.session.FindSessionQuery
+import domain.exception.conflict.FreespinExhaustedException
 import domain.exception.forbidden.InsufficientBalanceException
 import domain.exception.notfound.SessionNotFoundException
+import domain.model.Freespin
 import domain.model.PlayerBalance
 import domain.vo.Amount
 import domain.vo.Currency
+import domain.vo.FreespinId
 import infrastructure.aggregator.gamingflow.webhook.GamingFlowWebhook
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -32,8 +37,10 @@ import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -57,6 +64,18 @@ class GamingFlowWebhookTest : FunSpec({
 
     val session = TestFixtures.session(currency = "UAH", playerId = "player_1", token = "token_abc")
     val balance = PlayerBalance(Amount(4_400), Amount.ZERO, Currency("UAH"))
+
+    fun freespin(remaining: Int) = Freespin(
+        referenceId = FreespinId("bonus-1"),
+        playerId = session.playerId,
+        gameVariant = session.gameVariant,
+        currency = session.currency,
+        spinAmount = Amount(25),
+        totalCount = 10,
+        remainingCount = remaining,
+        startAt = Instant.parse("2026-08-13T00:00:00Z"),
+        endAt = Instant.parse("2026-09-13T00:00:00Z"),
+    )
 
     lateinit var bus: Bus
     lateinit var guard: IWebhookGuardPort
@@ -90,6 +109,8 @@ class GamingFlowWebhookTest : FunSpec({
         )
         coEvery { bus(ofType<FindSessionQuery>()) } returns session
         coEvery { bus(ofType<FindSessionBalanceQuery>()) } returns balance
+        // No grant unless a spec says otherwise: most spins are not free.
+        coEvery { bus(ofType<FindRedeemableFreespinQuery>()) } returns null
 
         webhook = GamingFlowWebhook(bus = bus, currencyPort = currency, guardPort = guard)
     }
@@ -324,6 +345,75 @@ class GamingFlowWebhookTest : FunSpec({
             val error = Json.parseToJsonElement(response.bodyAsText()).jsonObject["error"]!!.jsonObject
             error["code"]!!.jsonPrimitive.int shouldBe 7
         }
+    }
+
+    test("getBalance reports the free rounds we still hold for the player") {
+        coEvery { bus(ofType<FindRedeemableFreespinQuery>()) } returns freespin(remaining = 7)
+
+        runWebhook { client ->
+            val response = client.call(
+                method = "getBalance",
+                params = """{"currency":"UAH","sessionAlternativeId":"token_abc"}""",
+            )
+
+            val result = Json.parseToJsonElement(response.bodyAsText()).jsonObject["result"]!!.jsonObject
+            result["freeroundsLeft"]!!.jsonPrimitive.int shouldBe 7
+        }
+    }
+
+    test("a charged free round replaces the bet and still pays the win") {
+        coEvery { bus(ofType<ChargeFreespinCommand>()) } returns freespin(remaining = 4)
+        coEvery { bus(ofType<SettleSpinSessionCommand>()) } returns balance
+
+        runWebhook { client ->
+            val response = client.call(
+                method = "withdrawAndDeposit",
+                params = """{"withdraw":25,"deposit":100,"currency":"UAH","transactionRef":"ref-fs",
+                     "gameRoundRef":"r-fs","bonusId":"bonus-1","chargeFreerounds":1,
+                     "sessionAlternativeId":"token_abc"}""",
+            )
+
+            val result = Json.parseToJsonElement(response.bodyAsText()).jsonObject["result"]!!.jsonObject
+            result["freeroundsLeft"]!!.jsonPrimitive.int shouldBe 4
+            result["freeroundWasCharged"]!!.jsonPrimitive.boolean shouldBe true
+        }
+
+        // The stake is not taken — that is what "free" means — but the win is credited as usual,
+        // and both spins carry the grant so the round is identifiable as a bonus round.
+        coVerify(exactly = 0) { bus(ofType<PlaceSpinSessionCommand>()) }
+        coVerify(exactly = 1) { bus(match<SettleSpinSessionCommand> { it.freespinId == "bonus-1" }) }
+    }
+
+    test("a free round the grant cannot cover is refused, not silently billed") {
+        coEvery { bus(ofType<ChargeFreespinCommand>()) } throws FreespinExhaustedException()
+
+        runWebhook { client ->
+            val response = client.call(
+                method = "withdrawAndDeposit",
+                params = """{"withdraw":25,"deposit":0,"currency":"UAH","transactionRef":"ref-fs2",
+                     "bonusId":"bonus-1","chargeFreerounds":1,"sessionAlternativeId":"token_abc"}""",
+            )
+
+            val error = Json.parseToJsonElement(response.bodyAsText()).jsonObject["error"]!!.jsonObject
+            error["code"]!!.jsonPrimitive.int shouldBe 8
+        }
+
+        coVerify(exactly = 0) { bus(ofType<PlaceSpinSessionCommand>()) }
+    }
+
+    test("chargeFreerounds without a bonus id is an ordinary paid bet") {
+        coEvery { bus(ofType<PlaceSpinSessionCommand>()) } returns balance
+
+        runWebhook { client ->
+            client.call(
+                method = "withdrawAndDeposit",
+                params = """{"withdraw":25,"deposit":0,"currency":"UAH","transactionRef":"ref-paid",
+                     "chargeFreerounds":1,"sessionAlternativeId":"token_abc"}""",
+            )
+        }
+
+        coVerify(exactly = 0) { bus(ofType<ChargeFreespinCommand>()) }
+        coVerify(exactly = 1) { bus(ofType<PlaceSpinSessionCommand>()) }
     }
 
     test("a money call is serialised on the player's wallet, a balance read is not") {

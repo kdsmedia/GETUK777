@@ -16,7 +16,9 @@ import infrastructure.handler.collection.SaveCollectionCommandHandler
 import infrastructure.handler.collection.UpdateCollectionGameOrderCommandHandler
 import infrastructure.handler.common.SetImageCommandHandler
 import infrastructure.handler.freespin.CancelFreespinCommandHandler
+import infrastructure.handler.freespin.ChargeFreespinCommandHandler
 import infrastructure.handler.freespin.CreateFreespinCommandHandler
+import infrastructure.handler.freespin.FindRedeemableFreespinQueryHandler
 import infrastructure.handler.game.AddGameFavouriteCommandHandler
 import infrastructure.handler.game.BatchGameQueryHandler
 import infrastructure.handler.game.FindAllActiveRtpGameQueryHandler
@@ -85,8 +87,10 @@ val handlerModule = module {
 
     // Freespin
     single { GetFreespinPresetsQueryHandler(aggregatorFactory = get()) }
-    single { CreateFreespinCommandHandler(gameVariantRepository = get(), aggregatorFactory = get()) }
-    single { CancelFreespinCommandHandler(gameVariantRepository = get(), aggregatorFactory = get()) }
+    single { CreateFreespinCommandHandler(gameVariantRepository = get(), freespinRepository = get(), aggregatorFactory = get()) }
+    single { CancelFreespinCommandHandler(gameVariantRepository = get(), freespinRepository = get(), aggregatorFactory = get()) }
+    single { ChargeFreespinCommandHandler(freespinRepository = get()) }
+    single { FindRedeemableFreespinQueryHandler(freespinRepository = get()) }
 
     // Provider
     single { SaveProviderCommandHandler(providerRepository = get(), aggregatorRepository = get()) }

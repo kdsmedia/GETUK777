@@ -4,6 +4,7 @@ import application.port.external.IEventPublisherPort
 import application.port.external.IGamePort
 import application.port.factory.IAggregatorFactory
 import domain.event.SessionEvent
+import domain.repository.IFreespinRepository
 import domain.repository.ISessionRepository
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -20,14 +21,15 @@ class OpenSessionUsecaseTest : FunSpec({
         val gamePort = mockk<IGamePort>()
         val sessionRepo = mockk<ISessionRepository>()
         val eventPublisher = mockk<IEventPublisherPort>(relaxed = true)
+        val freespinRepo = mockk<IFreespinRepository>().also { coEvery { it.findRedeemable(any(), any(), any()) } returns null }
 
         val session = TestFixtures.session()
 
         coEvery { aggregatorFactory.createGameAdapter(any()) } returns gamePort
-        coEvery { gamePort.getLaunchUrl(session, "lobby") } returns IGamePort.Launch("https://launch.url")
+        coEvery { gamePort.getLaunchUrl(session, "lobby", null) } returns IGamePort.Launch("https://launch.url")
         coEvery { sessionRepo.save(session) } returns session
 
-        val usecase = OpenSessionUsecase(aggregatorFactory, sessionRepo, eventPublisher)
+        val usecase = OpenSessionUsecase(aggregatorFactory, sessionRepo, freespinRepo, eventPublisher)
 
         val result = usecase.invoke(session, "lobby")
 
@@ -44,15 +46,16 @@ class OpenSessionUsecaseTest : FunSpec({
         val gamePort = mockk<IGamePort>()
         val sessionRepo = mockk<ISessionRepository>()
         val eventPublisher = mockk<IEventPublisherPort>(relaxed = true)
+        val freespinRepo = mockk<IFreespinRepository>().also { coEvery { it.findRedeemable(any(), any(), any()) } returns null }
 
         val session = TestFixtures.session()
 
         coEvery { aggregatorFactory.createGameAdapter(any()) } returns gamePort
-        coEvery { gamePort.getLaunchUrl(any(), any()) } returns
+        coEvery { gamePort.getLaunchUrl(any(), any(), any()) } returns
             IGamePort.Launch(url = "https://q31d0lghlxf67ep.gamix.party/", externalToken = "q31d0lghlxf67ep")
         coEvery { sessionRepo.save(any()) } answers { firstArg() }
 
-        val usecase = OpenSessionUsecase(aggregatorFactory, sessionRepo, eventPublisher)
+        val usecase = OpenSessionUsecase(aggregatorFactory, sessionRepo, freespinRepo, eventPublisher)
 
         val result = usecase.invoke(session, "lobby")
 
@@ -65,14 +68,15 @@ class OpenSessionUsecaseTest : FunSpec({
         val gamePort = mockk<IGamePort>()
         val sessionRepo = mockk<ISessionRepository>()
         val eventPublisher = mockk<IEventPublisherPort>(relaxed = true)
+        val freespinRepo = mockk<IFreespinRepository>().also { coEvery { it.findRedeemable(any(), any(), any()) } returns null }
 
         val session = TestFixtures.session()
 
         coEvery { aggregatorFactory.createGameAdapter(any()) } returns gamePort
-        coEvery { gamePort.getLaunchUrl(any(), any()) } returns IGamePort.Launch("https://launch.url")
+        coEvery { gamePort.getLaunchUrl(any(), any(), any()) } returns IGamePort.Launch("https://launch.url")
         coEvery { sessionRepo.save(any()) } answers { firstArg() }
 
-        val usecase = OpenSessionUsecase(aggregatorFactory, sessionRepo, eventPublisher)
+        val usecase = OpenSessionUsecase(aggregatorFactory, sessionRepo, freespinRepo, eventPublisher)
 
         usecase.invoke(session, "lobby").getOrThrow()
 
@@ -84,13 +88,14 @@ class OpenSessionUsecaseTest : FunSpec({
         val gamePort = mockk<IGamePort>()
         val sessionRepo = mockk<ISessionRepository>(relaxed = true)
         val eventPublisher = mockk<IEventPublisherPort>(relaxed = true)
+        val freespinRepo = mockk<IFreespinRepository>().also { coEvery { it.findRedeemable(any(), any(), any()) } returns null }
 
         val session = TestFixtures.session()
 
         coEvery { aggregatorFactory.createGameAdapter(any()) } returns gamePort
-        coEvery { gamePort.getLaunchUrl(any(), any()) } throws RuntimeException("upstream down")
+        coEvery { gamePort.getLaunchUrl(any(), any(), any()) } throws RuntimeException("upstream down")
 
-        val usecase = OpenSessionUsecase(aggregatorFactory, sessionRepo, eventPublisher)
+        val usecase = OpenSessionUsecase(aggregatorFactory, sessionRepo, freespinRepo, eventPublisher)
 
         val result = usecase.invoke(session, "lobby")
 

@@ -1,6 +1,7 @@
 package infrastructure.aggregator.gamingflow.adapter
 
 import application.port.external.IGamePort
+import domain.model.Freespin
 import domain.model.Platform
 import domain.model.Session
 import domain.vo.Currency
@@ -52,7 +53,7 @@ class GamingFlowGameAdapter(
      * value we handed over — the vendor's integration-test harness sends the game's section id
      * there. Storing their id gives the webhook a second, authoritative way to find the session.
      */
-    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): IGamePort.Launch {
+    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String, freespin: Freespin?): IGamePort.Launch {
         val currency = session.currency.value
         val bankGroupId = config.bankGroupId(currency)
         val playerId = config.playerName(session.playerId.value, currency)
@@ -64,7 +65,10 @@ class GamingFlowGameAdapter(
             playerId = playerId,
             gameId = session.gameVariant.symbol.value,
             alternativeId = session.token.value,
-            language = language(session.locale)
+            language = language(session.locale),
+            // Free rounds are bound to the session, not to the spin: a session opened without a
+            // BonusId can never become a bonus session later.
+            bonusId = freespin?.referenceId?.value,
         )
 
         return IGamePort.Launch(url = launchUrl(created), externalToken = created.sessionId)
