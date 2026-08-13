@@ -1,7 +1,8 @@
 package infrastructure.persistence.repository
 
-import domain.repository.ISpinRepository
+import domain.exception.conflict.SpinAlreadyExistsException
 import domain.model.Spin
+import domain.repository.ISpinRepository
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.dbTransaction
 import infrastructure.persistence.entity.GameEntity
@@ -15,15 +16,25 @@ import infrastructure.persistence.table.RoundTable
 import infrastructure.persistence.table.SpinTable
 import kotlinx.datetime.Instant
 import org.jetbrains.exposed.dao.with
+import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.update
+import java.sql.SQLException
 
 class SpinRepositoryImpl : ISpinRepository {
 
+    private companion object {
+        const val UNIQUE_VIOLATION_SQL_STATE = "23505"
+    }
+
     override suspend fun save(spin: Spin): Spin = dbTransaction {
         if (spin.id == Long.MIN_VALUE) {
-            val id = SpinTable.insertAndGetId { it.fromDomain(spin) }
+            val id = try {
+                SpinTable.insertAndGetId { it.fromDomain(spin) }
+            } catch (e: ExposedSQLException) {
+                if (e.isUniqueViolation()) throw SpinAlreadyExistsException() else throw e
+            }
             spin.copy(id = id.value)
         } else {
             SpinTable.update({ SpinTable.id eq spin.id }) { it.fromDomain(spin) }
@@ -59,6 +70,12 @@ class SpinRepositoryImpl : ISpinRepository {
             )
             .map { it.toDomain() }
     }
+
+    /** Postgres `unique_violation`; the driver exposes it as the SQLState, not as a typed error. */
+    private fun ExposedSQLException.isUniqueViolation(): Boolean =
+        generateSequence(cause) { it.cause }
+            .filterIsInstance<SQLException>()
+            .any { it.sqlState == UNIQUE_VIOLATION_SQL_STATE }
 
     private fun UpdateBuilder<*>.fromDomain(spin: Spin) {
         this[SpinTable.externalId] = spin.externalId.value

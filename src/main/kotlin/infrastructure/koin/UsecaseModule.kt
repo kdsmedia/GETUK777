@@ -16,7 +16,6 @@ val usecaseModule = module {
             eventPublisher = get(),
             walletPort = get(),
             playerLimitPort = get(),
-            backgroundTaskPort = get(),
         )
     }
     single {

@@ -4,6 +4,7 @@ import application.ICommandHandler
 import application.command.session.SettleSpinSessionCommand
 import application.port.external.IWalletPort
 import application.usecase.ProcessSpinUsecase
+import domain.exception.conflict.SpinAlreadyExistsException
 import domain.model.PlayerBalance
 import domain.repository.IRoundRepository
 import domain.repository.ISpinRepository
@@ -46,6 +47,12 @@ class SettleSpinSessionHandler(
             amount = command.amount,
         )
 
-        processSpinUsecase.invoke(spin).getOrThrow().balance
+        // See PlaceSpinSessionHandler: the unique constraint, not the lookup, is what makes a
+        // concurrent redelivery safe.
+        try {
+            processSpinUsecase.invoke(spin).getOrThrow().balance
+        } catch (_: SpinAlreadyExistsException) {
+            walletPort.findBalance(playerId = session.playerId, currency = session.currency)
+        }
     }
 }

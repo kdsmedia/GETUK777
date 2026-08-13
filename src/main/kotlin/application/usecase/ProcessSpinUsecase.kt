@@ -1,6 +1,5 @@
 package application.usecase
 
-import application.port.external.IBackgroundTaskPort
 import application.port.external.IEventPublisherPort
 import application.port.external.IPlayerLimitPort
 import application.port.external.IWalletPort
@@ -22,7 +21,6 @@ class ProcessSpinUsecase(
     private val eventPublisher: IEventPublisherPort,
     private val walletPort: IWalletPort,
     private val playerLimitPort: IPlayerLimitPort,
-    private val backgroundTaskPort: IBackgroundTaskPort,
 ) {
 
     private val logger = LoggerFactory.getLogger(ProcessSpinUsecase::class.java)
@@ -41,12 +39,10 @@ class ProcessSpinUsecase(
 
         val updatedSpin = spinRepository.save(result.spin)
 
-        // Spin persisted: the event reflects committed state, so publish it now. The wallet
-        // debit/credit was dispatched fire-and-forget to backgroundTaskPort (see process());
-        // BackgroundWorker catches and logs any wallet failure — it does NOT roll back this
-        // spin or this event. The event is the source of truth for the committed spin; a
-        // failed wallet move is reconciled out-of-band, never by suppressing the event.
-        // The spin is committed — a broker failure must never 500 the webhook at this point.
+        // Spin persisted: the event reflects committed state, so publish it now. A failed
+        // wallet move (see process()) does NOT roll back this spin or this event — the committed
+        // spin is the source of truth and the move is reconciled out-of-band. Likewise a broker
+        // failure must never 500 the webhook once the spin is committed.
         try {
             eventPublisher.publish(SpinEvent(updatedSpin))
         } catch (e: Exception) {
@@ -86,7 +82,14 @@ class ProcessSpinUsecase(
         // Debit/credit the wallet with the balance-split spin (real/bonus computed by
         // SpinBalanceCalculator). The raw `spin` has realAmount/bonusAmount = 0, so
         // using it would move nothing and leave the wallet balance unchanged.
-        backgroundTaskPort.launch(action = { updateBalance(result.spin) })
+        //
+        // Awaited, not dispatched: the move has to land before the spin row commits, or a
+        // concurrent redelivery that loses the unique-constraint race reads a wallet that has
+        // not caught up and answers the provider a balance that is simply wrong. A failure is
+        // still swallowed — the committed spin remains the source of truth and a broken wallet
+        // move is reconciled out of band, exactly as before.
+        runCatching { updateBalance(result.spin) }
+            .onFailure { logger.error("Wallet move failed for spin {}", spin.externalId.value, it) }
 
         result
     }

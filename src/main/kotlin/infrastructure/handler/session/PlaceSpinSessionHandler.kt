@@ -4,6 +4,7 @@ import application.ICommandHandler
 import application.command.session.PlaceSpinSessionCommand
 import application.port.external.IWalletPort
 import application.usecase.ProcessSpinUsecase
+import domain.exception.conflict.SpinAlreadyExistsException
 import domain.model.PlayerBalance
 import domain.repository.IRoundRepository
 import domain.repository.ISpinRepository
@@ -46,6 +47,13 @@ class PlaceSpinSessionHandler(
             amount = command.amount,
         )
 
-        processSpinUsecase.invoke(spin).getOrThrow().balance
+        // The lookup above cannot see a redelivery that is still in flight, so the unique
+        // constraint on the external id is what actually decides the winner. The loser answers
+        // exactly as the lookup would have: success, with the balance the winner left behind.
+        try {
+            processSpinUsecase.invoke(spin).getOrThrow().balance
+        } catch (_: SpinAlreadyExistsException) {
+            walletPort.findBalance(playerId = session.playerId, currency = session.currency)
+        }
     }
 }
