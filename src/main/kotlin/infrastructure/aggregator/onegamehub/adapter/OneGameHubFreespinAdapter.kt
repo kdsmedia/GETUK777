@@ -18,7 +18,7 @@ class OneGameHubFreespinAdapter(
     override suspend fun getPreset(gameSymbol: String): Map<String, Any> {
         val response = client.listGames()
 
-        check(response.success) { "OneGameHub listGames failed with status ${response.status}" }
+        check(response.success) { "OneGameHub listGames failed with ${response.describe()}" }
 
         val game = response.response
             ?.firstOrNull { it.id == gameSymbol }
@@ -59,7 +59,7 @@ class OneGameHubFreespinAdapter(
 
         val response = client.createFreespin(payload)
 
-        check(response.success) { "OneGameHub createFreespin failed with status ${response.status}" }
+        check(response.success) { "OneGameHub createFreespin failed with ${response.describe()}" }
     }
 
     override suspend fun cancel(referenceId: String) {
@@ -67,6 +67,6 @@ class OneGameHubFreespinAdapter(
 
         val response = client.cancelFreespin(payload)
 
-        check(response.success) { "OneGameHub cancelFreespin failed with status ${response.status}" }
+        check(response.success) { "OneGameHub cancelFreespin failed with ${response.describe()}" }
     }
 }

@@ -17,7 +17,7 @@ class OneGameHubGameAdapter(
     override suspend fun getAggregatorGames(): List<IGamePort.AggregatorGame> {
         val response = client.listGames()
 
-        check(response.success) { "OneGameHub listGames failed with status ${response.status}" }
+        check(response.success) { "OneGameHub listGames failed with ${response.describe()}" }
 
         val games = response.response ?: emptyList()
 
@@ -63,7 +63,7 @@ class OneGameHubGameAdapter(
             demo = true
         )
 
-        check(response.success) { "OneGameHub getDemoUrl failed with status ${response.status}" }
+        check(response.success) { "OneGameHub getDemoUrl failed with ${response.describe()}" }
 
         return response.response?.gameUrl
             ?: error("No game URL returned from OneGameHub for demo")
@@ -81,7 +81,7 @@ class OneGameHubGameAdapter(
             demo = false
         )
 
-        check(response.success) { "OneGameHub getLaunchUrl failed with status ${response.status}" }
+        check(response.success) { "OneGameHub getLaunchUrl failed with ${response.describe()}" }
 
         val url = response.response?.gameUrl
             ?: error("No game URL returned from OneGameHub")
