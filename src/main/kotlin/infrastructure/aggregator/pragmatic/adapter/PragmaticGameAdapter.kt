@@ -56,8 +56,8 @@ class PragmaticGameAdapter(
         )
     }
 
-    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): String {
-        return client.getLaunchUrl(
+    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): IGamePort.Launch {
+        val url = client.getLaunchUrl(
             LaunchUrlRequestDto(
                 gameSymbol = session.gameVariant.symbol.value,
                 sessionToken = session.token.value,
@@ -69,6 +69,8 @@ class PragmaticGameAdapter(
                 demo = false
             )
         )
+
+        return IGamePort.Launch(url)
     }
 
     private fun parsePlatforms(platformString: String?): List<Platform> {

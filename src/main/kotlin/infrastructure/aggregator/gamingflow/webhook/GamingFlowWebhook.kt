@@ -9,6 +9,7 @@ import application.port.external.ICurrencyPort
 import application.port.external.IWebhookGuardPort
 import application.query.aggregator.FindAggregatorQuery
 import application.query.session.FindSessionBalanceQuery
+import application.query.session.FindSessionByExternalTokenQuery
 import application.query.session.FindSessionQuery
 import domain.exception.forbidden.InsufficientBalanceException
 import domain.exception.forbidden.MaxPlaceSpinException
@@ -148,7 +149,7 @@ class GamingFlowWebhook(
     }
 
     private suspend fun getBalance(params: GetBalanceParams): JsonElement {
-        val session = resolveSession(params.sessionAlternativeId, params.currency)
+        val session = resolveSession(params.sessionAlternativeId, params.sessionId, params.currency)
         val balance = bus(FindSessionBalanceQuery(session))
 
         // freeroundsLeft is deliberately absent — see the class comment.
@@ -165,7 +166,7 @@ class GamingFlowWebhook(
         if (params.deposit < 0) throw SeamlessException(ERR_NEGATIVE_DEPOSIT, "Negative deposit")
         if (params.withdraw < 0) throw SeamlessException(ERR_NEGATIVE_WITHDRAWAL, "Negative withdrawal")
 
-        val session = resolveSession(params.sessionAlternativeId, params.currency)
+        val session = resolveSession(params.sessionAlternativeId, params.sessionId, params.currency)
 
         if (guardPort.isRolledBack("$AGGREGATOR_IDENTITY:${params.transactionRef}")) {
             throw SeamlessException(
@@ -218,7 +219,7 @@ class GamingFlowWebhook(
     }
 
     private suspend fun rollbackTransaction(params: RollbackTransactionParams): JsonElement {
-        val session = resolveSession(params.sessionAlternativeId, currency = null)
+        val session = resolveSession(params.sessionAlternativeId, params.sessionId, currency = null)
 
         // Marked before anything is reversed, so a transaction still in flight — the provider may
         // send the rollback first — is refused when it arrives rather than executed and orphaned.
@@ -249,11 +250,21 @@ class GamingFlowWebhook(
             .onFailure { logger.warn("GamingFlow round {} not closed: {}", roundId, it.message) }
     }
 
-    private suspend fun resolveSession(sessionAlternativeId: String?, currency: String?): Session {
-        val token = sessionAlternativeId
-            ?: throw SeamlessException(ERR_INTERNAL, "sessionAlternativeId is required")
-
-        val session = bus(FindSessionQuery(token))
+    /**
+     * Both identifiers are optional on the wire, so neither can be trusted on its own:
+     * `sessionAlternativeId` is the token we handed over at launch, `sessionId` is the one the
+     * provider minted and we stored as `Session.externalToken`. Ours is tried first because it is
+     * the one every in-game call carries; the provider's is the fallback that keeps the integration
+     * test harness working, which sends the game's section id as the alternative id.
+     */
+    private suspend fun resolveSession(
+        sessionAlternativeId: String?,
+        sessionId: String?,
+        currency: String?,
+    ): Session {
+        val session = sessionAlternativeId?.let { findSession { bus(FindSessionQuery(it)) } }
+            ?: sessionId?.let { findSession { bus(FindSessionByExternalTokenQuery(it)) } }
+            ?: throw SessionNotFoundException()
 
         // The session is currency-locked at creation; a mismatch means the provider is talking about
         // a wallet we do not own.
@@ -263,6 +274,10 @@ class GamingFlowWebhook(
 
         return session
     }
+
+    /** A miss on one identifier must fall through to the other, not abort the resolution. */
+    private suspend fun findSession(lookup: suspend () -> Session): Session? =
+        runCatching { lookup() }.getOrElse { if (it is SessionNotFoundException) null else throw it }
 
     private fun isFresh(timestamp: Long): Boolean {
         val now = System.currentTimeMillis() / MILLIS_PER_SECOND

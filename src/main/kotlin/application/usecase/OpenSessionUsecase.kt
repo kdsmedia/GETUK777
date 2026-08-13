@@ -32,9 +32,17 @@ class OpenSessionUsecase(
         // token). That callback reads in a separate DB connection, so the row must already be
         // committed; saving after the launch call left it invisible and the provider answered 401
         // UNKNOWN_SESSION, surfacing here as a 500.
-        val updatedSession = sessionRepository.save(session)
+        val savedSession = sessionRepository.save(session)
 
-        val launchUrl = gameAdapter.getLaunchUrl(updatedSession, lobbyUrl)
+        val launch = gameAdapter.getLaunchUrl(savedSession, lobbyUrl)
+
+        // Providers that mint their own session id report it back here. Persisting it lets an
+        // inbound webhook resolve the session by the provider's identifier as well as by ours.
+        val updatedSession = if (launch.externalToken != null && launch.externalToken != savedSession.externalToken) {
+            sessionRepository.save(savedSession.copy(externalToken = launch.externalToken))
+        } else {
+            savedSession
+        }
 
         // The session is committed and the launch URL issued — a broker failure must never
         // fail the open at this point.
@@ -49,7 +57,7 @@ class OpenSessionUsecase(
 
         logger.info("Session opened: id={} player={}", updatedSession.id, updatedSession.playerId.value)
 
-        Response(session = updatedSession, launchUrl = launchUrl)
+        Response(session = updatedSession, launchUrl = launch.url)
     }.onFailure { e ->
         if (e !is DomainException) {
             logger.error(

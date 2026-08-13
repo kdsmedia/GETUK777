@@ -69,7 +69,7 @@ class OneGameHubGameAdapter(
             ?: error("No game URL returned from OneGameHub for demo")
     }
 
-    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): String {
+    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): IGamePort.Launch {
         val response = client.getLaunchUrl(
             gameSymbol = session.gameVariant.symbol.value,
             sessionToken = session.token.value,
@@ -83,8 +83,10 @@ class OneGameHubGameAdapter(
 
         check(response.success) { "OneGameHub getLaunchUrl failed with status ${response.status}" }
 
-        return response.response?.gameUrl
+        val url = response.response?.gameUrl
             ?: error("No game URL returned from OneGameHub")
+
+        return IGamePort.Launch(url)
     }
 
     private companion object {

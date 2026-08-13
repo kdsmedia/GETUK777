@@ -244,7 +244,7 @@ class GamingFlowAdapterTest : FunSpec({
             token = "token_abc"
         )
 
-        val url = GamingFlowGameAdapter(config()).getLaunchUrl(session, lobbyUrl = "https://lobby")
+        val launch = GamingFlowGameAdapter(config()).getLaunchUrl(session, lobbyUrl = "https://lobby")
 
         // Order matters: the session references a player that references a bank group.
         calls.map { it.first } shouldContainExactly
@@ -266,7 +266,10 @@ class GamingFlowAdapterTest : FunSpec({
         params("Session.Create")["Params"]!!.jsonObject["language"]!!.jsonPrimitive.content shouldBe "es"
 
         // Composed from BaseHost, not from the deprecated SessionUrl the provider returned.
-        url shouldBe "https://n5vpp2xp406c8f5.gamix.party/"
+        launch.url shouldBe "https://n5vpp2xp406c8f5.gamix.party/"
+
+        // The provider id is carried back so the session can be stored against it.
+        launch.externalToken shouldBe "n5vpp2xp406c8f5"
     }
 
     test("an unsupported game language falls back to English") {
@@ -285,13 +288,13 @@ class GamingFlowAdapterTest : FunSpec({
             """{"SessionId": "abc", "SessionUrl": "https://abc.provider.example/"}"""
         )
 
-        val url = GamingFlowGameAdapter(config(mapOf("baseHost" to ""))).getLaunchUrl(
+        val launch = GamingFlowGameAdapter(config(mapOf("baseHost" to ""))).getLaunchUrl(
             session = support.TestFixtures.session(),
             lobbyUrl = "https://lobby"
         )
 
         params("Session.Create")["BaseHost"] shouldBe null
-        url shouldBe "https://abc.provider.example/"
+        launch.url shouldBe "https://abc.provider.example/"
     }
 
     test("demo upserts the bank group and opens a demo session") {

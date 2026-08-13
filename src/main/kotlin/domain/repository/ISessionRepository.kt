@@ -10,4 +10,6 @@ interface ISessionRepository {
 
     suspend fun findByToken(token: String): Session?
 
+    suspend fun findByExternalToken(externalToken: String): Session?
+
 }

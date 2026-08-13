@@ -21,6 +21,16 @@ interface IGamePort {
         val tags: List<String> = emptyList(),
     )
 
+    /**
+     * A launch URL plus, when the provider mints its own session identifier, that identifier.
+     * It is persisted as `Session.externalToken` so an inbound webhook can resolve the session
+     * by the provider's id and not only by the token we handed out.
+     */
+    data class Launch(
+        val url: String,
+        val externalToken: String? = null,
+    )
+
     suspend fun getAggregatorGames(): List<AggregatorGame>
 
     suspend fun getDemoUrl(
@@ -31,5 +41,5 @@ interface IGamePort {
         lobbyUrl: String,
     ): String
 
-    suspend fun getLaunchUrl(session: Session, lobbyUrl: String): String
+    suspend fun getLaunchUrl(session: Session, lobbyUrl: String): Launch
 }

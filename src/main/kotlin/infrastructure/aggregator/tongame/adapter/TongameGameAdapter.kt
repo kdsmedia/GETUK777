@@ -42,7 +42,7 @@ class TongameGameAdapter(
         lobbyUrl: String,
     ): String = throw DemoNotSupportedException()
 
-    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): String {
+    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): IGamePort.Launch {
         check(config.gameHost.isNotBlank()) { "TONGame game host not configured" }
 
         val gameSymbol = session.gameVariant.symbol.value
@@ -55,11 +55,13 @@ class TongameGameAdapter(
 
         // The game client reads three query params — sessionToken, currency, operator — and replays
         // sessionToken + operator in its WS auth frame so the provider resolves our session.
-        return URLBuilder("https://$gameSymbol.${config.gameHost}").apply {
+        val url = URLBuilder("https://$gameSymbol.${config.gameHost}").apply {
             parameters.append("sessionToken", session.token.value)
             parameters.append("currency", session.currency.value)
             parameters.append("operator", config.operatorIdentity)
         }.buildString()
+
+        return IGamePort.Launch(url)
     }
 
     companion object {

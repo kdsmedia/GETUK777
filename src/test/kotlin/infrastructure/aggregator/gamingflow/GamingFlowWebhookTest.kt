@@ -9,6 +9,7 @@ import application.port.external.ICurrencyPort
 import application.port.external.IWebhookGuardPort
 import application.query.aggregator.FindAggregatorQuery
 import application.query.session.FindSessionBalanceQuery
+import application.query.session.FindSessionByExternalTokenQuery
 import application.query.session.FindSessionQuery
 import domain.exception.forbidden.InsufficientBalanceException
 import domain.exception.notfound.SessionNotFoundException
@@ -321,6 +322,36 @@ class GamingFlowWebhookTest : FunSpec({
             val error = Json.parseToJsonElement(response.bodyAsText()).jsonObject["error"]!!.jsonObject
             error["code"]!!.jsonPrimitive.int shouldBe 7
         }
+    }
+
+    test("a session is resolved by the provider's own id when the alternative id is not ours") {
+        // What the vendor's integration-test harness actually sends: the game's section id in
+        // sessionAlternativeId, the real identifier in sessionId.
+        coEvery { bus(ofType<FindSessionQuery>()) } throws SessionNotFoundException()
+        coEvery { bus(ofType<FindSessionByExternalTokenQuery>()) } returns session
+
+        runWebhook { client ->
+            val response = client.call(
+                method = "getBalance",
+                params = """{"currency":"UAH","sessionId":"q31d0lghlxf67ep","sessionAlternativeId":"bgaming"}""",
+            )
+
+            val result = Json.parseToJsonElement(response.bodyAsText()).jsonObject["result"]!!.jsonObject
+            result["balance"]!!.jsonPrimitive.long shouldBe 4_400
+        }
+
+        coVerify(exactly = 1) { bus(FindSessionByExternalTokenQuery("q31d0lghlxf67ep")) }
+    }
+
+    test("our own alternative id wins over the provider's id when both resolve") {
+        runWebhook { client ->
+            client.call(
+                method = "getBalance",
+                params = """{"currency":"UAH","sessionId":"q31d0lghlxf67ep","sessionAlternativeId":"token_abc"}""",
+            )
+        }
+
+        coVerify(exactly = 0) { bus(ofType<FindSessionByExternalTokenQuery>()) }
     }
 
     test("a currency the session is not held in answers code 2") {

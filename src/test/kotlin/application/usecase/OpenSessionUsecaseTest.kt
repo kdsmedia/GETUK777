@@ -24,7 +24,7 @@ class OpenSessionUsecaseTest : FunSpec({
         val session = TestFixtures.session()
 
         coEvery { aggregatorFactory.createGameAdapter(any()) } returns gamePort
-        coEvery { gamePort.getLaunchUrl(session, "lobby") } returns "https://launch.url"
+        coEvery { gamePort.getLaunchUrl(session, "lobby") } returns IGamePort.Launch("https://launch.url")
         coEvery { sessionRepo.save(session) } returns session
 
         val usecase = OpenSessionUsecase(aggregatorFactory, sessionRepo, eventPublisher)
@@ -37,6 +37,46 @@ class OpenSessionUsecaseTest : FunSpec({
         verify(exactly = 1) {
             eventPublisher.publish(match<SessionEvent> { it.data.playerId == session.playerId })
         }
+    }
+
+    test("a provider-minted session id is persisted as the session's external token") {
+        val aggregatorFactory = mockk<IAggregatorFactory>()
+        val gamePort = mockk<IGamePort>()
+        val sessionRepo = mockk<ISessionRepository>()
+        val eventPublisher = mockk<IEventPublisherPort>(relaxed = true)
+
+        val session = TestFixtures.session()
+
+        coEvery { aggregatorFactory.createGameAdapter(any()) } returns gamePort
+        coEvery { gamePort.getLaunchUrl(any(), any()) } returns
+            IGamePort.Launch(url = "https://q31d0lghlxf67ep.gamix.party/", externalToken = "q31d0lghlxf67ep")
+        coEvery { sessionRepo.save(any()) } answers { firstArg() }
+
+        val usecase = OpenSessionUsecase(aggregatorFactory, sessionRepo, eventPublisher)
+
+        val result = usecase.invoke(session, "lobby")
+
+        result.getOrThrow().session.externalToken shouldBe "q31d0lghlxf67ep"
+        coVerify(exactly = 1) { sessionRepo.save(match { it.externalToken == "q31d0lghlxf67ep" }) }
+    }
+
+    test("a provider that mints no session id is saved once, not twice") {
+        val aggregatorFactory = mockk<IAggregatorFactory>()
+        val gamePort = mockk<IGamePort>()
+        val sessionRepo = mockk<ISessionRepository>()
+        val eventPublisher = mockk<IEventPublisherPort>(relaxed = true)
+
+        val session = TestFixtures.session()
+
+        coEvery { aggregatorFactory.createGameAdapter(any()) } returns gamePort
+        coEvery { gamePort.getLaunchUrl(any(), any()) } returns IGamePort.Launch("https://launch.url")
+        coEvery { sessionRepo.save(any()) } answers { firstArg() }
+
+        val usecase = OpenSessionUsecase(aggregatorFactory, sessionRepo, eventPublisher)
+
+        usecase.invoke(session, "lobby").getOrThrow()
+
+        coVerify(exactly = 1) { sessionRepo.save(any()) }
     }
 
     test("failing adapter propagates through runCatching as failure Result") {

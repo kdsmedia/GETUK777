@@ -46,8 +46,13 @@ class GamingFlowGameAdapter(
      * of tracking provisioning state locally. Our session token travels as `AlternativeId`: the
      * provider echoes it back as `sessionAlternativeId` on every Seamless API call, which is how an
      * inbound wallet request resolves our session.
+     *
+     * The provider's own `SessionId` comes back as the launch identifier and is returned for
+     * persistence, because `sessionAlternativeId` is optional on the wire and is not always the
+     * value we handed over — the vendor's integration-test harness sends the game's section id
+     * there. Storing their id gives the webhook a second, authoritative way to find the session.
      */
-    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): String {
+    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String): IGamePort.Launch {
         val currency = session.currency.value
         val bankGroupId = config.bankGroupId(currency)
         val playerId = config.playerName(session.playerId.value, currency)
@@ -62,7 +67,7 @@ class GamingFlowGameAdapter(
             language = language(session.locale)
         )
 
-        return launchUrl(created)
+        return IGamePort.Launch(url = launchUrl(created), externalToken = created.sessionId)
     }
 
     /** The provider serves each session on its own subdomain of the configured base host. Its own

@@ -52,6 +52,19 @@ class SessionRepositoryImpl : ISessionRepository {
             .firstOrNull()?.toDomain()
     }
 
+    override suspend fun findByExternalToken(externalToken: String): Session? = dbRead {
+        SessionEntity.find { SessionTable.externalToken eq externalToken }
+            .with(
+                SessionEntity::gameVariant,
+                GameVariantEntity::game,
+                GameEntity::provider,
+                GameEntity::collections,
+                ProviderEntity::aggregator,
+            )
+            // Newest wins: a provider id is unique in practice, but nothing in the schema enforces it.
+            .maxByOrNull { it.id.value }?.toDomain()
+    }
+
     private fun UpdateBuilder<*>.fromDomain(session: Session) {
         this[SessionTable.gameVariant] = session.gameVariant.id
         this[SessionTable.playerId] = session.playerId.value
