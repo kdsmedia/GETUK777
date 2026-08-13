@@ -22,4 +22,17 @@ interface IWebhookGuardPort {
     suspend fun markRolledBack(key: String, ttlSeconds: Long)
 
     suspend fun isRolledBack(key: String): Boolean
+
+    /**
+     * Runs [block] with exclusive access to [key], waiting for a holder to finish.
+     *
+     * A provider transaction that both takes a bet and pays a win moves the wallet twice, and
+     * without this the two legs are separately observable: a concurrent transaction reads the
+     * balance between them and reports one that reflects half of somebody else's bet. The lock
+     * makes one transaction atomic as far as the rest of them can tell.
+     *
+     * Throws if the wait is exhausted — the caller has done nothing at that point, so answering
+     * an error is safe and no money is left in doubt.
+     */
+    suspend fun <T> withLock(key: String, block: suspend () -> T): T
 }

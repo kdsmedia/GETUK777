@@ -73,6 +73,8 @@ class GamingFlowWebhookTest : FunSpec({
 
         coEvery { guard.claimNonce(any(), any()) } returns true
         coEvery { guard.isRolledBack(any()) } returns false
+        // Uncontended: run the guarded body inline so these specs exercise the money path itself.
+        coEvery { guard.withLock<Any>(any(), any()) } coAnswers { secondArg<suspend () -> Any>().invoke() }
 
         coEvery { bus(ofType<FindAggregatorQuery>()) } returns java.util.Optional.of(
             TestFixtures.aggregator(
@@ -322,6 +324,21 @@ class GamingFlowWebhookTest : FunSpec({
             val error = Json.parseToJsonElement(response.bodyAsText()).jsonObject["error"]!!.jsonObject
             error["code"]!!.jsonPrimitive.int shouldBe 7
         }
+    }
+
+    test("a money call is serialised on the player's wallet, a balance read is not") {
+        runWebhook { client ->
+            client.call(
+                method = "withdrawAndDeposit",
+                params = """{"withdraw":14,"deposit":20,"currency":"UAH","transactionRef":"ref-lock",
+                     "gameRoundRef":"r-lock","sessionAlternativeId":"token_abc"}""",
+            )
+            client.call("getBalance", """{"currency":"UAH","sessionAlternativeId":"token_abc"}""")
+        }
+
+        // Keyed on the wallet account: two games of the same player share one balance, two players
+        // must never wait on each other.
+        coVerify(exactly = 1) { guard.withLock<Any>("gamingflow:wallet:player_1:UAH", any()) }
     }
 
     test("a session is resolved by the provider's own id when the alternative id is not ours") {

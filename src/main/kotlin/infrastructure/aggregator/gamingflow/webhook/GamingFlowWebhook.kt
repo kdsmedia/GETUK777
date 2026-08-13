@@ -168,6 +168,13 @@ class GamingFlowWebhook(
 
         val session = resolveSession(params.sessionAlternativeId, params.sessionId, params.currency)
 
+        // A bet and a win in one call move the wallet twice. Held against the player's wallet for
+        // the whole call, this lock is what stops a concurrent transaction from reading — and
+        // reporting — a balance that has one leg of this one applied and not the other.
+        return guardPort.withLock(session.walletKey()) { withdrawAndDeposit(session, params) }
+    }
+
+    private suspend fun withdrawAndDeposit(session: Session, params: WithdrawAndDepositParams): JsonElement {
         if (guardPort.isRolledBack("$AGGREGATOR_IDENTITY:${params.transactionRef}")) {
             throw SeamlessException(
                 ERR_UNKNOWN,
@@ -221,6 +228,11 @@ class GamingFlowWebhook(
     private suspend fun rollbackTransaction(params: RollbackTransactionParams): JsonElement {
         val session = resolveSession(params.sessionAlternativeId, params.sessionId, currency = null)
 
+        // Same wallet, same reason as withdrawAndDeposit: reversing a bet and a win is two moves.
+        return guardPort.withLock(session.walletKey()) { rollbackTransaction(session, params) }
+    }
+
+    private suspend fun rollbackTransaction(session: Session, params: RollbackTransactionParams): JsonElement {
         // Marked before anything is reversed, so a transaction still in flight — the provider may
         // send the rollback first — is refused when it arrives rather than executed and orphaned.
         guardPort.markRolledBack(
@@ -274,6 +286,9 @@ class GamingFlowWebhook(
 
         return session
     }
+
+    /** The resource a money call contends on is the wallet account, not the session or the game. */
+    private fun Session.walletKey(): String = "$AGGREGATOR_IDENTITY:wallet:${playerId.value}:${currency.value}"
 
     /** A miss on one identifier must fall through to the other, not abort the resolution. */
     private suspend fun findSession(lookup: suspend () -> Session): Session? =
