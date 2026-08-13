@@ -72,14 +72,16 @@ class SyncAggregatorUsecase(
 
             val existingGame = existingGames[gameIdentity]
 
-            // Tags are refreshed on every sync. Images are NOT the aggregator's to set —
+            // Aggregator tags are MERGED into whatever the row already carries, never substituted:
+            // the operator's editorial tags (hot/new/top) live in the same list and a plain
+            // overwrite would erase them on every run. Images are NOT the aggregator's to set —
             // artwork is uploaded by the operator through GameService.UpdateImage.
             // An existing game is reused as-is — same row, same provider, same artwork — and this
             // aggregator only contributes another variant below. Re-pointing its provider would
             // yank the game away from whichever aggregator currently serves it.
             val game = updateGames[gameIdentity]
                 ?: existingGame?.copy(
-                    tags = aggregatorGame.tags.ifEmpty { existingGame.tags },
+                    tags = (aggregatorGame.tags + existingGame.tags).distinct(),
                 )?.also { reusedGames++ }
                 ?: Game(
                     identity = gameIdentity,
