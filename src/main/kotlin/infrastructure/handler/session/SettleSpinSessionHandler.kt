@@ -4,8 +4,6 @@ import application.ICommandHandler
 import application.command.session.SettleSpinSessionCommand
 import application.port.external.IWalletPort
 import application.usecase.ProcessSpinUsecase
-import domain.exception.domainRequireNotNull
-import domain.exception.notfound.RoundNotFoundException
 import domain.model.PlayerBalance
 import domain.repository.IRoundRepository
 import domain.repository.ISpinRepository
@@ -31,12 +29,16 @@ class SettleSpinSessionHandler(
             return@runCatching walletPort.findBalance(playerId = session.playerId, currency = session.currency)
         }
 
-        val round = domainRequireNotNull(
-            roundRepository.findByExternalIdAndSessionId(
-                externalId = ExternalRoundId(command.externalRoundId),
-                sessionId = session.id,
-            )
-        ) { RoundNotFoundException() }.copy(session = session)
+        // A credit can legitimately be the first thing we hear about a round: a seamless provider
+        // sends win-only calls for bonus payouts and promo credits, and its integration suite does
+        // the same. Refusing those left the provider retrying — and eventually rolling back — a
+        // payout that was never in dispute, so the round is opened here exactly as PLACE opens it.
+        val externalRoundId = ExternalRoundId(command.externalRoundId)
+
+        val round = roundRepository.findByExternalIdAndSessionId(
+            externalId = externalRoundId,
+            sessionId = session.id,
+        )?.copy(session = session) ?: roundRepository.save(session.openRound(externalId = externalRoundId))
 
         val spin = SpinFactory.settle(
             round = round,
