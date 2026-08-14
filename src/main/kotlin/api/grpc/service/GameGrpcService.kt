@@ -155,7 +155,7 @@ class GameGrpcService(
     }
 
     override suspend fun play(request: PlayGameProto): PlayGameProto.Result = handleGrpcCall {
-        val launchUrl = bus(
+        val result = bus(
             PlayGameCqrs(
                 identity = Identity(request.identity),
                 playerId = PlayerId(request.playerId),
@@ -167,7 +167,8 @@ class GameGrpcService(
         )
 
         PlayGameCommandKt.result {
-            this.launchUrl = launchUrl
+            this.launchUrl = result.launchUrl
+            this.sessionToken = result.sessionToken.value
         }
     }
 

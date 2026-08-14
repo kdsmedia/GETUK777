@@ -2,6 +2,7 @@ package infrastructure.handler.game
 
 import application.ICommandHandler
 import application.command.game.PlayGameCommand
+import application.command.game.PlayGameResult
 import application.port.external.IPlayerLimitPort
 import application.usecase.OpenSessionUsecase
 import domain.exception.domainRequireNotNull
@@ -14,14 +15,14 @@ class PlayGameCommandHandler(
     private val gameVariantRepository: IGameVariantRepository,
     private val playerLimitPort: IPlayerLimitPort,
     private val openSessionUsecase: OpenSessionUsecase,
-) : ICommandHandler<PlayGameCommand, String> {
+) : ICommandHandler<PlayGameCommand, PlayGameResult> {
 
     companion object {
         private const val BASE24_CHARS = "BCDFGHJKMPQRTVWXY2346789"
         private const val TOKEN_LENGTH = 32
     }
 
-    override suspend fun handle(command: PlayGameCommand): Result<String> = runCatching {
+    override suspend fun handle(command: PlayGameCommand): Result<PlayGameResult> = runCatching {
         val gameVariant = domainRequireNotNull(
             gameVariantRepository.findActiveByGameIdentity(command.identity)
         ) { GameNotFoundException() }
@@ -41,7 +42,9 @@ class PlayGameCommandHandler(
 
         val result = openSessionUsecase(session, lobbyUrl = "").getOrThrow()
 
-        result.launchUrl
+        // Token of the persisted session, not the provider's externalToken — our wallet webhooks
+        // resolve by ours.
+        PlayGameResult(launchUrl = result.launchUrl, sessionToken = result.session.token)
     }
 
     private fun generateBase24Token(): String = buildString(TOKEN_LENGTH) {

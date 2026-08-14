@@ -109,6 +109,11 @@ message PlayGameCommand {
 
   message Result {
     string launch_url = 1;
+
+    // Our own session token (not the provider's). Wallet webhooks resolve the
+    // session by it, so a caller that drives them needs it without reading the
+    // sessions table.
+    string session_token = 2;
   }
 }
 

@@ -131,7 +131,8 @@ message UpdateGameImageCommand {
 
 ### Play
 
-Open a real-money game session. Returns a launch URL the player should be redirected to.
+Open a real-money game session. Returns a launch URL the player should be redirected to, plus the
+session token the engine minted for it.
 
 ```protobuf
 // Request
@@ -147,6 +148,7 @@ message PlayGameCommand {
 // Response
 message PlayGameCommand.Result {
   string launch_url = 1;
+  string session_token = 2;  // Our session token (not the provider's external one)
 }
 ```
 
