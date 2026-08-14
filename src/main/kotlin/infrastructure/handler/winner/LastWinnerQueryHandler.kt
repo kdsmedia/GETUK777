@@ -85,7 +85,11 @@ class LastWinnerQueryHandler : IQueryHandler<LastWinnerQuery, Page<LastWin>> {
                 GameVariantTable.playLines,
             )
             .where {
-                (SpinTable.type eq SpinType.SETTLE) and (RoundTable.freespinId.isNull())
+                // A lost round settles as a zero-amount SETTLE — it is a settlement, not a win,
+                // and listing it puts "0" rows in the player-facing winners feed.
+                (SpinTable.type eq SpinType.SETTLE) and
+                    (SpinTable.amount greater 0L) and
+                    (RoundTable.freespinId.isNull())
             }
 
         // Тот же предикат, что и у листингов игр: провайдер/коллекция/теги/флаги.
