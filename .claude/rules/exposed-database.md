@@ -21,8 +21,8 @@ All database operations MUST use Exposed DAO Entity pattern for maximum performa
 - For one-to-many and many-to-many relations, always eager-load when you know you'll access them
 - Example:
   ```kotlin
-  GameEntity.find { GameTable.active eq true }
-      .with(GameEntity::provider, GameEntity::collections)
+  CasinoGameEntity.find { CasinoGameTable.active eq true }
+      .with(CasinoGameEntity::provider, CasinoGameEntity::collections)
       .map { it.toDomain() }
   ```
 
@@ -40,7 +40,7 @@ All database operations MUST use Exposed DAO Entity pattern for maximum performa
 
 ### Index-Aware Querying
 - Query by indexed/PK columns whenever possible
-- When filtering by foreign keys, use the table column reference (e.g., `SessionTable.gameVariant eq variantId`) not a subquery
+- When filtering by foreign keys, use the table column reference (e.g., `CasinoSessionTable.gameVariant eq variantId`) not a subquery
 - For multi-column lookups, ensure a composite index exists or use the PK
 
 ### Column Type Choices

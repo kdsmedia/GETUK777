@@ -1,7 +1,7 @@
 package domain.event
 
-import domain.model.Round
-import domain.model.Session
+import domain.model.CasinoRound
+import domain.model.CasinoSession
 import domain.model.Spin
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -15,7 +15,7 @@ import kotlinx.serialization.json.jsonObject
  * `gameIdentity` / `gameProvider` / `currency` / `freespinId` at the TOP level **alongside** the
  * full nested payload — additive only. Internal consumers (e.g. PlaceSpinEventConsumer) keep
  * decoding the nested aggregate; the extra keys are ignored via `appJson { ignoreUnknownKeys }`.
- * `gameIdentity`/`gameProvider` are the `Identity` slugs CRM expects, NOT the aggregator GameSymbol.
+ * `gameIdentity`/`gameProvider` are the `Identity` slugs CRM expects, NOT the aggregator CasinoGameSymbol.
  */
 private fun JsonObject.withFlatGameFields(
     gameVariant: JsonObject?,
@@ -43,7 +43,7 @@ object SpinWireSerializer : JsonTransformingSerializer<Spin>(Spin.serializer()) 
     }
 }
 
-object RoundWireSerializer : JsonTransformingSerializer<Round>(Round.serializer()) {
+object CasinoRoundWireSerializer : JsonTransformingSerializer<CasinoRound>(CasinoRound.serializer()) {
     public override fun transformSerialize(element: JsonElement): JsonElement =
         element.jsonObject.withFlatGameFields(
             gameVariant = element.jsonObject["gameVariant"]?.jsonObject,
@@ -52,7 +52,7 @@ object RoundWireSerializer : JsonTransformingSerializer<Round>(Round.serializer(
         )
 }
 
-object SessionWireSerializer : JsonTransformingSerializer<Session>(Session.serializer()) {
+object CasinoSessionWireSerializer : JsonTransformingSerializer<CasinoSession>(CasinoSession.serializer()) {
     public override fun transformSerialize(element: JsonElement): JsonElement =
         element.jsonObject.withFlatGameFields(
             gameVariant = element.jsonObject["gameVariant"]?.jsonObject,

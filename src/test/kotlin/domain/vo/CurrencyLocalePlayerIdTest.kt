@@ -3,7 +3,7 @@ package domain.vo
 import domain.exception.badrequest.BlankCurrencyException
 import domain.exception.badrequest.BlankLocaleException
 import domain.exception.badrequest.BlankPlayerIdException
-import domain.exception.badrequest.BlankSessionTokenException
+import domain.exception.badrequest.BlankCasinoSessionTokenException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -35,11 +35,11 @@ class CurrencyLocalePlayerIdTest : FunSpec({
         shouldThrow<BlankPlayerIdException> { PlayerId("") }
     }
 
-    test("SessionToken accepts non-blank value") {
-        SessionToken("tok_abc").value shouldBe "tok_abc"
+    test("CasinoSessionToken accepts non-blank value") {
+        CasinoSessionToken("tok_abc").value shouldBe "tok_abc"
     }
 
-    test("SessionToken rejects blank") {
-        shouldThrow<BlankSessionTokenException> { SessionToken("") }
+    test("CasinoSessionToken rejects blank") {
+        shouldThrow<BlankCasinoSessionTokenException> { CasinoSessionToken("") }
     }
 })

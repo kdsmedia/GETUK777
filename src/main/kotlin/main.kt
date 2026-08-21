@@ -3,8 +3,8 @@ import api.grpc.configureGrpc
 import api.grpc.service.AggregatorGrpcService
 import api.grpc.service.CollectionGrpcService
 import api.grpc.service.FreespinGrpcService
-import api.grpc.service.GameGrpcService
-import api.grpc.service.ProviderGrpcService
+import api.grpc.service.CasinoGameGrpcService
+import api.grpc.service.CasinoProviderGrpcService
 import api.grpc.service.WinnerGrpcService
 import api.webhook.configureRestInspector
 import api.webhook.configureWebhook

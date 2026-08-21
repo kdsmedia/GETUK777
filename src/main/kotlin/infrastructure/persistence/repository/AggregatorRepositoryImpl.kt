@@ -3,6 +3,7 @@ package infrastructure.persistence.repository
 import domain.exception.domainRequireNotNull
 import domain.exception.notfound.AggregatorNotFoundException
 import domain.model.Aggregator
+import domain.model.AggregatorType
 import domain.repository.IAggregatorRepository
 import domain.vo.Identity
 import infrastructure.persistence.dbRead
@@ -11,6 +12,7 @@ import infrastructure.persistence.mapper.AggregatorMapper.toAggregator
 import infrastructure.persistence.mapper.JsonMapperUtil.toJsonObject
 import infrastructure.persistence.table.AggregatorTable
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.upsert
@@ -21,6 +23,7 @@ class AggregatorRepositoryImpl : IAggregatorRepository {
         AggregatorTable.upsert(keys = arrayOf(AggregatorTable.identity)) {
             it[identity] = aggregator.identity.value
             it[integration] = aggregator.integration
+            it[type] = aggregator.type
             it[config] = aggregator.config.toJsonObject()
             it[active] = aggregator.active
         }
@@ -33,6 +36,16 @@ class AggregatorRepositoryImpl : IAggregatorRepository {
             .selectAll()
             .where { AggregatorTable.identity eq identity.value }
             .singleOrNull()
+            ?.toAggregator()
+    }
+
+    override suspend fun findFirstActiveByType(type: AggregatorType): Aggregator? = dbRead {
+        AggregatorTable
+            .selectAll()
+            .where { (AggregatorTable.type eq type) and (AggregatorTable.active eq true) }
+            .orderBy(AggregatorTable.id)
+            .limit(1)
+            .firstOrNull()
             ?.toAggregator()
     }
 

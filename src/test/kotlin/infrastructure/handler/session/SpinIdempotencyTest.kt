@@ -1,7 +1,7 @@
 package infrastructure.handler.session
 
-import application.command.session.PlaceSpinSessionCommand
-import application.command.session.SettleSpinSessionCommand
+import application.command.session.PlaceSpinCasinoSessionCommand
+import application.command.session.SettleSpinCasinoSessionCommand
 import application.port.external.IEventPublisherPort
 import application.port.external.IPlayerLimitPort
 import application.port.external.IWalletPort
@@ -9,7 +9,7 @@ import application.usecase.ProcessSpinUsecase
 import domain.exception.conflict.SpinAlreadyExistsException
 import domain.model.PlayerBalance
 import domain.model.Spin
-import domain.repository.IRoundRepository
+import domain.repository.ICasinoRoundRepository
 import domain.repository.ISpinRepository
 import domain.vo.Amount
 import domain.vo.Currency
@@ -47,13 +47,13 @@ class SpinIdempotencyTest : FunSpec({
     test("a PLACE that loses the unique-constraint race answers with the settled balance") {
         val walletPort = wallet()
         val spinRepository = mockk<ISpinRepository>()
-        val roundRepository = mockk<IRoundRepository>()
+        val roundRepository = mockk<ICasinoRoundRepository>()
 
         coEvery { spinRepository.findByExternalId(any()) } returns null
         coEvery { spinRepository.save(any()) } throws SpinAlreadyExistsException()
         coEvery { roundRepository.findByExternalIdAndSessionId(any(), any()) } returns round
 
-        val handler = PlaceSpinSessionHandler(
+        val handler = PlaceSpinCasinoSessionHandler(
             roundRepository = roundRepository,
             spinRepository = spinRepository,
             processSpinUsecase = usecase(walletPort, spinRepository),
@@ -61,7 +61,7 @@ class SpinIdempotencyTest : FunSpec({
         )
 
         val result = handler.handle(
-            PlaceSpinSessionCommand(
+            PlaceSpinCasinoSessionCommand(
                 session = session,
                 gameSymbol = "elvisfrog_bg",
                 externalRoundId = "round_1",
@@ -77,13 +77,13 @@ class SpinIdempotencyTest : FunSpec({
     test("a SETTLE that loses the unique-constraint race answers with the settled balance") {
         val walletPort = wallet()
         val spinRepository = mockk<ISpinRepository>()
-        val roundRepository = mockk<IRoundRepository>()
+        val roundRepository = mockk<ICasinoRoundRepository>()
 
         coEvery { spinRepository.findByExternalId(any()) } returns null
         coEvery { spinRepository.save(any()) } throws SpinAlreadyExistsException()
         coEvery { roundRepository.findByExternalIdAndSessionId(any(), any()) } returns round
 
-        val handler = SettleSpinSessionHandler(
+        val handler = SettleSpinCasinoSessionHandler(
             roundRepository = roundRepository,
             spinRepository = spinRepository,
             processSpinUsecase = usecase(walletPort, spinRepository),
@@ -91,7 +91,7 @@ class SpinIdempotencyTest : FunSpec({
         )
 
         val result = handler.handle(
-            SettleSpinSessionCommand(
+            SettleSpinCasinoSessionCommand(
                 session = session,
                 gameSymbol = "elvisfrog_bg",
                 externalRoundId = "round_1",

@@ -2,23 +2,23 @@ package infrastructure.aggregator.gamingflow.webhook
 
 import application.Bus
 import application.command.freespin.ChargeFreespinCommand
-import application.command.session.EndRoundSessionCommand
-import application.command.session.PlaceSpinSessionCommand
-import application.command.session.RollbackSpinSessionCommand
-import application.command.session.SettleSpinSessionCommand
+import application.command.session.EndCasinoRoundSessionCommand
+import application.command.session.PlaceSpinCasinoSessionCommand
+import application.command.session.RollbackSpinCasinoSessionCommand
+import application.command.session.SettleSpinCasinoSessionCommand
 import application.port.external.ICurrencyPort
 import application.port.external.IWebhookGuardPort
 import application.query.aggregator.FindAggregatorQuery
 import application.query.freespin.FindRedeemableFreespinQuery
-import application.query.session.FindSessionBalanceQuery
-import application.query.session.FindSessionByExternalTokenQuery
-import application.query.session.FindSessionQuery
+import application.query.session.FindCasinoSessionBalanceQuery
+import application.query.session.FindCasinoSessionByExternalTokenQuery
+import application.query.session.FindCasinoSessionQuery
 import domain.exception.forbidden.InsufficientBalanceException
 import domain.exception.forbidden.MaxPlaceSpinException
-import domain.exception.notfound.SessionNotFoundException
+import domain.exception.notfound.CasinoSessionNotFoundException
 import domain.model.Freespin
 import domain.model.PlayerBalance
-import domain.model.Session
+import domain.model.CasinoSession
 import domain.vo.Amount
 import domain.vo.Currency
 import domain.vo.Identity
@@ -154,7 +154,7 @@ class GamingFlowWebhook(
 
     private suspend fun getBalance(params: GetBalanceParams): JsonElement {
         val session = resolveSession(params.sessionAlternativeId, params.sessionId, params.currency)
-        val balance = bus(FindSessionBalanceQuery(session))
+        val balance = bus(FindCasinoSessionBalanceQuery(session))
 
         return json.encodeToJsonElement(
             BalanceResult.serializer(),
@@ -167,7 +167,7 @@ class GamingFlowWebhook(
 
     /** The free-round balance is ours to keep for this provider: it stores the promotion id and
      *  nothing else, and asks us for the count on every call. */
-    private suspend fun redeemableFreespin(session: Session) = bus(
+    private suspend fun redeemableFreespin(session: CasinoSession) = bus(
         FindRedeemableFreespinQuery(
             playerId = session.playerId,
             gameVariantId = session.gameVariant.id,
@@ -186,7 +186,7 @@ class GamingFlowWebhook(
         return guardPort.withLock(session.walletKey()) { withdrawAndDeposit(session, params) }
     }
 
-    private suspend fun withdrawAndDeposit(session: Session, params: WithdrawAndDepositParams): JsonElement {
+    private suspend fun withdrawAndDeposit(session: CasinoSession, params: WithdrawAndDepositParams): JsonElement {
         if (guardPort.isRolledBack("$AGGREGATOR_IDENTITY:${params.transactionRef}")) {
             throw SeamlessException(
                 ERR_UNKNOWN,
@@ -206,7 +206,7 @@ class GamingFlowWebhook(
 
         if (charged == null && params.withdraw > 0) {
             balance = bus(
-                PlaceSpinSessionCommand(
+                PlaceSpinCasinoSessionCommand(
                     session = session,
                     gameSymbol = params.gameId,
                     externalRoundId = roundId,
@@ -219,7 +219,7 @@ class GamingFlowWebhook(
 
         if (params.deposit > 0) {
             balance = bus(
-                SettleSpinSessionCommand(
+                SettleSpinCasinoSessionCommand(
                     session = session,
                     gameSymbol = params.gameId,
                     externalRoundId = roundId,
@@ -231,7 +231,7 @@ class GamingFlowWebhook(
         }
 
         // A zero/zero call is a legal round marker; answer with the balance as it stands.
-        val newBalance = balance ?: bus(FindSessionBalanceQuery(session))
+        val newBalance = balance ?: bus(FindCasinoSessionBalanceQuery(session))
 
         if (params.reason == REASON_GAME_PLAY_FINAL) closeRound(session, roundId)
 
@@ -253,7 +253,7 @@ class GamingFlowWebhook(
      * The grant is looked up by the `bonusId` the provider quotes rather than by player and game,
      * so a charge can only ever hit the promotion the session was opened against.
      */
-    private suspend fun chargeFreerounds(session: Session, params: WithdrawAndDepositParams): Freespin? {
+    private suspend fun chargeFreerounds(session: CasinoSession, params: WithdrawAndDepositParams): Freespin? {
         val count = params.chargeFreerounds ?: 0
         val bonusId = params.bonusId
 
@@ -279,7 +279,7 @@ class GamingFlowWebhook(
         return guardPort.withLock(session.walletKey()) { rollbackTransaction(session, params) }
     }
 
-    private suspend fun rollbackTransaction(session: Session, params: RollbackTransactionParams): JsonElement {
+    private suspend fun rollbackTransaction(session: CasinoSession, params: RollbackTransactionParams): JsonElement {
         // Marked before anything is reversed, so a transaction still in flight — the provider may
         // send the rollback first — is refused when it arrives rather than executed and orphaned.
         guardPort.markRolledBack(
@@ -288,7 +288,7 @@ class GamingFlowWebhook(
         )
 
         bus(
-            RollbackSpinSessionCommand(
+            RollbackSpinCasinoSessionCommand(
                 session = session,
                 // Win first, then bet: reclaiming before refunding keeps the balance non-negative.
                 externalSpinIds = listOf(
@@ -304,15 +304,15 @@ class GamingFlowWebhook(
 
     /** The money has already moved by this point, so a round that cannot be closed must not fail the
      *  call — the provider would roll back a transaction that legitimately went through. */
-    private suspend fun closeRound(session: Session, roundId: String) {
-        runCatching { bus(EndRoundSessionCommand(session = session, externalRoundId = roundId)) }
+    private suspend fun closeRound(session: CasinoSession, roundId: String) {
+        runCatching { bus(EndCasinoRoundSessionCommand(session = session, externalRoundId = roundId)) }
             .onFailure { logger.warn("GamingFlow round {} not closed: {}", roundId, it.message) }
     }
 
     /**
      * Both identifiers are optional on the wire, so neither can be trusted on its own:
      * `sessionAlternativeId` is the token we handed over at launch, `sessionId` is the one the
-     * provider minted and we stored as `Session.externalToken`. Ours is tried first because it is
+     * provider minted and we stored as `CasinoSession.externalToken`. Ours is tried first because it is
      * the one every in-game call carries; the provider's is the fallback that keeps the integration
      * test harness working, which sends the game's section id as the alternative id.
      */
@@ -320,10 +320,10 @@ class GamingFlowWebhook(
         sessionAlternativeId: String?,
         sessionId: String?,
         currency: String?,
-    ): Session {
-        val session = sessionAlternativeId?.let { findSession { bus(FindSessionQuery(it)) } }
-            ?: sessionId?.let { findSession { bus(FindSessionByExternalTokenQuery(it)) } }
-            ?: throw SessionNotFoundException()
+    ): CasinoSession {
+        val session = sessionAlternativeId?.let { findSession { bus(FindCasinoSessionQuery(it)) } }
+            ?: sessionId?.let { findSession { bus(FindCasinoSessionByExternalTokenQuery(it)) } }
+            ?: throw CasinoSessionNotFoundException()
 
         // The session is currency-locked at creation; a mismatch means the provider is talking about
         // a wallet we do not own.
@@ -335,11 +335,11 @@ class GamingFlowWebhook(
     }
 
     /** The resource a money call contends on is the wallet account, not the session or the game. */
-    private fun Session.walletKey(): String = "$AGGREGATOR_IDENTITY:wallet:${playerId.value}:${currency.value}"
+    private fun CasinoSession.walletKey(): String = "$AGGREGATOR_IDENTITY:wallet:${playerId.value}:${currency.value}"
 
     /** A miss on one identifier must fall through to the other, not abort the resolution. */
-    private suspend fun findSession(lookup: suspend () -> Session): Session? =
-        runCatching { lookup() }.getOrElse { if (it is SessionNotFoundException) null else throw it }
+    private suspend fun findSession(lookup: suspend () -> CasinoSession): CasinoSession? =
+        runCatching { lookup() }.getOrElse { if (it is CasinoSessionNotFoundException) null else throw it }
 
     private fun isFresh(timestamp: Long): Boolean {
         val now = System.currentTimeMillis() / MILLIS_PER_SECOND
@@ -354,7 +354,7 @@ class GamingFlowWebhook(
 
     private fun String.settleSpinId(): String = "$this$SETTLE_SUFFIX"
 
-    /** Provider minor units → wallet system units (nano). */
+    /** CasinoProvider minor units → wallet system units (nano). */
     private suspend fun Long.toSystemUnits(currency: Currency): Amount =
         Amount(currencyPort.convertToUnits(this / MINOR_UNITS_PER_MAJOR, currency))
 
@@ -372,7 +372,7 @@ class GamingFlowWebhook(
             GamingFlowRpcError(ERR_NOT_ENOUGH_MONEY, "The player doesn't have enough money to do the bet action")
         is MaxPlaceSpinException ->
             GamingFlowRpcError(ERR_MAX_BET_LIMIT_EXCEEDED, "The bet exceeds the player's maximum bet limit")
-        is SessionNotFoundException ->
+        is CasinoSessionNotFoundException ->
             // ErrInternal, not ErrUnknown: no session means no money moved, so a rollback cycle
             // would chase a transaction that never existed.
             GamingFlowRpcError(ERR_INTERNAL, "Unknown session")

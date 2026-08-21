@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_package = "com.nekgamebling.game.v1";
+option java_multiple_files = true;
+
+// ---------------------------------------------------------------------------
+// Sportbook service — opens the sportbook for a player.
+//
+// Open resolves the single active SPORTBOOK aggregator, mints a session with a
+// one-time public token and returns what the frontend needs to boot the
+// provider SDK. Mirrors `application.command.sportbook.OpenSportbookCommand`.
+// ---------------------------------------------------------------------------
+service SportbookService {
+  rpc Open(OpenSportbookCommand) returns (OpenSportbookCommand.Result);
+}
+
+message OpenSportbookCommand {
+  string player_id = 1;
+
+  // Player wallet currency (ISO 4217 / crypto code, e.g. "USD").
+  string currency = 2;
+
+  message Result {
+    // Aggregator integration key (e.g. "01TECHSPORT") — tells the frontend which SDK to load.
+    string integration = 1;
+
+    // Aggregator-specific SDK init payload (e.g. public token, partnerId).
+    map<string, string> data = 2;
+  }
+}

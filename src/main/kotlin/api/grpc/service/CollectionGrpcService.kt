@@ -2,36 +2,36 @@ package api.grpc.service
 
 import api.grpc.config.handleGrpcCall
 import api.grpc.mapper.CollectionProtoMapper.toProto
-import api.grpc.mapper.GameFilterProtoMapper.toDomain
-import api.grpc.mapper.GamePageProtoMapper.toGamePageDto
+import api.grpc.mapper.CasinoGameFilterProtoMapper.toDomain
+import api.grpc.mapper.CasinoGamePageProtoMapper.toCasinoGamePageDto
 import application.Bus
 import application.command.collection.SaveCollectionCommand
 import application.command.collection.SetCollectionImageCommand
-import application.query.game.FindAllGameCollectionQuery
+import application.query.game.FindAllCasinoGameCollectionQuery
 import com.nekgamebling.game.v1.BatchCollectionQueryKt
 import com.nekgamebling.game.v1.CollectionServiceGrpcKt
 import com.nekgamebling.game.v1.Empty
 import com.nekgamebling.game.v1.FindAllCollectionQueryKt
 import com.nekgamebling.game.v1.FindCollectionQueryKt
-import com.nekgamebling.game.v1.GamePageDto
+import com.nekgamebling.game.v1.CasinoGamePageDto
 import com.nekgamebling.game.v1.UpdateCollectionImageCommand
 import domain.exception.notfound.CollectionNotFoundException
 import domain.vo.Identity
 import domain.vo.LocaleName
 import domain.vo.Pageable
-import com.nekgamebling.game.v1.AddCollectionGameCommand as AddCollectionGameProto
+import com.nekgamebling.game.v1.AddCollectionCasinoGameCommand as AddCollectionCasinoGameProto
 import com.nekgamebling.game.v1.BatchCollectionQuery as BatchCollectionProto
 import com.nekgamebling.game.v1.DeleteCollectionCommand as DeleteCollectionProto
 import com.nekgamebling.game.v1.FindAllCollectionQuery as FindAllCollectionProto
-import com.nekgamebling.game.v1.FindAllGameCollectionQuery as FindAllGameCollectionProto
+import com.nekgamebling.game.v1.FindAllCasinoGameCollectionQuery as FindAllCasinoGameCollectionProto
 import com.nekgamebling.game.v1.FindCollectionQuery as FindCollectionProto
-import com.nekgamebling.game.v1.RemoveCollectionGameCommand as RemoveCollectionGameProto
+import com.nekgamebling.game.v1.RemoveCollectionCasinoGameCommand as RemoveCollectionCasinoGameProto
 import com.nekgamebling.game.v1.SaveCollectionCommand as SaveCollectionProto
-import com.nekgamebling.game.v1.UpdateCollectionGameOrderCommand as UpdateCollectionGameOrderProto
-import application.command.collection.AddCollectionGameCommand as AddCollectionGameCqrs
+import com.nekgamebling.game.v1.UpdateCollectionCasinoGameOrderCommand as UpdateCollectionCasinoGameOrderProto
+import application.command.collection.AddCollectionCasinoGameCommand as AddCollectionCasinoGameCqrs
 import application.command.collection.DeleteCollectionCommand as DeleteCollectionCqrs
-import application.command.collection.RemoveCollectionGameCommand as RemoveCollectionGameCqrs
-import application.command.collection.UpdateCollectionGameOrderCommand as UpdateCollectionGameOrderCqrs
+import application.command.collection.RemoveCollectionCasinoGameCommand as RemoveCollectionCasinoGameCqrs
+import application.command.collection.UpdateCollectionCasinoGameOrderCommand as UpdateCollectionCasinoGameOrderCqrs
 import application.query.collection.BatchCollectionQuery as BatchCollectionCqrs
 import application.query.collection.FindAllCollectionQuery as FindAllCollectionCqrs
 import application.query.collection.FindCollectionQuery as FindCollectionCqrs
@@ -92,21 +92,21 @@ class CollectionGrpcService(
         }
     }
 
-    override suspend fun findAllGame(request: FindAllGameCollectionProto): GamePageDto = handleGrpcCall {
+    override suspend fun findAllCasinoGame(request: FindAllCasinoGameCollectionProto): CasinoGamePageDto = handleGrpcCall {
         val page = bus(
-            FindAllGameCollectionQuery(
+            FindAllCasinoGameCollectionQuery(
                 collection = Identity(request.collectionIdentity),
                 filter = request.filter.toDomain(),
                 pageable = Pageable(request.pageNum, request.pageSize),
             )
         )
 
-        page.toGamePageDto()
+        page.toCasinoGamePageDto()
     }
 
-    override suspend fun addGame(request: AddCollectionGameProto): Empty = handleGrpcCall {
+    override suspend fun addCasinoGame(request: AddCollectionCasinoGameProto): Empty = handleGrpcCall {
         bus(
-            AddCollectionGameCqrs(
+            AddCollectionCasinoGameCqrs(
                 identity = Identity(request.identity),
                 gameIdentity = Identity(request.gameIdentity),
             )
@@ -114,9 +114,9 @@ class CollectionGrpcService(
         Empty.getDefaultInstance()
     }
 
-    override suspend fun removeGame(request: RemoveCollectionGameProto): Empty = handleGrpcCall {
+    override suspend fun removeCasinoGame(request: RemoveCollectionCasinoGameProto): Empty = handleGrpcCall {
         bus(
-            RemoveCollectionGameCqrs(
+            RemoveCollectionCasinoGameCqrs(
                 identity = Identity(request.identity),
                 gameIdentity = Identity(request.gameIdentity),
             )
@@ -124,9 +124,9 @@ class CollectionGrpcService(
         Empty.getDefaultInstance()
     }
 
-    override suspend fun updateGameOrder(request: UpdateCollectionGameOrderProto): Empty = handleGrpcCall {
+    override suspend fun updateCasinoGameOrder(request: UpdateCollectionCasinoGameOrderProto): Empty = handleGrpcCall {
         bus(
-            UpdateCollectionGameOrderCqrs(
+            UpdateCollectionCasinoGameOrderCqrs(
                 identity = Identity(request.identity),
                 gameIdentity = Identity(request.gameIdentity),
                 order = request.order,

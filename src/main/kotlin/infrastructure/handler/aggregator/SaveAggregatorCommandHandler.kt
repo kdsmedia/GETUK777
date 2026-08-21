@@ -13,11 +13,13 @@ class SaveAggregatorCommandHandler(
         val existing = aggregatorRepository.findByIdentity(command.identity)
         val aggregator = existing?.copy(
             integration = command.integration,
+            type = command.type,
             config = command.config,
             active = command.active,
         ) ?: Aggregator(
             identity = command.identity,
             integration = command.integration,
+            type = command.type,
             config = command.config,
             active = command.active,
         )

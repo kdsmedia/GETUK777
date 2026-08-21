@@ -8,7 +8,7 @@ import domain.vo.Identity
  *
  * The engine does not accept file content — callers upload to object storage
  * themselves and pass the final public URL. Concrete subclasses
- * (`SetGameImageCommand`, `SetProviderImageCommand`, `SetCollectionImageCommand`)
+ * (`SetCasinoGameImageCommand`, `SetCasinoProviderImageCommand`, `SetCollectionImageCommand`)
  * only route to the right repository; a single `SetImageCommandHandler` persists
  * the URL without per-entity duplication.
  */

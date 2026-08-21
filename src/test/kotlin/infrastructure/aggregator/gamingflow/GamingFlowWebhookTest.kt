@@ -2,20 +2,20 @@ package infrastructure.aggregator.gamingflow
 
 import application.Bus
 import application.command.freespin.ChargeFreespinCommand
-import application.command.session.EndRoundSessionCommand
-import application.command.session.PlaceSpinSessionCommand
-import application.command.session.RollbackSpinSessionCommand
-import application.command.session.SettleSpinSessionCommand
+import application.command.session.EndCasinoRoundSessionCommand
+import application.command.session.PlaceSpinCasinoSessionCommand
+import application.command.session.RollbackSpinCasinoSessionCommand
+import application.command.session.SettleSpinCasinoSessionCommand
 import application.port.external.ICurrencyPort
 import application.port.external.IWebhookGuardPort
 import application.query.aggregator.FindAggregatorQuery
 import application.query.freespin.FindRedeemableFreespinQuery
-import application.query.session.FindSessionBalanceQuery
-import application.query.session.FindSessionByExternalTokenQuery
-import application.query.session.FindSessionQuery
+import application.query.session.FindCasinoSessionBalanceQuery
+import application.query.session.FindCasinoSessionByExternalTokenQuery
+import application.query.session.FindCasinoSessionQuery
 import domain.exception.conflict.FreespinExhaustedException
 import domain.exception.forbidden.InsufficientBalanceException
-import domain.exception.notfound.SessionNotFoundException
+import domain.exception.notfound.CasinoSessionNotFoundException
 import domain.model.Freespin
 import domain.model.PlayerBalance
 import domain.vo.Amount
@@ -107,8 +107,8 @@ class GamingFlowWebhookTest : FunSpec({
                 )
             )
         )
-        coEvery { bus(ofType<FindSessionQuery>()) } returns session
-        coEvery { bus(ofType<FindSessionBalanceQuery>()) } returns balance
+        coEvery { bus(ofType<FindCasinoSessionQuery>()) } returns session
+        coEvery { bus(ofType<FindCasinoSessionBalanceQuery>()) } returns balance
         // No grant unless a spec says otherwise: most spins are not free.
         coEvery { bus(ofType<FindRedeemableFreespinQuery>()) } returns null
 
@@ -156,7 +156,7 @@ class GamingFlowWebhookTest : FunSpec({
             )
 
             response.status shouldBe HttpStatusCode.Unauthorized
-            coVerify(exactly = 0) { bus(ofType<FindSessionBalanceQuery>()) }
+            coVerify(exactly = 0) { bus(ofType<FindCasinoSessionBalanceQuery>()) }
         }
     }
 
@@ -187,7 +187,7 @@ class GamingFlowWebhookTest : FunSpec({
             val response = client.call("getBalance", """{"sessionAlternativeId":"token_abc","currency":"UAH"}""")
 
             response.status shouldBe HttpStatusCode.Unauthorized
-            coVerify(exactly = 0) { bus(ofType<FindSessionBalanceQuery>()) }
+            coVerify(exactly = 0) { bus(ofType<FindCasinoSessionBalanceQuery>()) }
         }
     }
 
@@ -218,13 +218,13 @@ class GamingFlowWebhookTest : FunSpec({
     }
 
     test("withdrawAndDeposit books a bet and a win from one transaction ref") {
-        var place: PlaceSpinSessionCommand? = null
-        var settle: SettleSpinSessionCommand? = null
-        var endRound: EndRoundSessionCommand? = null
+        var place: PlaceSpinCasinoSessionCommand? = null
+        var settle: SettleSpinCasinoSessionCommand? = null
+        var endRound: EndCasinoRoundSessionCommand? = null
 
-        coEvery { bus(ofType<PlaceSpinSessionCommand>()) } answers { place = firstArg(); balance }
-        coEvery { bus(ofType<SettleSpinSessionCommand>()) } answers { settle = firstArg(); balance }
-        coEvery { bus(ofType<EndRoundSessionCommand>()) } answers { endRound = firstArg(); Unit }
+        coEvery { bus(ofType<PlaceSpinCasinoSessionCommand>()) } answers { place = firstArg(); balance }
+        coEvery { bus(ofType<SettleSpinCasinoSessionCommand>()) } answers { settle = firstArg(); balance }
+        coEvery { bus(ofType<EndCasinoRoundSessionCommand>()) } answers { endRound = firstArg(); Unit }
 
         runWebhook { client ->
             val response = client.call(
@@ -257,7 +257,7 @@ class GamingFlowWebhookTest : FunSpec({
     }
 
     test("withdrawAndDeposit keeps the round open unless told to close it") {
-        coEvery { bus(ofType<PlaceSpinSessionCommand>()) } returns balance
+        coEvery { bus(ofType<PlaceSpinCasinoSessionCommand>()) } returns balance
 
         runWebhook { client ->
             client.call(
@@ -265,7 +265,7 @@ class GamingFlowWebhookTest : FunSpec({
                 params = """{"withdraw":20,"deposit":0,"currency":"UAH","transactionRef":"ref-2","gameRoundRef":"r2","reason":"GAME_PLAY","sessionAlternativeId":"token_abc"}""",
             )
 
-            coVerify(exactly = 0) { bus(ofType<EndRoundSessionCommand>()) }
+            coVerify(exactly = 0) { bus(ofType<EndCasinoRoundSessionCommand>()) }
         }
     }
 
@@ -280,7 +280,7 @@ class GamingFlowWebhookTest : FunSpec({
 
             val error = Json.parseToJsonElement(response.bodyAsText()).jsonObject["error"]!!.jsonObject
             error["code"]!!.jsonPrimitive.int shouldBe 8
-            coVerify(exactly = 0) { bus(ofType<PlaceSpinSessionCommand>()) }
+            coVerify(exactly = 0) { bus(ofType<PlaceSpinCasinoSessionCommand>()) }
         }
     }
 
@@ -293,13 +293,13 @@ class GamingFlowWebhookTest : FunSpec({
 
             val error = Json.parseToJsonElement(response.bodyAsText()).jsonObject["error"]!!.jsonObject
             error["code"]!!.jsonPrimitive.int shouldBe 8
-            coVerify(exactly = 0) { bus(ofType<PlaceSpinSessionCommand>()) }
+            coVerify(exactly = 0) { bus(ofType<PlaceSpinCasinoSessionCommand>()) }
         }
     }
 
     test("rollbackTransaction marks the ref and reverses the win before the bet") {
-        var rollback: RollbackSpinSessionCommand? = null
-        coEvery { bus(ofType<RollbackSpinSessionCommand>()) } answers { rollback = firstArg(); balance }
+        var rollback: RollbackSpinCasinoSessionCommand? = null
+        coEvery { bus(ofType<RollbackSpinCasinoSessionCommand>()) } answers { rollback = firstArg(); balance }
 
         runWebhook { client ->
             val response = client.call(
@@ -320,7 +320,7 @@ class GamingFlowWebhookTest : FunSpec({
     }
 
     test("insufficient balance answers code 1 and starts no rollback cycle") {
-        coEvery { bus(ofType<PlaceSpinSessionCommand>()) } throws InsufficientBalanceException()
+        coEvery { bus(ofType<PlaceSpinCasinoSessionCommand>()) } throws InsufficientBalanceException()
 
         runWebhook { client ->
             val response = client.call(
@@ -334,7 +334,7 @@ class GamingFlowWebhookTest : FunSpec({
     }
 
     test("an unknown session answers code 7 so no rollback is chased") {
-        coEvery { bus(ofType<FindSessionQuery>()) } throws SessionNotFoundException()
+        coEvery { bus(ofType<FindCasinoSessionQuery>()) } throws CasinoSessionNotFoundException()
 
         runWebhook { client ->
             val response = client.call(
@@ -363,7 +363,7 @@ class GamingFlowWebhookTest : FunSpec({
 
     test("a charged free round replaces the bet and still pays the win") {
         coEvery { bus(ofType<ChargeFreespinCommand>()) } returns freespin(remaining = 4)
-        coEvery { bus(ofType<SettleSpinSessionCommand>()) } returns balance
+        coEvery { bus(ofType<SettleSpinCasinoSessionCommand>()) } returns balance
 
         runWebhook { client ->
             val response = client.call(
@@ -380,8 +380,8 @@ class GamingFlowWebhookTest : FunSpec({
 
         // The stake is not taken — that is what "free" means — but the win is credited as usual,
         // and both spins carry the grant so the round is identifiable as a bonus round.
-        coVerify(exactly = 0) { bus(ofType<PlaceSpinSessionCommand>()) }
-        coVerify(exactly = 1) { bus(match<SettleSpinSessionCommand> { it.freespinId == "bonus-1" }) }
+        coVerify(exactly = 0) { bus(ofType<PlaceSpinCasinoSessionCommand>()) }
+        coVerify(exactly = 1) { bus(match<SettleSpinCasinoSessionCommand> { it.freespinId == "bonus-1" }) }
     }
 
     test("a free round the grant cannot cover is refused, not silently billed") {
@@ -398,11 +398,11 @@ class GamingFlowWebhookTest : FunSpec({
             error["code"]!!.jsonPrimitive.int shouldBe 8
         }
 
-        coVerify(exactly = 0) { bus(ofType<PlaceSpinSessionCommand>()) }
+        coVerify(exactly = 0) { bus(ofType<PlaceSpinCasinoSessionCommand>()) }
     }
 
     test("chargeFreerounds without a bonus id is an ordinary paid bet") {
-        coEvery { bus(ofType<PlaceSpinSessionCommand>()) } returns balance
+        coEvery { bus(ofType<PlaceSpinCasinoSessionCommand>()) } returns balance
 
         runWebhook { client ->
             client.call(
@@ -413,7 +413,7 @@ class GamingFlowWebhookTest : FunSpec({
         }
 
         coVerify(exactly = 0) { bus(ofType<ChargeFreespinCommand>()) }
-        coVerify(exactly = 1) { bus(ofType<PlaceSpinSessionCommand>()) }
+        coVerify(exactly = 1) { bus(ofType<PlaceSpinCasinoSessionCommand>()) }
     }
 
     test("a money call is serialised on the player's wallet, a balance read is not") {
@@ -434,8 +434,8 @@ class GamingFlowWebhookTest : FunSpec({
     test("a session is resolved by the provider's own id when the alternative id is not ours") {
         // What the vendor's integration-test harness actually sends: the game's section id in
         // sessionAlternativeId, the real identifier in sessionId.
-        coEvery { bus(ofType<FindSessionQuery>()) } throws SessionNotFoundException()
-        coEvery { bus(ofType<FindSessionByExternalTokenQuery>()) } returns session
+        coEvery { bus(ofType<FindCasinoSessionQuery>()) } throws CasinoSessionNotFoundException()
+        coEvery { bus(ofType<FindCasinoSessionByExternalTokenQuery>()) } returns session
 
         runWebhook { client ->
             val response = client.call(
@@ -447,7 +447,7 @@ class GamingFlowWebhookTest : FunSpec({
             result["balance"]!!.jsonPrimitive.long shouldBe 4_400
         }
 
-        coVerify(exactly = 1) { bus(FindSessionByExternalTokenQuery("q31d0lghlxf67ep")) }
+        coVerify(exactly = 1) { bus(FindCasinoSessionByExternalTokenQuery("q31d0lghlxf67ep")) }
     }
 
     test("our own alternative id wins over the provider's id when both resolve") {
@@ -458,7 +458,7 @@ class GamingFlowWebhookTest : FunSpec({
             )
         }
 
-        coVerify(exactly = 0) { bus(ofType<FindSessionByExternalTokenQuery>()) }
+        coVerify(exactly = 0) { bus(ofType<FindCasinoSessionByExternalTokenQuery>()) }
     }
 
     test("a currency the session is not held in answers code 2") {

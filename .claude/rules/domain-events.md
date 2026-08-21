@@ -10,7 +10,7 @@ no use case or event touches JSON, bytes, or the channel.
 
 - **Events are a domain concern** — they live in `domain/event/`:
   - `AppEvent<T>` interface + its `Meta<T>` companion contract (`route` + `serializer` + `create`).
-  - `SpinEvent` / `RoundEvent` / `SessionEvent` — each wraps a `domain.model.*` aggregate directly.
+  - `SpinEvent` / `CasinoRoundEvent` / `CasinoSessionEvent` — each wraps a `domain.model.*` aggregate directly.
 - **The publisher is a driven port** — `application/port/external/IEventPublisherPort` (`publish(AppEvent<*>)`),
   following the project `I…Port` convention. Use cases depend on this port only.
 - **The RabbitMQ machinery is infrastructure** — `infrastructure/rabbitmq/AppEventBus.kt`:
@@ -20,7 +20,7 @@ no use case or event touches JSON, bytes, or the channel.
 
 ## Rules
 
-- **Publish the domain model AS-IS.** `data` is the domain aggregate (`Spin`/`Round`/`Session`),
+- **Publish the domain model AS-IS.** `data` is the domain aggregate (`Spin`/`CasinoRound`/`CasinoSession`),
   not a snapshot/DTO. The aggregates are `@Serializable`, so the full nested graph ships verbatim
   — including `Spin.reference` (recursive) and `aggregator.config` secrets via
   `domain/util/AnyMapSerializer`. This is a deliberate owner decision; do NOT reintroduce
@@ -30,7 +30,7 @@ no use case or event touches JSON, bytes, or the channel.
 - **One constructor param.** Each event takes one `data` param; `playerId` is *derived* from `data`
   (e.g. `data.round.session.playerId.value`), never passed separately.
 - **Computed members don't ship.** kotlinx serializes only constructor state, so getter-only
-  properties (`Spin.isPlace`, `Round.isFinished`) never appear on the wire.
+  properties (`Spin.isPlace`, `CasinoRound.isFinished`) never appear on the wire.
 - **Publish after commit.** Use cases publish **after** the DB write commits (outside the
   `dbTransaction { }` block) so a failed transaction never emits phantom events.
 - **Consumers are read-only routers.** An `AppEventConsumer<E>` subclass `handle()` only maps the
@@ -49,11 +49,11 @@ no use case or event touches JSON, bytes, or the channel.
 
 ## Existing events
 
-- `SessionEvent` → `session.events` — published by `OpenSessionUsecase` after the session persists.
+- `CasinoSessionEvent` → `session.events` — published by `OpenCasinoSessionUsecase` after the session persists.
 - `SpinEvent` → `spin.events` — published by `ProcessSpinUsecase` after the spin persists
   (`Spin.type` serializes as `PLACE`/`SETTLE`/`ROLLBACK`).
-- `RoundEvent` → `round.events` — published by `FinishRoundUsecase` after the round persists
-  (`finished = true`). Round-finished is a `RoundEvent`, NOT a spin type.
+- `CasinoRoundEvent` → `round.events` — published by `FinishCasinoRoundUsecase` after the round persists
+  (`finished = true`). CasinoRound-finished is a `CasinoRoundEvent`, NOT a spin type.
 
 ## Cross-engine contract
 

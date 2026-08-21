@@ -19,11 +19,11 @@ Create a `XView` data class next to the query if the query returns:
 
 ## When to reuse the domain model
 
-If a query returns a pure aggregate (full `Game`, full `Session`) with its relationships, return the domain class directly. Example: `BatchCollectionQuery : IQuery<List<Collection>>` — no view needed.
+If a query returns a pure aggregate (full `CasinoGame`, full `CasinoSession`) with its relationships, return the domain class directly. Example: `BatchCollectionQuery : IQuery<List<Collection>>` — no view needed.
 
 ## Naming and ownership
 
-- `XView` for an enriched read shape (e.g. `CollectionView`, `ProviderView`, `RoundView`)
+- `XView` for an enriched read shape (e.g. `CollectionView`, `CasinoProviderView`, `CasinoRoundView`)
 - `LastWin`-style semantic names are also acceptable when the meaning is clearer than `<Name>View`
 - When `Find*Query` and `FindAll*Query` share the same view shape, **the `Find*Query.kt` file owns the type** and `FindAll*Query.kt` references it via the same Kotlin package (no import needed). Single source of truth, zero duplication.
 

@@ -4,33 +4,33 @@ Package: `game.v1` | Java package: `com.nekgamebling.game.v1`
 
 ---
 
-## GameService
+## CasinoGameService
 
-Game catalog management, launching, and player favorites. Games are contract artefacts and cannot be deleted once registered.
+CasinoGame catalog management, launching, and player favorites. Games are contract artefacts and cannot be deleted once registered.
 
 | RPC | Request | Response | Description |
 |-----|---------|----------|-------------|
-| `Save` | `SaveGameCommand` | `Empty` | Create or update a game |
-| `Find` | `FindGameQuery` | `FindGameQuery.Result` | Get a single game by identity |
-| `FindAll` | `FindAllGameQuery` | `GamePageDto` | List/filter games with pagination |
-| `FindAllActiveRtp` | `FindAllActiveRtpGameQuery` | `GamePageDto` | List active games by RTP bucket (HOT/COLD) |
-| `FindTagsAll` | `FindAllGameTagQuery` | `FindAllGameTagQuery.Result` | Paged alphabetical list of distinct tags across active games |
-| `Batch` | `BatchGameQuery` | `BatchGameQuery.Result` | Batch fetch games |
-| `UpdateImage` | `UpdateGameImageCommand` | `Empty` | Attach/replace a game image URL |
-| `Play` | `PlayGameCommand` | `PlayGameCommand.Result` | Open a real-money game session |
+| `Save` | `SaveCasinoGameCommand` | `Empty` | Create or update a game |
+| `Find` | `FindCasinoGameQuery` | `FindCasinoGameQuery.Result` | Get a single game by identity |
+| `FindAll` | `FindAllCasinoGameQuery` | `CasinoGamePageDto` | List/filter games with pagination |
+| `FindAllActiveRtp` | `FindAllActiveRtpCasinoGameQuery` | `CasinoGamePageDto` | List active games by RTP bucket (HOT/COLD) |
+| `FindTagsAll` | `FindAllCasinoGameTagQuery` | `FindAllCasinoGameTagQuery.Result` | Paged alphabetical list of distinct tags across active games |
+| `Batch` | `BatchCasinoGameQuery` | `BatchCasinoGameQuery.Result` | Batch fetch games |
+| `UpdateImage` | `UpdateCasinoGameImageCommand` | `Empty` | Attach/replace a game image URL |
+| `Play` | `PlayCasinoGameCommand` | `PlayCasinoGameCommand.Result` | Open a real-money game session |
 | `OpenDemo` | `OpenDemoQuery` | `OpenDemoQuery.Result` | Open a demo game session |
-| `AddFavourite` | `GameFavouriteCommand` | `Empty` | Add game to player favorites |
-| `RemoveFavourite` | `GameFavouriteCommand` | `Empty` | Remove game from player favorites |
-| `FindAllPlayerFavourite` | `FindAllGamePlayerFavouriteQuery` | `GamePageDto` | List a player's favourite games with the same filter/shape as `FindAll` |
-| `FindAllPlayerLast` | `FindAllGamePlayerLastQuery` | `GamePageDto` | List the games a player recently played (deduplicated, newest session first) |
+| `AddFavourite` | `CasinoGameFavouriteCommand` | `Empty` | Add game to player favorites |
+| `RemoveFavourite` | `CasinoGameFavouriteCommand` | `Empty` | Remove game from player favorites |
+| `FindAllPlayerFavourite` | `FindAllCasinoGamePlayerFavouriteQuery` | `CasinoGamePageDto` | List a player's favourite games with the same filter/shape as `FindAll` |
+| `FindAllPlayerLast` | `FindAllCasinoGamePlayerLastQuery` | `CasinoGamePageDto` | List the games a player recently played (deduplicated, newest session first) |
 
 ### Save
 
 Create or update a game's editable properties.
 
 ```protobuf
-message SaveGameCommand {
-  string identity = 1;              // Game unique identifier
+message SaveCasinoGameCommand {
+  string identity = 1;              // CasinoGame unique identifier
   string name = 2;                  // Display name
   bool bonus_bet_enable = 3;        // Allow bonus bets
   bool bonus_wagering_enable = 4;   // Allow bonus wagering
@@ -46,14 +46,14 @@ Returns a game with its provider, aggregator, and collections.
 
 ```protobuf
 // Request
-message FindGameQuery {
+message FindCasinoGameQuery {
   string identity = 1;
 }
 
 // Response
-message FindGameQuery.Result {
-  GameDto item = 1;
-  ProviderDto provider = 2;
+message FindCasinoGameQuery.Result {
+  CasinoGameDto item = 1;
+  CasinoProviderDto provider = 2;
   AggregatorDto aggregator = 3;
   repeated CollectionDto collections = 4;
 }
@@ -61,18 +61,18 @@ message FindGameQuery.Result {
 
 ### FindAll
 
-Paginated game listing with filters. Returns the shared `GamePageDto` — the same response type every paged game-listing RPC uses.
+Paginated game listing with filters. Returns the shared `CasinoGamePageDto` — the same response type every paged game-listing RPC uses.
 
 ```protobuf
 // Request
-message FindAllGameQuery {
-  GameFilter filter = 1;                         // Filter criteria
+message FindAllCasinoGameQuery {
+  CasinoGameFilter filter = 1;                         // Filter criteria
   int32 page_num = 2;                            // Page number (0-based)
   int32 page_size = 3;                           // Items per page
 }
 ```
 
-`GameFilter` and `GamePageDto` both live in `game/v1/dto/` — see [Shared game-listing DTOs](#shared-game-listing-dtos) below.
+`CasinoGameFilter` and `CasinoGamePageDto` both live in `game/v1/dto/` — see [Shared game-listing DTOs](#shared-game-listing-dtos) below.
 
 ### FindAllActiveRtp
 
@@ -83,14 +83,14 @@ is rejected with `INVALID_ARGUMENT`.
 
 ```protobuf
 // Request
-message FindAllActiveRtpGameQuery {
+message FindAllActiveRtpCasinoGameQuery {
   enum Type {
     TYPE_UNSPECIFIED = 0;
     TYPE_HOT = 1;
     TYPE_COLD = 2;
   }
   Type type = 1;                                 // RTP bucket
-  GameFilter filter = 2;                         // Extra filter criteria
+  CasinoGameFilter filter = 2;                         // Extra filter criteria
   int32 page_num = 3;                            // Page number (0-based)
   int32 page_size = 4;                           // Items per page
 }
@@ -102,14 +102,14 @@ Fetch games by identities. Response structure matches `FindAll`.
 
 ```protobuf
 // Request
-message BatchGameQuery {
+message BatchCasinoGameQuery {
   repeated string identities = 1;  // game identities to fetch
 }
 
 // Response
-message BatchGameQuery.Result {
-  repeated GameDto items = 1;
-  repeated ProviderDto providers = 2;
+message BatchCasinoGameQuery.Result {
+  repeated CasinoGameDto items = 1;
+  repeated CasinoProviderDto providers = 2;
   repeated AggregatorDto aggregators = 3;
   repeated CollectionDto collections = 4;
 }
@@ -122,8 +122,8 @@ The engine stores the URL verbatim — callers upload the file to object storage
 themselves and pass the final public URL.
 
 ```protobuf
-message UpdateGameImageCommand {
-  string identity = 1;     // Game identity
+message UpdateCasinoGameImageCommand {
+  string identity = 1;     // CasinoGame identity
   string key = 2;          // Image key (e.g. "thumbnail")
   string url = 5;          // Full public URL of the image
 }
@@ -136,8 +136,8 @@ session token the engine minted for it.
 
 ```protobuf
 // Request
-message PlayGameCommand {
-  string identity = 1;                      // Game identity
+message PlayCasinoGameCommand {
+  string identity = 1;                      // CasinoGame identity
   string player_id = 2;                     // Player UUID
   string locale = 3;                        // Player locale (e.g. "en")
   PlatformDto platform = 4;                 // DESKTOP / MOBILE / DOWNLOAD
@@ -146,7 +146,7 @@ message PlayGameCommand {
 }
 
 // Response
-message PlayGameCommand.Result {
+message PlayCasinoGameCommand.Result {
   string launch_url = 1;
   string session_token = 2;  // Our session token (not the provider's external one)
 }
@@ -159,7 +159,7 @@ Open a demo (free-play) game session. No player authentication required.
 ```protobuf
 // Request
 message OpenDemoQuery {
-  string identity = 1;       // Game identity
+  string identity = 1;       // CasinoGame identity
   string currency = 2;       // Currency code
   string locale = 3;         // Locale
   PlatformDto platform = 4;  // Platform
@@ -177,27 +177,27 @@ message OpenDemoQuery.Result {
 Add or remove a game from a player's favorites list.
 
 ```protobuf
-message GameFavouriteCommand {
-  string identity = 1;   // Game identity
+message CasinoGameFavouriteCommand {
+  string identity = 1;   // CasinoGame identity
   string player_id = 2;  // Player UUID
 }
 ```
 
 ### FindAllPlayerFavourite
 
-Paginated listing of the games a specific player has favourited. Uses the shared `GameFilter` and returns the shared `GamePageDto` — the only extra input is `player_id`.
+Paginated listing of the games a specific player has favourited. Uses the shared `CasinoGameFilter` and returns the shared `CasinoGamePageDto` — the only extra input is `player_id`.
 
 ```protobuf
 // Request
-message FindAllGamePlayerFavouriteQuery {
+message FindAllCasinoGamePlayerFavouriteQuery {
   string player_id = 1;      // Player UUID whose favourites to read
-  GameFilter filter = 2;     // Shared filter — see Shared game-listing DTOs
+  CasinoGameFilter filter = 2;     // Shared filter — see Shared game-listing DTOs
   int32 page_num = 3;
   int32 page_size = 4;
 }
 ```
 
-Response: `GamePageDto` (see [Shared game-listing DTOs](#shared-game-listing-dtos)).
+Response: `CasinoGamePageDto` (see [Shared game-listing DTOs](#shared-game-listing-dtos)).
 
 ### FindAllPlayerLast
 
@@ -205,29 +205,29 @@ Paginated listing of the games a specific player has recently played, derived fr
 
 ```protobuf
 // Request
-message FindAllGamePlayerLastQuery {
+message FindAllCasinoGamePlayerLastQuery {
   string player_id = 1;      // Player UUID whose recent games to read
   int32 page_num = 2;
   int32 page_size = 3;
 }
 ```
 
-Response: `GamePageDto` (see [Shared game-listing DTOs](#shared-game-listing-dtos)).
+Response: `CasinoGamePageDto` (see [Shared game-listing DTOs](#shared-game-listing-dtos)).
 
 ---
 
-## ProviderService
+## CasinoProviderService
 
-Game provider management (e.g. "Pragmatic Play", "NetEnt").
+CasinoGame provider management (e.g. "Pragmatic Play", "NetEnt").
 
 | RPC | Request | Response | Description |
 |-----|---------|----------|-------------|
-| `Save` | `SaveProviderCommand` | `Empty` | Create or update a provider |
-| `Find` | `FindProviderQuery` | `FindProviderQuery.Result` | Get provider with denormalized aggregator |
-| `FindAll` | `FindAllProviderQuery` | `FindAllProviderQuery.Result` | List/filter providers with pagination |
-| `FindTagsAll` | `FindAllProviderTagQuery` | `FindAllProviderTagQuery.Result` | Paged alphabetical list of distinct tags across active providers |
-| `Batch` | `BatchProviderQuery` | `BatchProviderQuery.Result` | Batch fetch providers by identities |
-| `UpdateImage` | `UpdateProviderImageCommand` | `Empty` | Attach/replace a provider image URL |
+| `Save` | `SaveCasinoProviderCommand` | `Empty` | Create or update a provider |
+| `Find` | `FindCasinoProviderQuery` | `FindCasinoProviderQuery.Result` | Get provider with denormalized aggregator |
+| `FindAll` | `FindAllCasinoProviderQuery` | `FindAllCasinoProviderQuery.Result` | List/filter providers with pagination |
+| `FindTagsAll` | `FindAllCasinoProviderTagQuery` | `FindAllCasinoProviderTagQuery.Result` | Paged alphabetical list of distinct tags across active providers |
+| `Batch` | `BatchCasinoProviderQuery` | `BatchCasinoProviderQuery.Result` | Batch fetch providers by identities |
+| `UpdateImage` | `UpdateCasinoProviderImageCommand` | `Empty` | Attach/replace a provider image URL |
 
 Providers are contract artefacts and cannot be deleted once registered.
 
@@ -236,8 +236,8 @@ Providers are contract artefacts and cannot be deleted once registered.
 Create or update a provider with explicit typed fields. Image URLs are managed separately via `UpdateImage`.
 
 ```protobuf
-message SaveProviderCommand {
-  string identity = 1;              // Provider unique identifier
+message SaveCasinoProviderCommand {
+  string identity = 1;              // CasinoProvider unique identifier
   string name = 2;                  // Display name
   int32 order = 3;                  // Sort order
   bool active = 4;                  // Active status
@@ -253,23 +253,23 @@ Returns a provider with its aggregator denormalized.
 
 ```protobuf
 // Request
-message FindProviderQuery {
+message FindCasinoProviderQuery {
   string identity = 1;
 }
 
 // Response
-message FindProviderQuery.Result {
-  ProviderDto item = 1;
+message FindCasinoProviderQuery.Result {
+  CasinoProviderDto item = 1;
   AggregatorDto aggregator = 2;
 }
 ```
 
 ### FindAll
 
-Paginated provider listing. Filter criteria are wrapped in a dedicated `ProviderFilter` sub-message.
+Paginated provider listing. Filter criteria are wrapped in a dedicated `CasinoProviderFilter` sub-message.
 
 ```protobuf
-message ProviderFilter {
+message CasinoProviderFilter {
   string query = 1;                              // Free-text search
   optional bool active = 2;                      // Filter by status
   optional string aggregator_identity = 3;       // Filter by aggregator
@@ -279,15 +279,15 @@ message ProviderFilter {
 }
 
 // Request
-message FindAllProviderQuery {
-  ProviderFilter filter = 1;
+message FindAllCasinoProviderQuery {
+  CasinoProviderFilter filter = 1;
   int32 page_num = 2;
   int32 page_size = 3;
 }
 
 // Response
-message FindAllProviderQuery.Result {
-  repeated ProviderDto items = 1;
+message FindAllCasinoProviderQuery.Result {
+  repeated CasinoProviderDto items = 1;
   repeated AggregatorDto aggregators = 2;        // All referenced aggregators (denormalized)
   int32 total_items = 3;
 }
@@ -299,13 +299,13 @@ Fetch providers by identities. Returns providers with their aggregators denormal
 
 ```protobuf
 // Request
-message BatchProviderQuery {
+message BatchCasinoProviderQuery {
   repeated string identities = 1;  // provider identities to fetch
 }
 
 // Response
-message BatchProviderQuery.Result {
-  repeated ProviderDto items = 1;
+message BatchCasinoProviderQuery.Result {
+  repeated CasinoProviderDto items = 1;
   repeated AggregatorDto aggregators = 2;
 }
 ```
@@ -313,7 +313,7 @@ message BatchProviderQuery.Result {
 ### UpdateImage
 
 ```protobuf
-message UpdateProviderImageCommand {
+message UpdateCasinoProviderImageCommand {
   string identity = 1;
   string key = 2;
   string url = 5;   // Full public URL of the image
@@ -344,6 +344,7 @@ message SaveAggregatorCommand {
   string integration = 2;            // Integration type: "ONEGAMEHUB", "PRAGMATIC", "PATEPLAY"
   google.protobuf.Struct config = 3; // Aggregator-specific JSON configuration
   bool active = 4;                   // Active status
+  AggregatorTypeDto type = 5;        // Product type; UNSPECIFIED is treated as CASINO
 }
 ```
 
@@ -418,7 +419,7 @@ message DeleteAggregatorCommand {
 
 ## CollectionService
 
-Game collection management (e.g. "Hot Games", "New Releases") with multi-language support.
+CasinoGame collection management (e.g. "Hot Games", "New Releases") with multi-language support.
 
 | RPC | Request | Response | Description |
 |-----|---------|----------|-------------|
@@ -426,10 +427,10 @@ Game collection management (e.g. "Hot Games", "New Releases") with multi-languag
 | `Find` | `FindCollectionQuery` | `FindCollectionQuery.Result` | Get a single collection by identity |
 | `FindAll` | `FindAllCollectionQuery` | `FindAllCollectionQuery.Result` | List/filter collections with pagination |
 | `Batch` | `BatchCollectionQuery` | `BatchCollectionQuery.Result` | Batch fetch collections by identities |
-| `FindAllGame` | `FindAllGameCollectionQuery` | `GamePageDto` | List games that belong to a given collection, ordered by per-collection position |
-| `AddGame` | `AddCollectionGameCommand` | `Empty` | Add one game to a collection (idempotent; appended at end) |
-| `RemoveGame` | `RemoveCollectionGameCommand` | `Empty` | Remove one game from a collection (idempotent) |
-| `UpdateGameOrder` | `UpdateCollectionGameOrderCommand` | `Empty` | Set one game's per-collection sort position |
+| `FindAllCasinoGame` | `FindAllCasinoGameCollectionQuery` | `CasinoGamePageDto` | List games that belong to a given collection, ordered by per-collection position |
+| `AddCasinoGame` | `AddCollectionCasinoGameCommand` | `Empty` | Add one game to a collection (idempotent; appended at end) |
+| `RemoveCasinoGame` | `RemoveCollectionCasinoGameCommand` | `Empty` | Remove one game from a collection (idempotent) |
+| `UpdateCasinoGameOrder` | `UpdateCollectionCasinoGameOrderCommand` | `Empty` | Set one game's per-collection sort position |
 | `UpdateImage` | `UpdateCollectionImageCommand` | `Empty` | Attach/replace a collection image URL |
 
 Collections are contract artefacts and cannot be deleted once created.
@@ -471,7 +472,7 @@ message CollectionFilter {
   string query = 1;                              // Free-text search
   optional bool active = 2;                      // Filter by status
   repeated string in_tags = 3;                   // Filter by the collection's OWN tags
-                                                 // (ANY-of match, same semantics as GameFilter.tags)
+                                                 // (ANY-of match, same semantics as CasinoGameFilter.tags)
   repeated string in_provider_identities = 4;    // Filter by provider identities
                                                  // (collections containing games from these providers)
 }
@@ -506,63 +507,63 @@ message BatchCollectionQuery.Result {
 }
 ```
 
-### FindAllGame
+### FindAllCasinoGame
 
-Paginated listing of the games that belong to a specific collection. Uses the shared `GameFilter` and returns the shared `GamePageDto` — the only extra input is `collection_identity`.
+Paginated listing of the games that belong to a specific collection. Uses the shared `CasinoGameFilter` and returns the shared `CasinoGamePageDto` — the only extra input is `collection_identity`.
 
 ```protobuf
 // Request
-message FindAllGameCollectionQuery {
+message FindAllCasinoGameCollectionQuery {
   string collection_identity = 1;  // Collection whose games to read
-  GameFilter filter = 2;           // Shared filter — see Shared game-listing DTOs
+  CasinoGameFilter filter = 2;           // Shared filter — see Shared game-listing DTOs
   int32 page_num = 3;
   int32 page_size = 4;
 }
 ```
 
-Response: `GamePageDto` (see [Shared game-listing DTOs](#shared-game-listing-dtos)).
+Response: `CasinoGamePageDto` (see [Shared game-listing DTOs](#shared-game-listing-dtos)).
 
-### AddGame / RemoveGame / UpdateGameOrder
+### AddCasinoGame / RemoveCasinoGame / UpdateCasinoGameOrder
 
 Three focused single-game RPCs manage game-in-collection membership and per-collection ordering. Each accepts one `game_identity` — batch operations are not supported by design.
 
-All three fail with `NOT_FOUND` + `x-exception-name=CollectionNotFoundException` if the collection does not exist, or `x-exception-name=GameNotFoundException` if the game does not exist. `UpdateGameOrder` additionally returns `GameNotFoundException` if the game is not currently a member of the collection.
+All three fail with `NOT_FOUND` + `x-exception-name=CollectionNotFoundException` if the collection does not exist, or `x-exception-name=CasinoGameNotFoundException` if the game does not exist. `UpdateCasinoGameOrder` additionally returns `CasinoGameNotFoundException` if the game is not currently a member of the collection.
 
-#### AddGame
+#### AddCasinoGame
 
 Add a single game to a collection. **Idempotent** — if the game is already in the collection, no-op. On first insert, the new row is appended at the end (`sort_order = max(existing) + 1`, or `0` when the collection is empty).
 
 ```protobuf
-message AddCollectionGameCommand {
+message AddCollectionCasinoGameCommand {
   string identity = 1;       // Collection identity
-  string game_identity = 2;  // Game to add
+  string game_identity = 2;  // CasinoGame to add
 }
 ```
 
-#### RemoveGame
+#### RemoveCasinoGame
 
 Remove a single game from a collection. **Idempotent** — if the game is not currently a member, no-op. Remaining games keep their existing `sort_order` values (no compaction — holes in the sequence are harmless because the read side only uses it for `ORDER BY`).
 
 ```protobuf
-message RemoveCollectionGameCommand {
+message RemoveCollectionCasinoGameCommand {
   string identity = 1;       // Collection identity
-  string game_identity = 2;  // Game to remove
+  string game_identity = 2;  // CasinoGame to remove
 }
 ```
 
-#### UpdateGameOrder
+#### UpdateCasinoGameOrder
 
-Set the per-collection display position for a single game. Fails if the game is not currently a member of the collection — callers must `AddGame` first.
+Set the per-collection display position for a single game. Fails if the game is not currently a member of the collection — callers must `AddCasinoGame` first.
 
 ```protobuf
-message UpdateCollectionGameOrderCommand {
+message UpdateCollectionCasinoGameOrderCommand {
   string identity = 1;       // Collection identity
-  string game_identity = 2;  // Game whose position to update
+  string game_identity = 2;  // CasinoGame whose position to update
   int32 order = 3;           // New per-collection sort position
 }
 ```
 
-`CollectionService.FindAllGame` returns games ordered by `sort_order ASC`, with ties broken deterministically on `GameTable.id`.
+`CollectionService.FindAllCasinoGame` returns games ordered by `sort_order ASC`, with ties broken deterministically on `CasinoGameTable.id`.
 
 ### UpdateImage
 
@@ -655,7 +656,7 @@ message FindAllWinnersQuery {
   optional string to_date = 7;          // End date (ISO 8601 LocalDateTime)
   int32 page_num = 8;                   // Page number (1-based)
   int32 page_size = 9;                  // Items per page
-  GameFilter filter = 10;               // Restrict to wins on games matching this filter
+  CasinoGameFilter filter = 10;               // Restrict to wins on games matching this filter
   WinnerSortDto sort = 11;              // Ordering (always descending)
 }
 
@@ -681,7 +682,7 @@ message FindAllWinnersQuery.Result {
 
 ```protobuf
 message WinnerItemDto {
-  GameDto game = 1;         // Full game details
+  CasinoGameDto game = 1;         // Full game details
   int64 amount = 2;         // Win amount (minor units)
   string currency = 3;      // Currency code
   string player_id = 4;     // Player UUID
@@ -691,12 +692,40 @@ message WinnerItemDto {
 
 ---
 
-## Shared DTOs
+## SportbookService
 
-### GameDto
+Opens the sportbook for a player. Resolves the single active `SPORTBOOK` aggregator, mints a session with a one-time public token and returns what the frontend needs to boot the provider SDK.
+
+| RPC | Request | Response | Description |
+|-----|---------|----------|-------------|
+| `Open` | `OpenSportbookCommand` | `OpenSportbookCommand.Result` | Open a sportbook session for a player |
+
+### Open
 
 ```protobuf
-message GameDto {
+// Request
+message OpenSportbookCommand {
+  string player_id = 1;             // Player UUID
+  string currency = 2;              // Player wallet currency (ISO 4217 / crypto, e.g. "USD")
+}
+
+// Response
+message OpenSportbookCommand.Result {
+  string integration = 1;           // Aggregator integration key (e.g. "01TECHSPORT") — which SDK to load
+  map<string, string> data = 2;     // SDK init payload (e.g. public token, partnerId)
+}
+```
+
+Errors: `NOT_FOUND` when no active `SPORTBOOK` aggregator exists; `INVALID_ARGUMENT` for a sportbook-incapable aggregator (`SportbookNotSupportedException`).
+
+---
+
+## Shared DTOs
+
+### CasinoGameDto
+
+```protobuf
+message CasinoGameDto {
   string identity = 1;
   string name = 2;
   string provider_identity = 3;
@@ -731,10 +760,10 @@ enum PlatformDto {
 }
 ```
 
-### ProviderDto
+### CasinoProviderDto
 
 ```protobuf
-message ProviderDto {
+message CasinoProviderDto {
   string identity = 1;
   string name = 2;
   map<string, string> images = 3;
@@ -749,11 +778,18 @@ message ProviderDto {
 ### AggregatorDto
 
 ```protobuf
+enum AggregatorTypeDto {
+  AGGREGATOR_TYPE_UNSPECIFIED = 0;
+  AGGREGATOR_TYPE_CASINO = 1;
+  AGGREGATOR_TYPE_SPORTBOOK = 2;
+}
+
 message AggregatorDto {
   string identity = 1;
   string integration = 2;            // "ONEGAMEHUB", "PRAGMATIC", "PATEPLAY"
   google.protobuf.Struct config = 3; // JSON configuration
   bool active = 4;
+  AggregatorTypeDto type = 5;        // Product type; UNSPECIFIED is treated as CASINO
 }
 ```
 
@@ -772,14 +808,14 @@ message CollectionDto {
 
 ## Shared game-listing DTOs
 
-Both `GameFilter` and `GamePageDto` live in dedicated DTO files (`game/v1/dto/game_filter.dto.proto`, `game/v1/dto/game_page.dto.proto`) so every game-listing RPC can share the same request filter and response shape without any service importing another service.
+Both `CasinoGameFilter` and `CasinoGamePageDto` live in dedicated DTO files (`game/v1/dto/casino_game_filter.dto.proto`, `game/v1/dto/casino_game_page.dto.proto`) so every game-listing RPC can share the same request filter and response shape without any service importing another service.
 
-### GameFilter
+### CasinoGameFilter
 
-Reusable filter used by `GameService.FindAll`, `GameService.FindAllPlayerFavourite`, and `CollectionService.FindAllGame`. Every boolean is tri-state via `optional` — an unset field means "do not filter on this flag".
+Reusable filter used by `CasinoGameService.FindAll`, `CasinoGameService.FindAllPlayerFavourite`, and `CollectionService.FindAllCasinoGame`. Every boolean is tri-state via `optional` — an unset field means "do not filter on this flag".
 
 ```protobuf
-message GameFilter {
+message CasinoGameFilter {
   string query = 1;                      // Free-text search
   optional bool active = 2;
   optional string provider_identity = 3;
@@ -795,16 +831,16 @@ message GameFilter {
 }
 ```
 
-`collection_identity` restricts the listing to the games that belong to that collection. In `GameService.FindAll` it also switches the ordering: instead of the catalog-wide `sort_order`, results come back in the collection's own curated order — the position set by `CollectionService.AddGame` / `UpdateGameOrder` — so rendering a lobby rail is a single `FindAll` call.
+`collection_identity` restricts the listing to the games that belong to that collection. In `CasinoGameService.FindAll` it also switches the ordering: instead of the catalog-wide `sort_order`, results come back in the collection's own curated order — the position set by `CollectionService.AddCasinoGame` / `UpdateCasinoGameOrder` — so rendering a lobby rail is a single `FindAll` call.
 
-### GamePageDto
+### CasinoGamePageDto
 
 Shared paged response for every paged game-listing RPC. The denormalized sets are joined back to each item by identity, so the wire payload never ships the same provider/aggregator/collection twice.
 
 ```protobuf
-message GamePageDto {
-  repeated GameDto items = 1;
-  repeated ProviderDto providers = 2;     // All referenced providers (denormalized)
+message CasinoGamePageDto {
+  repeated CasinoGameDto items = 1;
+  repeated CasinoProviderDto providers = 2;     // All referenced providers (denormalized)
   repeated AggregatorDto aggregators = 3; // All referenced aggregators (denormalized)
   repeated CollectionDto collections = 4; // All referenced collections (denormalized)
   int32 total_items = 5;                  // Total count for pagination
@@ -812,11 +848,11 @@ message GamePageDto {
 ```
 
 Join rules:
-- `GameDto.provider_identity` → `providers`
-- `ProviderDto.aggregator_identity` → `aggregators`
-- `GameDto.collection_identities` → `collections`
+- `CasinoGameDto.provider_identity` → `providers`
+- `CasinoProviderDto.aggregator_identity` → `aggregators`
+- `CasinoGameDto.collection_identities` → `collections`
 
-Note: `BatchGameQuery` has its own nested Result because it is not paged — it omits `total_items`.
+Note: `BatchCasinoGameQuery` has its own nested Result because it is not paged — it omits `total_items`.
 
 ---
 

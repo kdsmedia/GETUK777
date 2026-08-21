@@ -19,6 +19,7 @@ object AggregatorMapper {
     fun AggregatorEntity.toDomain(): Aggregator = Aggregator(
         identity = Identity(identity),
         integration = integration,
+        type = type,
         config = config.toMap(),
         active = active,
     )
@@ -26,6 +27,7 @@ object AggregatorMapper {
     fun ResultRow.toAggregator(): Aggregator = Aggregator(
         identity = Identity(this[AggregatorTable.identity]),
         integration = this[AggregatorTable.integration],
+        type = this[AggregatorTable.type],
         config = this[AggregatorTable.config].toMap(),
         active = this[AggregatorTable.active],
     )

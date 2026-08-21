@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_multiple_files = true;
+option java_package = "com.nekgamebling.game.v1";
+
+// Shared filter for every game-listing query. Every boolean is tri-state
+// via `optional` — "unset" means "do not filter on this flag".
+//
+// Consumed by `CasinoGameService.FindAll`, `CasinoGameService.FindAllPlayerFavourite`,
+// and `CollectionService.FindAllCasinoGame`, so this lives in the dto/ folder
+// to keep services from importing each other.
+message CasinoGameFilter {
+  string query = 1;
+
+  optional bool active = 2;
+
+  optional string provider_identity = 3;
+
+  repeated string tags = 4;
+
+  optional bool bonus_bet_enable = 5;
+
+  optional bool bonus_wagering_enable = 6;
+
+  optional bool free_spin_enable = 7;
+
+  optional bool free_chip_enable = 8;
+
+  optional bool jackpot_enable = 9;
+
+  optional bool demo_enable = 10;
+
+  optional bool bonus_buy_enable = 11;
+
+  // Restricts the listing to one collection's members. `CasinoGameService.FindAll`
+  // additionally switches its ordering to that collection's curated position
+  // (`AddCasinoGame` order), so a lobby rail is one FindAll call.
+  optional string collection_identity = 12;
+}

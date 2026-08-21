@@ -6,17 +6,17 @@ import application.port.factory.IAggregatorFactory
 import domain.exception.conflict.FreespinNotSupportedException
 import domain.exception.domainRequire
 import domain.exception.domainRequireNotNull
-import domain.exception.notfound.GameNotFoundException
+import domain.exception.notfound.CasinoGameNotFoundException
 import domain.model.Freespin
 import domain.repository.IFreespinRepository
-import domain.repository.IGameVariantRepository
+import domain.repository.ICasinoGameVariantRepository
 import domain.vo.Amount
 import domain.vo.FreespinId
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 
 class CreateFreespinCommandHandler(
-    private val gameVariantRepository: IGameVariantRepository,
+    private val gameVariantRepository: ICasinoGameVariantRepository,
     private val freespinRepository: IFreespinRepository,
     private val aggregatorFactory: IAggregatorFactory
 ) : ICommandHandler<CreateFreespinCommand, Unit> {
@@ -24,7 +24,7 @@ class CreateFreespinCommandHandler(
     override suspend fun handle(command: CreateFreespinCommand): Result<Unit> = runCatching {
         val variant = domainRequireNotNull(
             gameVariantRepository.findActiveByGameIdentity(command.gameIdentity)
-        ) { GameNotFoundException() }
+        ) { CasinoGameNotFoundException() }
 
         domainRequire(variant.freeSpinEnable) { FreespinNotSupportedException() }
 

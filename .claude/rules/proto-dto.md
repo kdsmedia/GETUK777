@@ -4,12 +4,12 @@ Conventions for protobuf DTO message files in `src/main/proto/`.
 
 ## File Naming
 
-- DTO files must be named `<name>.dto.proto` (e.g., `game.dto.proto`, `aggregator.dto.proto`)
+- DTO files must be named `<name>.dto.proto` (e.g., `casino_game.dto.proto`, `aggregator.dto.proto`)
 - Place DTO files in the `dto/` subdirectory (e.g., `src/main/proto/game/v1/dto/`)
 
 ## Message Naming
 
-- Message names must follow the pattern `<Name>Dto` (e.g., `GameDto`, `AggregatorDto`, `ProviderDto`)
+- Message names must follow the pattern `<Name>Dto` (e.g., `CasinoGameDto`, `AggregatorDto`, `CasinoProviderDto`)
 - Enum names in DTO files must follow the pattern `<Name>Dto` (e.g., `PlatformDto`)
 
 ## Field Formatting
@@ -19,7 +19,7 @@ Conventions for protobuf DTO message files in `src/main/proto/`.
 
 ```protobuf
 // CORRECT
-message GameDto {
+message CasinoGameDto {
   string identity = 1;
 
   string name = 2;
@@ -28,7 +28,7 @@ message GameDto {
 }
 
 // WRONG - no blank lines between fields
-message GameDto {
+message CasinoGameDto {
   string identity = 1;
   string name = 2;
   bool active = 3;

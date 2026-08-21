@@ -1,3 +1,3 @@
 package domain.exception.conflict
 
-class FreespinNotSupportedException : ConflictException("Game variant does not support freespins")
+class FreespinNotSupportedException : ConflictException("CasinoGame variant does not support freespins")

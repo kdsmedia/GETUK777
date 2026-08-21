@@ -2,16 +2,16 @@ package infrastructure.aggregator.onegamehub.webhook
 
 import application.Bus
 import application.port.external.ICurrencyPort
-import application.query.session.FindSessionBalanceQuery
-import application.query.session.FindSessionQuery
-import application.command.session.EndRoundSessionCommand
-import application.command.session.PlaceSpinSessionCommand
-import application.command.session.SettleSpinSessionCommand
+import application.query.session.FindCasinoSessionBalanceQuery
+import application.query.session.FindCasinoSessionQuery
+import application.command.session.EndCasinoRoundSessionCommand
+import application.command.session.PlaceSpinCasinoSessionCommand
+import application.command.session.SettleSpinCasinoSessionCommand
 import domain.exception.forbidden.InsufficientBalanceException
 import domain.exception.forbidden.MaxPlaceSpinException
-import domain.exception.notfound.SessionNotFoundException
+import domain.exception.notfound.CasinoSessionNotFoundException
 import domain.model.PlayerBalance
-import domain.model.Session
+import domain.model.CasinoSession
 import domain.vo.Amount
 import infrastructure.aggregator.onegamehub.webhook.dto.OneGameHubResponse
 import io.ktor.http.Parameters
@@ -52,15 +52,15 @@ class  OneGameHubWebhook(
 
     private suspend fun balance(sessionToken: String): OneGameHubResponse {
         return runCatching {
-            val session = bus(FindSessionQuery(sessionToken))
-            bus(FindSessionBalanceQuery(session))
+            val session = bus(FindCasinoSessionQuery(sessionToken))
+            bus(FindCasinoSessionBalanceQuery(session))
         }.toResponse()
     }
 
     private suspend fun bet(sessionToken: String, parameters: Parameters): OneGameHubResponse {
         return runCatching {
-            val session = bus(FindSessionQuery(sessionToken))
-            bus(PlaceSpinSessionCommand(
+            val session = bus(FindCasinoSessionQuery(sessionToken))
+            bus(PlaceSpinCasinoSessionCommand(
                 session = session,
                 gameSymbol = parameters.gameSymbol,
                 externalRoundId = parameters.roundId,
@@ -73,8 +73,8 @@ class  OneGameHubWebhook(
 
     private suspend fun win(sessionToken: String, parameters: Parameters): OneGameHubResponse {
         return runCatching {
-            val session = bus(FindSessionQuery(sessionToken))
-            bus(SettleSpinSessionCommand(
+            val session = bus(FindCasinoSessionQuery(sessionToken))
+            bus(SettleSpinCasinoSessionCommand(
                 session = session,
                 gameSymbol = parameters.gameSymbol,
                 externalRoundId = parameters.roundId,
@@ -85,8 +85,8 @@ class  OneGameHubWebhook(
         }.onSuccess { _ ->
             if (parameters.isRoundEnd) {
                 runCatching {
-                    val session = bus(FindSessionQuery(sessionToken))
-                    bus(EndRoundSessionCommand(
+                    val session = bus(FindCasinoSessionQuery(sessionToken))
+                    bus(EndCasinoRoundSessionCommand(
                         session = session,
                         externalRoundId = parameters.roundId
                     ))
@@ -95,8 +95,8 @@ class  OneGameHubWebhook(
         }.toResponse()
     }
 
-    /** Provider decimal amount + session currency → wallet system unit (nano). */
-    private suspend fun Session.toSystemUnit(amount: Double): Amount =
+    /** CasinoProvider decimal amount + session currency → wallet system unit (nano). */
+    private suspend fun CasinoSession.toSystemUnit(amount: Double): Amount =
         Amount(currencyPort.convertToUnits(amount, currency))
 
     private fun Result<PlayerBalance>.toResponse(): OneGameHubResponse {
@@ -107,7 +107,7 @@ class  OneGameHubWebhook(
             )
         }.getOrElse { exception ->
             when (exception) {
-                is SessionNotFoundException -> OneGameHubResponse.Error.SESSION_TIMEOUT
+                is CasinoSessionNotFoundException -> OneGameHubResponse.Error.SESSION_TIMEOUT
                 is InsufficientBalanceException -> OneGameHubResponse.Error.INSUFFICIENT_FUNDS
                 is MaxPlaceSpinException -> OneGameHubResponse.Error.EXCEED_WAGER_LIMIT
                 else -> OneGameHubResponse.Error.UNEXPECTED_ERROR

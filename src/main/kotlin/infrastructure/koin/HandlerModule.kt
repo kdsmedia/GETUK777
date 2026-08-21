@@ -6,48 +6,61 @@ import infrastructure.handler.aggregator.FindAggregatorQueryHandler
 import infrastructure.handler.aggregator.FindAllAggregatorQueryHandler
 import infrastructure.handler.aggregator.SaveAggregatorCommandHandler
 import infrastructure.handler.aggregator.SyncAllActiveAggregatorCommandHandler
-import infrastructure.handler.collection.AddCollectionGameCommandHandler
+import infrastructure.handler.collection.AddCollectionCasinoGameCommandHandler
 import infrastructure.handler.collection.BatchCollectionQueryHandler
 import infrastructure.handler.collection.DeleteCollectionCommandHandler
 import infrastructure.handler.collection.FindAllCollectionQueryHandler
 import infrastructure.handler.collection.FindCollectionQueryHandler
-import infrastructure.handler.collection.RemoveCollectionGameCommandHandler
+import infrastructure.handler.collection.RemoveCollectionCasinoGameCommandHandler
 import infrastructure.handler.collection.SaveCollectionCommandHandler
-import infrastructure.handler.collection.UpdateCollectionGameOrderCommandHandler
+import infrastructure.handler.collection.UpdateCollectionCasinoGameOrderCommandHandler
 import infrastructure.handler.common.SetImageCommandHandler
 import infrastructure.handler.freespin.CancelFreespinCommandHandler
 import infrastructure.handler.freespin.ChargeFreespinCommandHandler
 import infrastructure.handler.freespin.CreateFreespinCommandHandler
 import infrastructure.handler.freespin.FindRedeemableFreespinQueryHandler
-import infrastructure.handler.game.AddGameFavouriteCommandHandler
-import infrastructure.handler.game.BatchGameQueryHandler
-import infrastructure.handler.game.FindAllActiveRtpGameQueryHandler
-import infrastructure.handler.game.FindAllGameCollectionQueryHandler
-import infrastructure.handler.game.FindAllGamePlayerFavoriteQueryHandler
-import infrastructure.handler.game.FindAllGamePlayerLastQueryHandler
-import infrastructure.handler.game.FindAllGameQueryHandler
-import infrastructure.handler.game.FindAllGameTagQueryHandler
-import infrastructure.handler.game.FindGameQueryHandler
+import infrastructure.handler.game.AddCasinoGameFavouriteCommandHandler
+import infrastructure.handler.game.BatchCasinoGameQueryHandler
+import infrastructure.handler.game.FindAllActiveRtpCasinoGameQueryHandler
+import infrastructure.handler.game.FindAllCasinoGameCollectionQueryHandler
+import infrastructure.handler.game.FindAllCasinoGamePlayerFavoriteQueryHandler
+import infrastructure.handler.game.FindAllCasinoGamePlayerLastQueryHandler
+import infrastructure.handler.game.FindAllCasinoGameQueryHandler
+import infrastructure.handler.game.FindAllCasinoGameTagQueryHandler
+import infrastructure.handler.game.FindCasinoGameQueryHandler
 import infrastructure.handler.game.GetFreespinPresetsQueryHandler
-import infrastructure.handler.game.GetGameDemoUrlQueryHandler
-import infrastructure.handler.game.PlayGameCommandHandler
-import infrastructure.handler.game.RecalculateGameRtpCommandHandler
-import infrastructure.handler.game.RemoveGameFavouriteCommandHandler
-import infrastructure.handler.game.SaveGameCommandHandler
-import infrastructure.handler.provider.BatchProviderQueryHandler
-import infrastructure.handler.provider.FindAllProviderQueryHandler
-import infrastructure.handler.provider.FindAllProviderTagQueryHandler
-import infrastructure.handler.provider.FindProviderQueryHandler
-import infrastructure.handler.provider.SaveProviderCommandHandler
-import infrastructure.handler.round.FindAllRoundQueryHandler
-import infrastructure.handler.round.FindRoundQueryHandler
-import infrastructure.handler.session.EndRoundSessionHandler
-import infrastructure.handler.session.FindSessionBalanceHandler
-import infrastructure.handler.session.FindSessionByExternalTokenHandler
-import infrastructure.handler.session.FindSessionHandler
-import infrastructure.handler.session.PlaceSpinSessionHandler
-import infrastructure.handler.session.RollbackSpinSessionHandler
-import infrastructure.handler.session.SettleSpinSessionHandler
+import infrastructure.handler.game.GetCasinoGameDemoUrlQueryHandler
+import infrastructure.handler.game.PlayCasinoGameCommandHandler
+import infrastructure.handler.game.RecalculateCasinoGameRtpCommandHandler
+import infrastructure.handler.game.RemoveCasinoGameFavouriteCommandHandler
+import infrastructure.handler.game.SaveCasinoGameCommandHandler
+import infrastructure.handler.provider.BatchCasinoProviderQueryHandler
+import infrastructure.handler.provider.FindAllCasinoProviderQueryHandler
+import infrastructure.handler.provider.FindAllCasinoProviderTagQueryHandler
+import infrastructure.handler.provider.FindCasinoProviderQueryHandler
+import infrastructure.handler.provider.SaveCasinoProviderCommandHandler
+import infrastructure.handler.round.FindAllCasinoRoundQueryHandler
+import infrastructure.handler.round.FindCasinoRoundQueryHandler
+import infrastructure.handler.session.EndCasinoRoundSessionHandler
+import infrastructure.handler.session.FindCasinoSessionBalanceHandler
+import infrastructure.handler.session.FindCasinoSessionByExternalTokenHandler
+import infrastructure.handler.session.FindCasinoSessionHandler
+import infrastructure.handler.session.PlaceSpinCasinoSessionHandler
+import infrastructure.handler.session.RollbackSpinCasinoSessionHandler
+import infrastructure.handler.session.SettleSpinCasinoSessionHandler
+import infrastructure.handler.bet.ConfirmBetHandler
+import infrastructure.handler.bet.PlaceBetHandler
+import infrastructure.handler.bet.RollbackBetHandler
+import infrastructure.handler.bet.SettleBetHandler
+import infrastructure.handler.sportbook.ExchangeSportbookTokenHandler
+import infrastructure.handler.sportbook.FindActiveSportbookAggregatorHandler
+import infrastructure.handler.sportbook.FindLastSportbookSessionByPlayerHandler
+import infrastructure.handler.sportbook.FindSportbookSessionByPrivateTokenHandler
+import infrastructure.handler.sportbook.FindSportbookSessionHandler
+import infrastructure.handler.sportbook.OpenSportbookHandler
+import infrastructure.handler.wheel.CreditWheelHandler
+import infrastructure.handler.wheel.PayoutWheelHandler
+import infrastructure.handler.wheel.RollbackWheelHandler
 import infrastructure.handler.winner.LastWinnerQueryHandler
 import org.koin.dsl.module
 
@@ -60,30 +73,30 @@ import org.koin.dsl.module
  * 2. Add a single line in `busModule` mapping the command/query class to it
  */
 val handlerModule = module {
-    // Session
-    single { FindSessionHandler(sessionRepository = get()) }
-    single { FindSessionByExternalTokenHandler(sessionRepository = get()) }
-    single { PlaceSpinSessionHandler(roundRepository = get(), spinRepository = get(), processSpinUsecase = get(), walletPort = get()) }
-    single { SettleSpinSessionHandler(roundRepository = get(), spinRepository = get(), processSpinUsecase = get(), walletPort = get()) }
-    single { RollbackSpinSessionHandler(spinRepository = get(), processSpinUsecase = get(), walletPort = get()) }
-    single { EndRoundSessionHandler(roundRepository = get(), finishRoundUsecase = get()) }
-    single { FindSessionBalanceHandler(walletAdapter = get()) }
+    // CasinoSession
+    single { FindCasinoSessionHandler(sessionRepository = get()) }
+    single { FindCasinoSessionByExternalTokenHandler(sessionRepository = get()) }
+    single { PlaceSpinCasinoSessionHandler(roundRepository = get(), spinRepository = get(), processSpinUsecase = get(), walletPort = get()) }
+    single { SettleSpinCasinoSessionHandler(roundRepository = get(), spinRepository = get(), processSpinUsecase = get(), walletPort = get()) }
+    single { RollbackSpinCasinoSessionHandler(spinRepository = get(), processSpinUsecase = get(), walletPort = get()) }
+    single { EndCasinoRoundSessionHandler(roundRepository = get(), finishRoundUsecase = get()) }
+    single { FindCasinoSessionBalanceHandler(walletAdapter = get()) }
 
-    // Game
-    single { PlayGameCommandHandler(gameVariantRepository = get(), playerLimitPort = get(), openSessionUsecase = get()) }
-    single { SaveGameCommandHandler(gameRepository = get(), providerRepository = get()) }
-    single { RecalculateGameRtpCommandHandler(recalculateGameRtpUsecase = get()) }
-    single { FindGameQueryHandler() }
-    single { FindAllGameQueryHandler() }
-    single { FindAllGameTagQueryHandler() }
-    single { FindAllActiveRtpGameQueryHandler() }
-    single { BatchGameQueryHandler() }
-    single { GetGameDemoUrlQueryHandler(gameVariantRepository = get(), aggregatorFactory = get()) }
-    single { FindAllGamePlayerFavoriteQueryHandler() }
-    single { FindAllGamePlayerLastQueryHandler() }
-    single { FindAllGameCollectionQueryHandler() }
-    single { AddGameFavouriteCommandHandler() }
-    single { RemoveGameFavouriteCommandHandler() }
+    // CasinoGame
+    single { PlayCasinoGameCommandHandler(gameVariantRepository = get(), playerLimitPort = get(), openSessionUsecase = get()) }
+    single { SaveCasinoGameCommandHandler(gameRepository = get(), providerRepository = get()) }
+    single { RecalculateCasinoGameRtpCommandHandler(recalculateCasinoGameRtpUsecase = get()) }
+    single { FindCasinoGameQueryHandler() }
+    single { FindAllCasinoGameQueryHandler() }
+    single { FindAllCasinoGameTagQueryHandler() }
+    single { FindAllActiveRtpCasinoGameQueryHandler() }
+    single { BatchCasinoGameQueryHandler() }
+    single { GetCasinoGameDemoUrlQueryHandler(gameVariantRepository = get(), aggregatorFactory = get()) }
+    single { FindAllCasinoGamePlayerFavoriteQueryHandler() }
+    single { FindAllCasinoGamePlayerLastQueryHandler() }
+    single { FindAllCasinoGameCollectionQueryHandler() }
+    single { AddCasinoGameFavouriteCommandHandler() }
+    single { RemoveCasinoGameFavouriteCommandHandler() }
 
     // Freespin
     single { GetFreespinPresetsQueryHandler(aggregatorFactory = get()) }
@@ -92,24 +105,24 @@ val handlerModule = module {
     single { ChargeFreespinCommandHandler(freespinRepository = get()) }
     single { FindRedeemableFreespinQueryHandler(freespinRepository = get()) }
 
-    // Provider
-    single { SaveProviderCommandHandler(providerRepository = get(), aggregatorRepository = get()) }
-    single { FindProviderQueryHandler() }
-    single { FindAllProviderQueryHandler() }
-    single { FindAllProviderTagQueryHandler() }
-    single { BatchProviderQueryHandler() }
+    // CasinoProvider
+    single { SaveCasinoProviderCommandHandler(providerRepository = get(), aggregatorRepository = get()) }
+    single { FindCasinoProviderQueryHandler() }
+    single { FindAllCasinoProviderQueryHandler() }
+    single { FindAllCasinoProviderTagQueryHandler() }
+    single { BatchCasinoProviderQueryHandler() }
 
     // Collection
     single { SaveCollectionCommandHandler(collectionRepository = get()) }
     single { FindCollectionQueryHandler() }
     single { FindAllCollectionQueryHandler() }
     single { BatchCollectionQueryHandler() }
-    single { AddCollectionGameCommandHandler(collectionRepository = get()) }
-    single { RemoveCollectionGameCommandHandler(collectionRepository = get()) }
-    single { UpdateCollectionGameOrderCommandHandler(collectionRepository = get()) }
+    single { AddCollectionCasinoGameCommandHandler(collectionRepository = get()) }
+    single { RemoveCollectionCasinoGameCommandHandler(collectionRepository = get()) }
+    single { UpdateCollectionCasinoGameOrderCommandHandler(collectionRepository = get()) }
     single { DeleteCollectionCommandHandler(collectionRepository = get()) }
 
-    // Common (polymorphic — serves SetGameImageCommand / SetProviderImageCommand / SetCollectionImageCommand)
+    // Common (polymorphic — serves SetCasinoGameImageCommand / SetCasinoProviderImageCommand / SetCollectionImageCommand)
     single {
         SetImageCommandHandler(
             gameRepository = get(),
@@ -126,10 +139,29 @@ val handlerModule = module {
     single { BatchAggregatorQueryHandler(aggregatorRepository = get()) }
     single { SyncAllActiveAggregatorCommandHandler(get(), get()) }
 
-    // Round
-    single { FindRoundQueryHandler() }
-    single { FindAllRoundQueryHandler() }
+    // CasinoRound
+    single { FindCasinoRoundQueryHandler() }
+    single { FindAllCasinoRoundQueryHandler() }
 
     // Winner
     single { LastWinnerQueryHandler() }
+
+    // Sportbook
+    single { FindSportbookSessionHandler(sessionRepository = get()) }
+    single { FindSportbookSessionByPrivateTokenHandler(sessionRepository = get()) }
+    single { FindLastSportbookSessionByPlayerHandler(sessionRepository = get()) }
+    single { FindActiveSportbookAggregatorHandler(aggregatorRepository = get()) }
+    single { ExchangeSportbookTokenHandler(sessionRepository = get()) }
+    single { OpenSportbookHandler(openSportbookUsecase = get()) }
+
+    // Bet
+    single { PlaceBetHandler(processBetUsecase = get()) }
+    single { ConfirmBetHandler(processBetUsecase = get()) }
+    single { SettleBetHandler(processBetUsecase = get()) }
+    single { RollbackBetHandler(processBetUsecase = get()) }
+
+    // Wheel
+    single { CreditWheelHandler(processWheelUsecase = get()) }
+    single { PayoutWheelHandler(processWheelUsecase = get()) }
+    single { RollbackWheelHandler(processWheelUsecase = get()) }
 }

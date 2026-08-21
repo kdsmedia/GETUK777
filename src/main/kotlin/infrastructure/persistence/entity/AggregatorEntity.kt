@@ -10,6 +10,7 @@ class AggregatorEntity(id: EntityID<Long>) : LongEntity(id) {
 
     var identity by AggregatorTable.identity
     var integration by AggregatorTable.integration
+    var type by AggregatorTable.type
     var config by AggregatorTable.config
     var active by AggregatorTable.active
 }

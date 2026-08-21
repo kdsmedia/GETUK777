@@ -6,7 +6,7 @@ import domain.vo.Currency
 import domain.vo.FreespinId
 import domain.vo.PlayerId
 import infrastructure.persistence.entity.FreespinEntity
-import infrastructure.persistence.mapper.GameVariantMapper.toDomain
+import infrastructure.persistence.mapper.CasinoGameVariantMapper.toDomain
 
 object FreespinMapper {
 

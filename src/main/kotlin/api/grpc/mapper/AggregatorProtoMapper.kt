@@ -5,16 +5,31 @@ import com.google.protobuf.NullValue
 import com.google.protobuf.Struct
 import com.google.protobuf.Value
 import com.nekgamebling.game.v1.AggregatorDto
+import com.nekgamebling.game.v1.AggregatorTypeDto
 import com.nekgamebling.game.v1.aggregatorDto
 import domain.model.Aggregator
+import domain.model.AggregatorType
 
 object AggregatorProtoMapper {
 
     fun Aggregator.toProto(): AggregatorDto = aggregatorDto {
         identity = this@toProto.identity.value
         integration = this@toProto.integration
+        type = this@toProto.type.toProto()
         config = this@toProto.config.toProtoStruct()
         active = this@toProto.active
+    }
+
+    fun AggregatorType.toProto(): AggregatorTypeDto = when (this) {
+        AggregatorType.CASINO -> AggregatorTypeDto.AGGREGATOR_TYPE_CASINO
+        AggregatorType.SPORTBOOK -> AggregatorTypeDto.AGGREGATOR_TYPE_SPORTBOOK
+    }
+
+    fun AggregatorTypeDto.toDomain(): AggregatorType = when (this) {
+        AggregatorTypeDto.AGGREGATOR_TYPE_SPORTBOOK -> AggregatorType.SPORTBOOK
+        AggregatorTypeDto.AGGREGATOR_TYPE_CASINO,
+        AggregatorTypeDto.AGGREGATOR_TYPE_UNSPECIFIED,
+        AggregatorTypeDto.UNRECOGNIZED -> AggregatorType.CASINO
     }
 
     fun Map<String, Any>.toProtoStruct(): Struct {

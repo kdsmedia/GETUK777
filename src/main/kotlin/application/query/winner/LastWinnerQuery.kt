@@ -1,9 +1,9 @@
 package application.query.winner
 
 import application.IQuery
-import application.query.game.GameFilter
-import domain.model.Game
-import domain.model.GameVariant
+import application.query.game.CasinoGameFilter
+import domain.model.CasinoGame
+import domain.model.CasinoGameVariant
 import domain.vo.Amount
 import domain.vo.Currency
 import domain.vo.Page
@@ -12,8 +12,8 @@ import domain.vo.PlayerId
 import kotlinx.datetime.Instant
 
 data class LastWin(
-    val game: Game,
-    val variant: GameVariant?,
+    val game: CasinoGame,
+    val variant: CasinoGameVariant?,
     val amount: Amount,
     val currency: Currency,
     val playerId: PlayerId,
@@ -25,7 +25,7 @@ enum class WinnerSort { DATE, AMOUNT }
 
 data class LastWinnerQuery(
     /** Ограничивает ленту выигрышами на играх, подходящих под фильтр каталога. */
-    val filter: GameFilter? = null,
+    val filter: CasinoGameFilter? = null,
 
     val minAmount: Amount? = null,
     val maxAmount: Amount? = null,

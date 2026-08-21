@@ -2,25 +2,25 @@ package support
 
 import domain.model.Aggregator
 import domain.model.Collection
-import domain.model.Game
-import domain.model.GameVariant
+import domain.model.CasinoGame
+import domain.model.CasinoGameVariant
 import domain.model.Platform
 import domain.model.PlayerBalance
-import domain.model.Provider
-import domain.model.Round
-import domain.model.Session
+import domain.model.CasinoProvider
+import domain.model.CasinoRound
+import domain.model.CasinoSession
 import domain.model.Spin
 import domain.model.SpinType
 import domain.vo.Amount
 import domain.vo.Currency
 import domain.vo.Identity
-import domain.vo.ExternalRoundId
+import domain.vo.ExternalCasinoRoundId
 import domain.vo.ExternalSpinId
 import domain.vo.FreespinId
-import domain.vo.GameSymbol
+import domain.vo.CasinoGameSymbol
 import domain.vo.Locale
 import domain.vo.PlayerId
-import domain.vo.SessionToken
+import domain.vo.CasinoSessionToken
 
 /**
  * Reusable builders for domain fixtures in unit tests. Defaults to a minimal valid
@@ -44,9 +44,9 @@ object TestFixtures {
         identity: String = "test_provider",
         aggregator: Aggregator = aggregator(),
         active: Boolean = true,
-    ): Provider = Provider(
+    ): CasinoProvider = CasinoProvider(
         identity = Identity(identity),
-        name = "Test Provider",
+        name = "Test CasinoProvider",
         aggregator = aggregator,
         active = active,
     )
@@ -58,13 +58,13 @@ object TestFixtures {
 
     fun game(
         identity: String = "test_game",
-        provider: Provider = provider(),
+        provider: CasinoProvider = provider(),
         collections: List<Collection> = emptyList(),
         bonusBetEnable: Boolean = true,
         active: Boolean = true,
-    ): Game = Game(
+    ): CasinoGame = CasinoGame(
         identity = Identity(identity),
-        name = "Test Game",
+        name = "Test CasinoGame",
         provider = provider,
         collections = collections,
         bonusBetEnable = bonusBetEnable,
@@ -72,13 +72,13 @@ object TestFixtures {
     )
 
     fun gameVariant(
-        game: Game = game(),
+        game: CasinoGame = game(),
         symbol: String = "tg_01",
         locales: List<Locale> = listOf(Locale("en")),
         platforms: List<Platform> = listOf(Platform.DESKTOP, Platform.MOBILE),
-    ): GameVariant = GameVariant(
+    ): CasinoGameVariant = CasinoGameVariant(
         id = 1L,
-        symbol = GameSymbol(symbol),
+        symbol = CasinoGameSymbol(symbol),
         name = game.name,
         integration = game.provider.aggregator.integration,
         game = game,
@@ -95,17 +95,17 @@ object TestFixtures {
 
     fun session(
         id: Long = 1L,
-        variant: GameVariant = gameVariant(),
+        variant: CasinoGameVariant = gameVariant(),
         currency: String = "USD",
         locale: String = "en",
         platform: Platform = Platform.DESKTOP,
         playerId: String = "player_1",
         token: String = "token_abc",
-    ): Session = Session(
+    ): CasinoSession = CasinoSession(
         id = id,
         gameVariant = variant,
         playerId = PlayerId(playerId),
-        token = SessionToken(token),
+        token = CasinoSessionToken(token),
         externalToken = null,
         currency = Currency(currency),
         locale = Locale(locale),
@@ -114,18 +114,18 @@ object TestFixtures {
 
     fun round(
         id: Long = 1L,
-        session: Session = session(),
+        session: CasinoSession = session(),
         externalId: String = "round_1",
         freespinId: String? = null,
-    ): Round = Round(
+    ): CasinoRound = CasinoRound(
         id = id,
-        externalId = ExternalRoundId(externalId),
+        externalId = ExternalCasinoRoundId(externalId),
         freespinId = freespinId?.let { FreespinId(it) },
         session = session,
     )
 
     fun spin(
-        round: Round = round(),
+        round: CasinoRound = round(),
         type: SpinType = SpinType.PLACE,
         externalId: String = "spin_1",
         amount: Amount = Amount(100),

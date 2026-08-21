@@ -3,6 +3,7 @@ package api.webhook
 import infrastructure.aggregator.gamingflow.webhook.GamingFlowWebhook
 import infrastructure.aggregator.onegamehub.webhook.OneGameHubWebhook
 import infrastructure.aggregator.pragmatic.webhook.PragmaticWebhook
+import infrastructure.aggregator.tech01sport.webhook.Tech01SportWebhook
 import infrastructure.aggregator.tongame.webhook.TongameWebhook
 import io.ktor.server.application.Application
 import io.ktor.server.routing.route
@@ -18,6 +19,7 @@ fun Application.configureWebhook() {
     val pragmaticWebhook = get<PragmaticWebhook>()
     val tongameWebhook = get<TongameWebhook>()
     val gamingFlowWebhook = get<GamingFlowWebhook>()
+    val tech01SportWebhook = get<Tech01SportWebhook>()
 
     routing {
         route("/api/webhook") {
@@ -25,6 +27,7 @@ fun Application.configureWebhook() {
             with(pragmaticWebhook) { route() }
             with(tongameWebhook) { route() }
             with(gamingFlowWebhook) { route() }
+            with(tech01SportWebhook) { route() }
         }
     }
 }

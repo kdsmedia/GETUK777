@@ -29,25 +29,25 @@ interface ICollectionRepository {
      * `max(existing sort_order) + 1` (or `0` when the collection is empty).
      *
      * Raises `CollectionNotFoundException` if [identity] does not exist, or
-     * `GameNotFoundException` if [gameIdentity] does not exist.
+     * `CasinoGameNotFoundException` if [gameIdentity] does not exist.
      */
-    suspend fun addGame(identity: Identity, gameIdentity: Identity)
+    suspend fun addCasinoGame(identity: Identity, gameIdentity: Identity)
 
     /**
      * Remove a single game from a collection. Idempotent: if [gameIdentity]
      * is not currently a member, no-op.
      *
      * Raises `CollectionNotFoundException` if [identity] does not exist, or
-     * `GameNotFoundException` if [gameIdentity] does not exist.
+     * `CasinoGameNotFoundException` if [gameIdentity] does not exist.
      */
-    suspend fun removeGame(identity: Identity, gameIdentity: Identity)
+    suspend fun removeCasinoGame(identity: Identity, gameIdentity: Identity)
 
     /**
      * Set the per-collection [order] of [gameIdentity] inside [identity].
      *
      * Raises `CollectionNotFoundException` if [identity] does not exist, or
-     * `GameNotFoundException` if the (collection, game) row does not exist.
+     * `CasinoGameNotFoundException` if the (collection, game) row does not exist.
      */
-    suspend fun updateGameOrder(identity: Identity, gameIdentity: Identity, order: Int)
+    suspend fun updateCasinoGameOrder(identity: Identity, gameIdentity: Identity, order: Int)
 
 }

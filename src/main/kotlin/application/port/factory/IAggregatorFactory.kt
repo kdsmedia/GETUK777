@@ -1,8 +1,9 @@
 package application.port.factory
 
 import application.port.external.IFreespinPort
-import application.port.external.IGamePort
+import application.port.external.ICasinoGamePort
 import application.port.external.IJackpotStreamPort
+import application.port.external.ISportbookPort
 import domain.model.Aggregator
 
 /**
@@ -13,9 +14,11 @@ import domain.model.Aggregator
  */
 interface IAggregatorFactory {
 
-    fun createGameAdapter(aggregator: Aggregator): IGamePort
+    fun createGameAdapter(aggregator: Aggregator): ICasinoGamePort
 
     fun createFreespinAdapter(aggregator: Aggregator): IFreespinPort
 
     fun createJackpotStreamAdapter(aggregator: Aggregator): IJackpotStreamPort
+
+    fun createSportbookAdapter(aggregator: Aggregator): ISportbookPort
 }

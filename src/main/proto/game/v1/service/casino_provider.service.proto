@@ -1,0 +1,136 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_package = "com.nekgamebling.game.v1";
+option java_multiple_files = true;
+
+import "game/v1/dto/aggregator.dto.proto";
+import "game/v1/dto/casino_provider.dto.proto";
+import "game/v1/dto/common.dto.proto";
+
+// ---------------------------------------------------------------------------
+// CasinoProvider catalog service — read + upsert. Providers are contract artefacts
+// and cannot be deleted once registered.
+//
+// Every Save is a typed upsert mirroring
+// `application.command.provider.SaveCasinoProviderCommand`. FindAll takes a
+// dedicated CasinoProviderFilter sub-message.
+// ---------------------------------------------------------------------------
+service CasinoProviderService {
+  rpc Save(SaveCasinoProviderCommand) returns (Empty);
+
+  rpc Find(FindCasinoProviderQuery) returns (FindCasinoProviderQuery.Result);
+
+  rpc FindAll(FindAllCasinoProviderQuery) returns (FindAllCasinoProviderQuery.Result);
+
+  rpc FindTagsAll(FindAllCasinoProviderTagQuery) returns (FindAllCasinoProviderTagQuery.Result);
+
+  rpc Batch(BatchCasinoProviderQuery) returns (BatchCasinoProviderQuery.Result);
+
+  rpc UpdateImage(UpdateCasinoProviderImageCommand) returns (Empty);
+}
+
+// ---------------------------------------------------------------------------
+// Commands
+// ---------------------------------------------------------------------------
+
+message SaveCasinoProviderCommand {
+  string identity = 1;
+
+  string name = 2;
+
+  int32 order = 3;
+
+  bool active = 4;
+
+  string aggregator_identity = 5;
+
+  repeated string blocked_country = 6;
+
+  repeated string tags = 7;
+}
+
+message UpdateCasinoProviderImageCommand {
+  string identity = 1;
+
+  string key = 2;
+
+  // Was `bytes file` + `string extension` — the engine no longer accepts file
+  // content. Callers upload to object storage themselves and pass the final
+  // public URL.
+  reserved 3, 4;
+
+  reserved "file", "extension";
+
+  // Full public URL of the image; stored verbatim as the map value for `key`.
+  string url = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Queries
+// ---------------------------------------------------------------------------
+
+message FindCasinoProviderQuery {
+  string identity = 1;
+
+  message Result {
+    CasinoProviderDto item = 1;
+
+    AggregatorDto aggregator = 2;
+  }
+}
+
+message CasinoProviderFilter {
+  string query = 1;
+
+  optional bool active = 2;
+
+  optional string aggregator_identity = 3;
+
+  repeated string in_collection_identities = 4;
+
+  repeated string tags = 5;
+}
+
+message FindAllCasinoProviderQuery {
+  CasinoProviderFilter filter = 1;
+
+  int32 page_num = 2;
+
+  int32 page_size = 3;
+
+  message Result {
+    repeated CasinoProviderDto items = 1;
+
+    // Denormalized aggregators referenced by any provider in `items`.
+    repeated AggregatorDto aggregators = 2;
+
+    int32 total_items = 3;
+  }
+}
+
+// Paged alphabetical listing of the distinct tags across ACTIVE providers.
+// Mirrors `CasinoGameService.FindTagsAll` for the provider-level tag vocabulary
+// (e.g. `live`).
+message FindAllCasinoProviderTagQuery {
+  int32 page_num = 1;
+
+  int32 page_size = 2;
+
+  message Result {
+    repeated string items = 1;
+
+    int32 total_items = 2;
+  }
+}
+
+message BatchCasinoProviderQuery {
+  repeated string identities = 1;
+
+  message Result {
+    repeated CasinoProviderDto items = 1;
+
+    repeated AggregatorDto aggregators = 2;
+  }
+}

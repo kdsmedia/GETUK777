@@ -23,7 +23,7 @@ class GamingFlowConfig(config: Map<String, Any>) {
     /** Signature secret. HMAC-SHA256 key for both signing outbound and verifying inbound requests. */
     val keyValue = config["keyValue"]?.toString() ?: ""
 
-    /** Game session domain, e.g. `gamix.party`. Sent as `BaseHost` on session creation; the
+    /** CasinoGame session domain, e.g. `gamix.party`. Sent as `BaseHost` on session creation; the
      *  playable URL is `https://<SessionId>.<baseHost>/`. Swap for a proxy host once one exists. */
     val baseHost = (config["baseHost"]?.toString() ?: "").trim('/')
 
@@ -34,7 +34,7 @@ class GamingFlowConfig(config: Map<String, Any>) {
      *  currency, so ids are minted per currency: `<bankGroupPrefix>_<CURRENCY>`. */
     val bankGroupPrefix = config["bankGroupPrefix"]?.toString() ?: ""
 
-    /** Session creation behaviour. `Restore` re-hydrates the previous session state when one
+    /** CasinoSession creation behaviour. `Restore` re-hydrates the previous session state when one
      *  matches, otherwise falls back to `Create`. */
     val restorePolicy = config["restorePolicy"]?.toString()?.ifBlank { null } ?: DEFAULT_RESTORE_POLICY
 
@@ -48,7 +48,7 @@ class GamingFlowConfig(config: Map<String, Any>) {
     val subject: String = "$SUBJECT_PREFIX$casinoId"
 
     /**
-     * Provider-side bank group id for [currency]. Currency is immutable once a bank group exists,
+     * CasinoProvider-side bank group id for [currency]. Currency is immutable once a bank group exists,
      * so a group can never be shared across currencies.
      */
     fun bankGroupId(currency: String): String =
@@ -56,7 +56,7 @@ class GamingFlowConfig(config: Map<String, Any>) {
         else "${bankGroupPrefix}_${currency.uppercase()}"
 
     /**
-     * Provider-side player id. A player is bound to one bank group — and therefore one currency —
+     * CasinoProvider-side player id. A player is bound to one bank group — and therefore one currency —
      * for life, so a multi-currency player maps to one provider player per currency.
      * Inverse of [playerIdOf].
      */

@@ -3,13 +3,13 @@ package infrastructure.handler.common
 import application.ICommandHandler
 import application.command.collection.SetCollectionImageCommand
 import application.command.common.SetImageCommand
-import application.command.game.SetGameImageCommand
-import application.command.provider.SetProviderImageCommand
+import application.command.game.SetCasinoGameImageCommand
+import application.command.provider.SetCasinoProviderImageCommand
 import domain.exception.badrequest.BlankImageUrlException
 import domain.exception.domainRequire
 import domain.repository.ICollectionRepository
-import domain.repository.IGameRepository
-import domain.repository.IProviderRepository
+import domain.repository.ICasinoGameRepository
+import domain.repository.ICasinoProviderRepository
 
 /**
  * Single entry point for every `SetXImageCommand`.
@@ -19,8 +19,8 @@ import domain.repository.IProviderRepository
  * `addImage(...)` based on the concrete command subtype.
  */
 class SetImageCommandHandler(
-    private val gameRepository: IGameRepository,
-    private val providerRepository: IProviderRepository,
+    private val gameRepository: ICasinoGameRepository,
+    private val providerRepository: ICasinoProviderRepository,
     private val collectionRepository: ICollectionRepository,
 ) : ICommandHandler<SetImageCommand, Unit> {
 
@@ -28,8 +28,8 @@ class SetImageCommandHandler(
         domainRequire(command.url.isNotBlank()) { BlankImageUrlException() }
 
         when (command) {
-            is SetGameImageCommand -> gameRepository.addImage(command.identity, command.key, command.url)
-            is SetProviderImageCommand -> providerRepository.addImage(command.identity, command.key, command.url)
+            is SetCasinoGameImageCommand -> gameRepository.addImage(command.identity, command.key, command.url)
+            is SetCasinoProviderImageCommand -> providerRepository.addImage(command.identity, command.key, command.url)
             is SetCollectionImageCommand -> collectionRepository.addImage(command.identity, command.key, command.url)
             else -> error("Unhandled SetImageCommand subtype: ${command::class.qualifiedName}")
         }

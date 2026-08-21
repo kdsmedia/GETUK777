@@ -10,7 +10,7 @@ class FreespinEntity(id: EntityID<Long>) : LongEntity(id) {
 
     var referenceId by FreespinTable.referenceId
     var playerId by FreespinTable.playerId
-    var gameVariant by GameVariantEntity referencedOn FreespinTable.gameVariant
+    var gameVariant by CasinoGameVariantEntity referencedOn FreespinTable.gameVariant
     var currency by FreespinTable.currency
     var spinAmount by FreespinTable.spinAmount
     var totalCount by FreespinTable.totalCount

@@ -1,15 +1,15 @@
 package application.usecase
 
-import application.port.external.IGamePort
+import application.port.external.ICasinoGamePort
 import application.port.factory.IAggregatorFactory
 import domain.model.Aggregator
-import domain.model.Game
-import domain.model.GameVariant
+import domain.model.CasinoGame
+import domain.model.CasinoGameVariant
 import domain.model.Platform
-import domain.model.Provider
-import domain.repository.IGameRepository
-import domain.repository.IGameVariantRepository
-import domain.repository.IProviderRepository
+import domain.model.CasinoProvider
+import domain.repository.ICasinoGameRepository
+import domain.repository.ICasinoGameVariantRepository
+import domain.repository.ICasinoProviderRepository
 import domain.vo.Identity
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -31,7 +31,7 @@ class SyncAggregatorUsecaseTest : FunSpec({
         symbol: String,
         name: String,
         providerName: String,
-    ) = IGamePort.AggregatorGame(
+    ) = ICasinoGamePort.AggregatorGame(
         symbol = symbol,
         name = name,
         providerName = providerName,
@@ -45,36 +45,36 @@ class SyncAggregatorUsecaseTest : FunSpec({
     )
 
     class Harness(
-        existingProviders: List<Provider>,
-        existingGames: List<Game>,
+        existingProviders: List<CasinoProvider>,
+        existingGames: List<CasinoGame>,
         val aggregator: Aggregator,
-        games: List<IGamePort.AggregatorGame>,
+        games: List<ICasinoGamePort.AggregatorGame>,
     ) {
-        val savedProviders = mutableListOf<Provider>()
-        val savedGames = mutableListOf<List<Game>>()
-        val savedVariants = mutableListOf<List<GameVariant>>()
+        val savedProviders = mutableListOf<CasinoProvider>()
+        val savedGames = mutableListOf<List<CasinoGame>>()
+        val savedVariants = mutableListOf<List<CasinoGameVariant>>()
 
-        private val providerRepository = mockk<IProviderRepository>()
-        private val gameRepository = mockk<IGameRepository>()
-        private val variantRepository = mockk<IGameVariantRepository>()
+        private val providerRepository = mockk<ICasinoProviderRepository>()
+        private val gameRepository = mockk<ICasinoGameRepository>()
+        private val variantRepository = mockk<ICasinoGameVariantRepository>()
         private val factory = mockk<IAggregatorFactory>()
 
         init {
-            val port = mockk<IGamePort>()
+            val port = mockk<ICasinoGamePort>()
             coEvery { port.getAggregatorGames() } returns games
             coEvery { factory.createGameAdapter(any()) } returns port
 
             coEvery { providerRepository.findAll() } returns existingProviders
             coEvery { providerRepository.save(any()) } answers {
-                firstArg<Provider>().also { savedProviders += it }
+                firstArg<CasinoProvider>().also { savedProviders += it }
             }
             coEvery { gameRepository.findAll() } returns existingGames
             coEvery { gameRepository.saveAll(any()) } answers {
-                firstArg<List<Game>>().also { savedGames += it }
+                firstArg<List<CasinoGame>>().also { savedGames += it }
             }
             coEvery { variantRepository.findAllByIntegration(any()) } returns emptyList()
             coEvery { variantRepository.saveAll(any()) } answers {
-                firstArg<List<GameVariant>>().also { savedVariants += it }
+                firstArg<List<CasinoGameVariant>>().also { savedVariants += it }
             }
         }
 
@@ -85,8 +85,8 @@ class SyncAggregatorUsecaseTest : FunSpec({
             providerRepository = providerRepository,
         ).invoke(aggregator)
 
-        val persistedGames: List<Game> get() = savedGames.flatten()
-        val persistedVariants: List<GameVariant> get() = savedVariants.flatten()
+        val persistedGames: List<CasinoGame> get() = savedGames.flatten()
+        val persistedVariants: List<CasinoGameVariant> get() = savedVariants.flatten()
     }
 
     test("an aliased provider reuses the existing provider and its games, adding only a variant") {

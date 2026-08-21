@@ -27,7 +27,7 @@ data class Freespin(
 
     val playerId: PlayerId,
 
-    val gameVariant: GameVariant,
+    val gameVariant: CasinoGameVariant,
 
     val currency: Currency,
 

@@ -1,6 +1,7 @@
 package application.command.aggregator
 
 import application.ICommand
+import domain.model.AggregatorType
 import domain.vo.Identity
 
 data class SaveAggregatorCommand(
@@ -8,4 +9,5 @@ data class SaveAggregatorCommand(
     val config: Map<String, Any>,
     val active: Boolean,
     val integration: String,
+    val type: AggregatorType,
 ) : ICommand<Unit>

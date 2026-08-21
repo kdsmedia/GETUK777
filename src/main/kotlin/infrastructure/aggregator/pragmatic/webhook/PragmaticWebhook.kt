@@ -1,17 +1,17 @@
 package infrastructure.aggregator.pragmatic.webhook
 
 import application.Bus
-import application.command.session.EndRoundSessionCommand
+import application.command.session.EndCasinoRoundSessionCommand
 import application.port.external.ICurrencyPort
-import application.query.session.FindSessionBalanceQuery
-import application.query.session.FindSessionQuery
-import application.command.session.PlaceSpinSessionCommand
-import application.command.session.SettleSpinSessionCommand
+import application.query.session.FindCasinoSessionBalanceQuery
+import application.query.session.FindCasinoSessionQuery
+import application.command.session.PlaceSpinCasinoSessionCommand
+import application.command.session.SettleSpinCasinoSessionCommand
 import domain.exception.forbidden.InsufficientBalanceException
 import domain.exception.forbidden.MaxPlaceSpinException
-import domain.exception.notfound.SessionNotFoundException
+import domain.exception.notfound.CasinoSessionNotFoundException
 import domain.model.PlayerBalance
-import domain.model.Session
+import domain.model.CasinoSession
 import domain.vo.Amount
 import domain.vo.Currency
 import infrastructure.aggregator.pragmatic.webhook.dto.PragmaticBetDto
@@ -118,23 +118,23 @@ class PragmaticWebhook(
 
     private suspend fun authenticate(sessionToken: String): PragmaticResponse {
         return runCatching {
-            val session = bus(FindSessionQuery(sessionToken))
-            bus(FindSessionBalanceQuery(session))
+            val session = bus(FindCasinoSessionQuery(sessionToken))
+            bus(FindCasinoSessionBalanceQuery(session))
         }.toBalanceResponse(userId = sessionToken)
     }
 
     private suspend fun balance(sessionToken: String): PragmaticResponse {
         return runCatching {
-            val session = bus(FindSessionQuery(sessionToken))
-            bus(FindSessionBalanceQuery(session))
+            val session = bus(FindCasinoSessionQuery(sessionToken))
+            bus(FindCasinoSessionBalanceQuery(session))
         }.toBalanceResponse()
     }
 
     private suspend fun bet(sessionToken: String, payload: PragmaticBetDto): PragmaticResponse {
         return runCatching {
-            val session = bus(FindSessionQuery(sessionToken))
+            val session = bus(FindCasinoSessionQuery(sessionToken))
             val amount = session.toSystemUnit(BigDecimal(payload.amount))
-            bus(PlaceSpinSessionCommand(
+            bus(PlaceSpinCasinoSessionCommand(
                 session = session,
                 gameSymbol = payload.gameId,
                 externalRoundId = payload.roundId,
@@ -149,9 +149,9 @@ class PragmaticWebhook(
         val totalAmount = BigDecimal(payload.amount).add(BigDecimal(payload.promoWinAmount))
 
         val result = runCatching {
-            val session = bus(FindSessionQuery(sessionToken))
+            val session = bus(FindCasinoSessionQuery(sessionToken))
             val amount = session.toSystemUnit(totalAmount)
-            bus(SettleSpinSessionCommand(
+            bus(SettleSpinCasinoSessionCommand(
                 session = session,
                 gameSymbol = payload.gameId,
                 externalRoundId = payload.roundId,
@@ -166,8 +166,8 @@ class PragmaticWebhook(
 
     private suspend fun endRound(sessionToken: String, roundId: String): PragmaticResponse {
         runCatching {
-            val session = bus(FindSessionQuery(sessionToken))
-            bus(EndRoundSessionCommand(
+            val session = bus(FindCasinoSessionQuery(sessionToken))
+            bus(EndCasinoRoundSessionCommand(
                 session = session,
                 externalRoundId = roundId
             ))
@@ -177,7 +177,7 @@ class PragmaticWebhook(
     }
 
     private suspend fun refund(sessionToken: String): PragmaticResponse {
-        // TODO: implement RollbackSpinSessionCommand for proper refund handling
+        // TODO: implement RollbackSpinCasinoSessionCommand for proper refund handling
         return balance(sessionToken)
     }
 
@@ -193,9 +193,9 @@ class PragmaticWebhook(
 
         return if (isDebit) {
             runCatching {
-                val session = bus(FindSessionQuery(sessionToken))
+                val session = bus(FindCasinoSessionQuery(sessionToken))
                 val converted = session.toSystemUnit(decimalAmount.abs())
-                bus(PlaceSpinSessionCommand(
+                bus(PlaceSpinCasinoSessionCommand(
                     session = session,
                     gameSymbol = gameId,
                     externalRoundId = roundId,
@@ -205,9 +205,9 @@ class PragmaticWebhook(
             }.toBalanceResponse()
         } else {
             runCatching {
-                val session = bus(FindSessionQuery(sessionToken))
+                val session = bus(FindCasinoSessionQuery(sessionToken))
                 val converted = session.toSystemUnit(decimalAmount)
-                bus(SettleSpinSessionCommand(
+                bus(SettleSpinCasinoSessionCommand(
                     session = session,
                     gameSymbol = gameId,
                     externalRoundId = roundId,
@@ -218,8 +218,8 @@ class PragmaticWebhook(
         }
     }
 
-    /** Provider decimal amount + session currency → wallet system unit (nano). */
-    private suspend fun Session.toSystemUnit(amount: BigDecimal): Amount =
+    /** CasinoProvider decimal amount + session currency → wallet system unit (nano). */
+    private suspend fun CasinoSession.toSystemUnit(amount: BigDecimal): Amount =
         Amount(currencyPort.convertToUnits(amount.toDouble(), currency))
 
     /** Wallet system unit (nano) → provider decimal string, using the balance's currency. */
@@ -242,7 +242,7 @@ class PragmaticWebhook(
             },
             onFailure = { exception ->
                 when (exception) {
-                    is SessionNotFoundException -> PragmaticResponse.Error.SESSION_EXPIRED
+                    is CasinoSessionNotFoundException -> PragmaticResponse.Error.SESSION_EXPIRED
                     is InsufficientBalanceException -> PragmaticResponse.Error.INSUFFICIENT_FUNDS
                     is MaxPlaceSpinException -> PragmaticResponse.Error.BET_LIMIT_EXCEEDED
                     else -> PragmaticResponse.Error.UNEXPECTED_ERROR

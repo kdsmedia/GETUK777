@@ -1,6 +1,6 @@
 package domain.service
 
-import domain.exception.conflict.RoundAlreadyFinishedException
+import domain.exception.conflict.CasinoRoundAlreadyFinishedException
 import domain.model.SpinType
 import domain.vo.Amount
 import domain.vo.ExternalSpinId
@@ -23,7 +23,7 @@ class SpinFactoryTest : FunSpec({
 
     test("place on finished round throws") {
         val finished = TestFixtures.round().finish()
-        shouldThrow<RoundAlreadyFinishedException> {
+        shouldThrow<CasinoRoundAlreadyFinishedException> {
             SpinFactory.place(finished, ExternalSpinId("spin_1"), Amount(100))
         }
     }
@@ -36,7 +36,7 @@ class SpinFactoryTest : FunSpec({
 
     test("settle on finished round throws") {
         val finished = TestFixtures.round().finish()
-        shouldThrow<RoundAlreadyFinishedException> {
+        shouldThrow<CasinoRoundAlreadyFinishedException> {
             SpinFactory.settle(finished, ExternalSpinId("spin_2"), Amount(100))
         }
     }

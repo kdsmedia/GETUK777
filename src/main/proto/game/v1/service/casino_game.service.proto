@@ -1,0 +1,245 @@
+syntax = "proto3";
+
+package game.v1;
+
+option java_package = "com.nekgamebling.game.v1";
+option java_multiple_files = true;
+
+import "game/v1/dto/casino_game.dto.proto";
+import "game/v1/dto/casino_provider.dto.proto";
+import "game/v1/dto/aggregator.dto.proto";
+import "game/v1/dto/collection.dto.proto";
+import "game/v1/dto/common.dto.proto";
+import "game/v1/dto/casino_game_filter.dto.proto";
+import "game/v1/dto/casino_game_page.dto.proto";
+
+// ---------------------------------------------------------------------------
+// CasinoGame catalog service — read + upsert + gameplay entrypoints. No delete:
+// games, providers and collections are contract artefacts that must not be
+// removed once they are in the catalog.
+//
+// Naming convention (uniform across CasinoGame / Collection / CasinoProvider):
+//   Save<X>Command     — create-or-update (upsert) with typed fields
+//   Find<X>Query       — read one by identity; Result carries denormalized
+//                        related entities (provider + aggregator + collections)
+//   FindAll<X>Query    — paged read; carries a single <X>Filter sub-message
+//   Batch<X>Query      — read many by repeated string identities
+//   Update<X>ImageCommand — attach/replace a keyed image URL
+// ---------------------------------------------------------------------------
+service CasinoGameService {
+  rpc Save(SaveCasinoGameCommand) returns (Empty);
+
+  rpc Find(FindCasinoGameQuery) returns (FindCasinoGameQuery.Result);
+
+  rpc FindAll(FindAllCasinoGameQuery) returns (CasinoGamePageDto);
+
+  rpc FindAllActiveRtp(FindAllActiveRtpCasinoGameQuery) returns (CasinoGamePageDto);
+
+  rpc FindTagsAll(FindAllCasinoGameTagQuery) returns (FindAllCasinoGameTagQuery.Result);
+
+  rpc Batch(BatchCasinoGameQuery) returns (BatchCasinoGameQuery.Result);
+
+  rpc UpdateImage(UpdateCasinoGameImageCommand) returns (Empty);
+
+  rpc Play(PlayCasinoGameCommand) returns (PlayCasinoGameCommand.Result);
+
+  rpc OpenDemo(OpenDemoQuery) returns (OpenDemoQuery.Result);
+
+  rpc AddFavourite(CasinoGameFavouriteCommand) returns (Empty);
+
+  rpc RemoveFavourite(CasinoGameFavouriteCommand) returns (Empty);
+
+  rpc FindAllPlayerFavourite(FindAllCasinoGamePlayerFavouriteQuery) returns (CasinoGamePageDto);
+
+  rpc FindAllPlayerLast(FindAllCasinoGamePlayerLastQuery) returns (CasinoGamePageDto);
+}
+
+// ---------------------------------------------------------------------------
+// Commands
+// ---------------------------------------------------------------------------
+
+message SaveCasinoGameCommand {
+  string identity = 1;
+
+  string name = 2;
+
+  bool bonus_bet_enable = 3;
+
+  bool bonus_wagering_enable = 4;
+
+  repeated string tags = 5;
+
+  string provider_identity = 6;
+
+  bool active = 7;
+
+  // Catalog-wide position: FindAll without a collection filter sorts by it ASC.
+  // A collection-scoped listing keeps using the curated per-collection order.
+  int32 order = 8;
+}
+
+message UpdateCasinoGameImageCommand {
+  string identity = 1;
+
+  string key = 2;
+
+  // Was `bytes file` + `string extension` — the engine no longer accepts file
+  // content. Callers upload to object storage themselves and pass the final
+  // public URL.
+  reserved 3, 4;
+
+  reserved "file", "extension";
+
+  // Full public URL of the image; stored verbatim as the map value for `key`.
+  string url = 5;
+}
+
+message PlayCasinoGameCommand {
+  string identity = 1;
+
+  string player_id = 2;
+
+  string locale = 3;
+
+  PlatformDto platform = 4;
+
+  string currency = 5;
+
+  optional int64 max_spin_place_amount = 6;
+
+  message Result {
+    string launch_url = 1;
+
+    // Our own session token (not the provider's). Wallet webhooks resolve the
+    // session by it, so a caller that drives them needs it without reading the
+    // sessions table.
+    string session_token = 2;
+  }
+}
+
+message CasinoGameFavouriteCommand {
+  string identity = 1;
+
+  string player_id = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Queries
+// ---------------------------------------------------------------------------
+
+message FindCasinoGameQuery {
+  string identity = 1;
+
+  message Result {
+    CasinoGameDto item = 1;
+
+    CasinoProviderDto provider = 2;
+
+    AggregatorDto aggregator = 3;
+
+    repeated CollectionDto collections = 4;
+  }
+}
+
+// Paged game listing with a shared CasinoGameFilter. Returns the shared
+// `CasinoGamePageDto` — same response shape as every other paged game-listing RPC.
+message FindAllCasinoGameQuery {
+  CasinoGameFilter filter = 1;
+
+  int32 page_num = 2;
+
+  int32 page_size = 3;
+}
+
+// Paged listing of ACTIVE games bucketed by RTP relative to the default (96):
+// HOT = rtp above the default, ordered rtp DESC; COLD = rtp below the default,
+// ordered rtp ASC. Catalog position (`order`) is the secondary key (ASC) in both
+// cases. Reuses the shared `CasinoGameFilter` and returns the shared `CasinoGamePageDto`.
+message FindAllActiveRtpCasinoGameQuery {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+
+    TYPE_HOT = 1;
+
+    TYPE_COLD = 2;
+  }
+
+  Type type = 1;
+
+  CasinoGameFilter filter = 2;
+
+  int32 page_num = 3;
+
+  int32 page_size = 4;
+}
+
+// Paged alphabetical listing of the distinct tags across ACTIVE games. Tags are
+// stored denormalized per game, so this is the only way for a client to
+// enumerate them (filter sheets, tag pickers).
+message FindAllCasinoGameTagQuery {
+  int32 page_num = 1;
+
+  int32 page_size = 2;
+
+  message Result {
+    repeated string items = 1;
+
+    int32 total_items = 2;
+  }
+}
+
+message BatchCasinoGameQuery {
+  repeated string identities = 1;
+
+  // Batch has its own Result because it does NOT carry `total_items`
+  // (it is not paged — the caller already supplied the identities).
+  message Result {
+    repeated CasinoGameDto items = 1;
+
+    repeated CasinoProviderDto providers = 2;
+
+    repeated AggregatorDto aggregators = 3;
+
+    repeated CollectionDto collections = 4;
+  }
+}
+
+// Paged game listing restricted to a specific player's favourites. Reuses
+// the shared `CasinoGameFilter` and `CasinoGamePageDto`; the only extra input is
+// `player_id`, which picks whose favourites to read.
+message FindAllCasinoGamePlayerFavouriteQuery {
+  string player_id = 1;
+
+  CasinoGameFilter filter = 2;
+
+  int32 page_num = 3;
+
+  int32 page_size = 4;
+}
+
+// Paged listing of the games a player has recently played, derived from the
+// player's sessions. Games are de-duplicated (one row per game) and ordered by
+// the most recent session first. Returns the shared `CasinoGamePageDto`.
+message FindAllCasinoGamePlayerLastQuery {
+  string player_id = 1;
+
+  int32 page_num = 2;
+
+  int32 page_size = 3;
+}
+
+message OpenDemoQuery {
+  string identity = 1;
+
+  string currency = 2;
+
+  string locale = 3;
+
+  PlatformDto platform = 4;
+
+  string lobby_url = 5;
+
+  message Result {
+    string launch_url = 1;
+  }
+}

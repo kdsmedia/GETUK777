@@ -1,0 +1,34 @@
+package domain.model
+
+import domain.exception.badrequest.UnsupportedAggregatorTypeException
+import domain.exception.domainRequire
+import domain.util.Activatable
+import domain.util.Imageable
+import domain.util.Orderable
+import domain.vo.Country
+import domain.vo.Identity
+import domain.vo.ImageMap
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class CasinoProvider(
+    val identity: Identity,
+
+    val name: String,
+
+    override var images: ImageMap = ImageMap.EMPTY,
+
+    override var order: Int = 100,
+
+    override var active: Boolean = false,
+
+    val aggregator: Aggregator,
+
+    val blockedCountry: List<Country> = emptyList(),
+
+    val tags: List<String> = emptyList(),
+) : Activatable, Imageable, Orderable {
+    init {
+        domainRequire(aggregator.type == AggregatorType.CASINO) { UnsupportedAggregatorTypeException(aggregator.type) }
+    }
+}

@@ -4,12 +4,12 @@ import application.IQueryHandler
 import application.query.freespin.GetFreespinPresetsQuery
 import application.port.factory.IAggregatorFactory
 import domain.exception.conflict.FreespinNotSupportedException
-import domain.exception.notfound.GameNotFoundException
+import domain.exception.notfound.CasinoGameNotFoundException
 import infrastructure.persistence.mapper.AggregatorMapper.toAggregator
 import infrastructure.persistence.table.AggregatorTable
-import infrastructure.persistence.table.GameTable
-import infrastructure.persistence.table.GameVariantTable
-import infrastructure.persistence.table.ProviderTable
+import infrastructure.persistence.table.CasinoGameTable
+import infrastructure.persistence.table.CasinoGameVariantTable
+import infrastructure.persistence.table.CasinoProviderTable
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
@@ -21,22 +21,22 @@ class GetFreespinPresetsQueryHandler(
 
     override suspend fun handle(query: GetFreespinPresetsQuery): Map<String, Any> {
         val (aggregator, variantSymbol) = dbRead {
-            val row = GameVariantTable
-                .join(GameTable, JoinType.INNER, GameVariantTable.game, GameTable.id)
-                .join(ProviderTable, JoinType.INNER, GameTable.provider, ProviderTable.id)
-                .join(AggregatorTable, JoinType.INNER, ProviderTable.aggregator, AggregatorTable.id)
+            val row = CasinoGameVariantTable
+                .join(CasinoGameTable, JoinType.INNER, CasinoGameVariantTable.game, CasinoGameTable.id)
+                .join(CasinoProviderTable, JoinType.INNER, CasinoGameTable.provider, CasinoProviderTable.id)
+                .join(AggregatorTable, JoinType.INNER, CasinoProviderTable.aggregator, AggregatorTable.id)
                 .selectAll()
                 .where {
-                    (GameTable.identity eq query.gameIdentity.value) and
-                            (GameVariantTable.integration eq AggregatorTable.integration)
+                    (CasinoGameTable.identity eq query.gameIdentity.value) and
+                            (CasinoGameVariantTable.integration eq AggregatorTable.integration)
                 }
-                .firstOrNull() ?: throw GameNotFoundException()
+                .firstOrNull() ?: throw CasinoGameNotFoundException()
 
-            if (!row[GameVariantTable.freeSpinEnable]) {
+            if (!row[CasinoGameVariantTable.freeSpinEnable]) {
                 throw FreespinNotSupportedException()
             }
 
-            row.toAggregator() to row[GameVariantTable.symbol]
+            row.toAggregator() to row[CasinoGameVariantTable.symbol]
         }
 
         val freespinAdapter = aggregatorFactory.createFreespinAdapter(aggregator)

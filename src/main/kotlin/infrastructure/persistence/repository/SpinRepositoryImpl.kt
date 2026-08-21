@@ -5,14 +5,14 @@ import domain.model.Spin
 import domain.repository.ISpinRepository
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.dbTransaction
-import infrastructure.persistence.entity.GameEntity
-import infrastructure.persistence.entity.GameVariantEntity
-import infrastructure.persistence.entity.ProviderEntity
-import infrastructure.persistence.entity.RoundEntity
-import infrastructure.persistence.entity.SessionEntity
+import infrastructure.persistence.entity.CasinoGameEntity
+import infrastructure.persistence.entity.CasinoGameVariantEntity
+import infrastructure.persistence.entity.CasinoProviderEntity
+import infrastructure.persistence.entity.CasinoRoundEntity
+import infrastructure.persistence.entity.CasinoSessionEntity
 import infrastructure.persistence.entity.SpinEntity
 import infrastructure.persistence.mapper.SpinMapper.toDomain
-import infrastructure.persistence.table.RoundTable
+import infrastructure.persistence.table.CasinoRoundTable
 import infrastructure.persistence.table.SpinTable
 import kotlinx.datetime.Instant
 import org.jetbrains.exposed.dao.with
@@ -52,21 +52,21 @@ class SpinRepositoryImpl : ISpinRepository {
     }
 
     override suspend fun findAllSince(since: Instant): List<Spin> = dbRead {
-        val rows = SpinTable.innerJoin(RoundTable)
+        val rows = SpinTable.innerJoin(CasinoRoundTable)
             .select(SpinTable.columns)
-            .where { RoundTable.createdAt greaterEq since }
+            .where { CasinoRoundTable.createdAt greaterEq since }
 
         SpinEntity.wrapRows(rows)
             .with(
                 SpinEntity::reference,
                 SpinEntity::round,
-                RoundEntity::session,
-                RoundEntity::gameVariant,
-                SessionEntity::gameVariant,
-                GameVariantEntity::game,
-                GameEntity::provider,
-                GameEntity::collections,
-                ProviderEntity::aggregator,
+                CasinoRoundEntity::session,
+                CasinoRoundEntity::gameVariant,
+                CasinoSessionEntity::gameVariant,
+                CasinoGameVariantEntity::game,
+                CasinoGameEntity::provider,
+                CasinoGameEntity::collections,
+                CasinoProviderEntity::aggregator,
             )
             .map { it.toDomain() }
     }

@@ -1,9 +1,9 @@
 package infrastructure.aggregator.pragmatic.adapter
 
-import application.port.external.IGamePort
+import application.port.external.ICasinoGamePort
 import domain.model.Freespin
 import domain.model.Platform
-import domain.model.Session
+import domain.model.CasinoSession
 import domain.vo.Currency
 import domain.vo.Locale
 import infrastructure.aggregator.pragmatic.PragmaticConfig
@@ -12,15 +12,15 @@ import infrastructure.aggregator.pragmatic.client.dto.LaunchUrlRequestDto
 
 class PragmaticGameAdapter(
     config: PragmaticConfig,
-) : IGamePort {
+) : ICasinoGamePort {
 
     private val client = PragmaticHttpClient(config)
 
-    override suspend fun getAggregatorGames(): List<IGamePort.AggregatorGame> {
+    override suspend fun getAggregatorGames(): List<ICasinoGamePort.AggregatorGame> {
         val games = client.listGames()
 
         return games.map { game ->
-            IGamePort.AggregatorGame(
+            ICasinoGamePort.AggregatorGame(
                 symbol = game.gameId,
                 name = game.gameName,
                 providerName = PROVIDER_NAME,
@@ -57,7 +57,7 @@ class PragmaticGameAdapter(
         )
     }
 
-    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String, freespin: Freespin?): IGamePort.Launch {
+    override suspend fun getLaunchUrl(session: CasinoSession, lobbyUrl: String, freespin: Freespin?): ICasinoGamePort.Launch {
         val url = client.getLaunchUrl(
             LaunchUrlRequestDto(
                 gameSymbol = session.gameVariant.symbol.value,
@@ -71,7 +71,7 @@ class PragmaticGameAdapter(
             )
         )
 
-        return IGamePort.Launch(url)
+        return ICasinoGamePort.Launch(url)
     }
 
     private fun parsePlatforms(platformString: String?): List<Platform> {

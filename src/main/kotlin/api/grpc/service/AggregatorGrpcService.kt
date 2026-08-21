@@ -1,6 +1,7 @@
 package api.grpc.service
 
 import api.grpc.config.handleGrpcCall
+import api.grpc.mapper.AggregatorProtoMapper.toDomain
 import api.grpc.mapper.AggregatorProtoMapper.toDomainMap
 import api.grpc.mapper.AggregatorProtoMapper.toProto
 import application.Bus
@@ -32,6 +33,7 @@ class AggregatorGrpcService(
             SaveAggregatorCqrs(
                 identity = Identity(request.identity),
                 integration = request.integration,
+                type = request.type.toDomain(),
                 config = if (request.hasConfig()) request.config.toDomainMap() else emptyMap(),
                 active = request.active,
             )

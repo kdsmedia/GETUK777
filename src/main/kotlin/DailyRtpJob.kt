@@ -1,5 +1,5 @@
 import application.Bus
-import application.command.game.RecalculateGameRtpCommand
+import application.command.game.RecalculateCasinoGameRtpCommand
 import application.port.external.IEventPublisherPort
 import domain.util.ext.InstantExt
 import infrastructure.koin.aggregatorModule
@@ -59,7 +59,7 @@ fun main() {
 
         val since = InstantExt.now() - RTP_WINDOW
         logger.info("Recalculating game RTP from spins since {}...", since)
-        val updated = bus(RecalculateGameRtpCommand(since))
-        logger.info("Game RTP recalculated: {} game(s) updated", updated)
+        val updated = bus(RecalculateCasinoGameRtpCommand(since))
+        logger.info("CasinoGame RTP recalculated: {} game(s) updated", updated)
     }
 }

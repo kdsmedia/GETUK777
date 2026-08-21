@@ -7,6 +7,12 @@ option java_package = "com.nekgamebling.game.v1";
 
 import "google/protobuf/struct.proto";
 
+enum AggregatorTypeDto {
+  AGGREGATOR_TYPE_UNSPECIFIED = 0;
+  AGGREGATOR_TYPE_CASINO = 1;
+  AGGREGATOR_TYPE_SPORTBOOK = 2;
+}
+
 message AggregatorDto {
   string identity = 1;
 
@@ -15,4 +21,6 @@ message AggregatorDto {
   google.protobuf.Struct config = 3;
 
   bool active = 4;
+
+  AggregatorTypeDto type = 5;
 }

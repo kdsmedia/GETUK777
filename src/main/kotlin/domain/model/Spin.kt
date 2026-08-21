@@ -20,7 +20,7 @@ data class Spin(
 
     val externalId: ExternalSpinId,
 
-    val round: Round,
+    val round: CasinoRound,
 
     val reference: Spin? = null,
 

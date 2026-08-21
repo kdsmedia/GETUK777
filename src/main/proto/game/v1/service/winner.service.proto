@@ -5,9 +5,9 @@ package game.v1;
 option java_package = "com.nekgamebling.game.v1";
 option java_multiple_files = true;
 
-import "game/v1/dto/game.dto.proto";
+import "game/v1/dto/casino_game.dto.proto";
 import "game/v1/dto/common.dto.proto";
-import "game/v1/dto/game_filter.dto.proto";
+import "game/v1/dto/casino_game_filter.dto.proto";
 
 service WinnerService {
   rpc FindAll(FindAllWinnersQuery) returns (FindAllWinnersQuery.Result);
@@ -46,9 +46,9 @@ message FindAllWinnersQuery {
   int32 page_size = 9;
 
   // Restricts the feed to wins on games matching this filter — the same
-  // GameFilter every game listing takes (provider, collection, tags, flags).
+  // CasinoGameFilter every game listing takes (provider, collection, tags, flags).
   // Unset = wins on any game.
-  GameFilter filter = 10;
+  CasinoGameFilter filter = 10;
 
   WinnerSortDto sort = 11;
 
@@ -64,7 +64,7 @@ message FindAllWinnersQuery {
 }
 
 message WinnerItemDto {
-  GameDto game = 1;
+  CasinoGameDto game = 1;
 
   int64 amount = 2;
 

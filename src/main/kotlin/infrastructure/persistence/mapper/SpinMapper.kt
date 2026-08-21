@@ -4,7 +4,7 @@ import domain.model.Spin
 import domain.vo.Amount
 import domain.vo.ExternalSpinId
 import infrastructure.persistence.entity.SpinEntity
-import infrastructure.persistence.mapper.RoundMapper.toDomain
+import infrastructure.persistence.mapper.CasinoRoundMapper.toDomain
 
 object SpinMapper {
 

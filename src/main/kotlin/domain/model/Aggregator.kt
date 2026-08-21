@@ -11,6 +11,8 @@ data class Aggregator(
 
     val integration: String,
 
+    val type: AggregatorType = AggregatorType.CASINO,
+
     @Serializable(with = AnyMapSerializer::class)
     val config: Map<String, Any>,
 

@@ -1,9 +1,9 @@
 package infrastructure.aggregator.onegamehub.adapter
 
-import application.port.external.IGamePort
+import application.port.external.ICasinoGamePort
 import domain.model.Freespin
 import domain.model.Platform
-import domain.model.Session
+import domain.model.CasinoSession
 import domain.vo.Currency
 import domain.vo.Locale
 import infrastructure.aggregator.onegamehub.OneGameHubConfig
@@ -11,11 +11,11 @@ import infrastructure.aggregator.onegamehub.client.OneGameHubHttpClient
 
 class OneGameHubGameAdapter(
     config: OneGameHubConfig,
-) : IGamePort {
+) : ICasinoGamePort {
 
     private val client = OneGameHubHttpClient(config)
 
-    override suspend fun getAggregatorGames(): List<IGamePort.AggregatorGame> {
+    override suspend fun getAggregatorGames(): List<ICasinoGamePort.AggregatorGame> {
         val response = client.listGames()
 
         check(response.success) { "OneGameHub listGames failed with ${response.describe()}" }
@@ -29,7 +29,7 @@ class OneGameHubGameAdapter(
                 .filter { it.isNotBlank() }
                 .distinct()
 
-            IGamePort.AggregatorGame(
+            ICasinoGamePort.AggregatorGame(
                 symbol = game.id,
                 name = game.name,
                 providerName = game.provider.ifBlank { game.brand },
@@ -70,7 +70,7 @@ class OneGameHubGameAdapter(
             ?: error("No game URL returned from OneGameHub for demo")
     }
 
-    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String, freespin: Freespin?): IGamePort.Launch {
+    override suspend fun getLaunchUrl(session: CasinoSession, lobbyUrl: String, freespin: Freespin?): ICasinoGamePort.Launch {
         val response = client.getLaunchUrl(
             gameSymbol = session.gameVariant.symbol.value,
             sessionToken = session.token.value,
@@ -87,7 +87,7 @@ class OneGameHubGameAdapter(
         val url = response.response?.gameUrl
             ?: error("No game URL returned from OneGameHub")
 
-        return IGamePort.Launch(url)
+        return ICasinoGamePort.Launch(url)
     }
 
     private companion object {

@@ -25,7 +25,7 @@ service JackpotService {
 }
 
 message JackpotStreamRequest {
-  // Provider (aggregator) identity whose jackpot to stream, e.g. "tongame".
+  // CasinoProvider (aggregator) identity whose jackpot to stream, e.g. "tongame".
   string provider = 1;
 
   // Jackpot identity to stream, e.g. "lottery". Blank = any jackpot of the provider.

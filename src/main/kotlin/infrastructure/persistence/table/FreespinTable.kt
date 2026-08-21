@@ -8,7 +8,7 @@ object FreespinTable : LongIdTable("freespins") {
     // resolves the grant by.
     val referenceId = varchar("reference_id", 255).uniqueIndex()
     val playerId = varchar("player_id", 255)
-    val gameVariant = reference("game_variant_id", GameVariantTable)
+    val gameVariant = reference("game_variant_id", CasinoGameVariantTable)
     val currency = varchar("currency", 8)
     val spinAmount = long("spin_amount")
     val totalCount = integer("total_count")

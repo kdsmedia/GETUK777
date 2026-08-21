@@ -42,7 +42,7 @@ data class Pageable(
 
 ## Value Objects (`@JvmInline value class`)
 
-- Use `@JvmInline value class` for domain primitives (Identity, Currency, Locale, SessionToken)
+- Use `@JvmInline value class` for domain primitives (Identity, Currency, Locale, CasinoSessionToken)
 - Add `@Serializable` annotation when the VO will be serialized
 - Validate in `init` block with `require()`
 - Annotations order: `@Serializable`, then `@JvmInline`, then `value class`

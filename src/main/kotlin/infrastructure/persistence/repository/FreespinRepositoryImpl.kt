@@ -7,9 +7,9 @@ import domain.vo.PlayerId
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.dbTransaction
 import infrastructure.persistence.entity.FreespinEntity
-import infrastructure.persistence.entity.GameEntity
-import infrastructure.persistence.entity.GameVariantEntity
-import infrastructure.persistence.entity.ProviderEntity
+import infrastructure.persistence.entity.CasinoGameEntity
+import infrastructure.persistence.entity.CasinoGameVariantEntity
+import infrastructure.persistence.entity.CasinoProviderEntity
 import infrastructure.persistence.mapper.FreespinMapper.toDomain
 import infrastructure.persistence.table.FreespinTable
 import kotlinx.datetime.Instant
@@ -23,10 +23,10 @@ class FreespinRepositoryImpl : IFreespinRepository {
 
     private val variantChain = arrayOf(
         FreespinEntity::gameVariant,
-        GameVariantEntity::game,
-        GameEntity::provider,
-        GameEntity::collections,
-        ProviderEntity::aggregator,
+        CasinoGameVariantEntity::game,
+        CasinoGameEntity::provider,
+        CasinoGameEntity::collections,
+        CasinoProviderEntity::aggregator,
     )
 
     override suspend fun save(freespin: Freespin): Freespin = dbTransaction {

@@ -1,9 +1,9 @@
 package infrastructure.aggregator.pateplay.adapter
 
-import application.port.external.IGamePort
+import application.port.external.ICasinoGamePort
 import domain.model.Freespin
 import domain.model.Platform
-import domain.model.Session
+import domain.model.CasinoSession
 import domain.vo.Currency
 import domain.vo.Locale
 import infrastructure.aggregator.pateplay.PateplayConfig
@@ -11,11 +11,11 @@ import io.ktor.http.URLBuilder
 
 class PateplayGameAdapter(
     private val config: PateplayConfig,
-) : IGamePort {
+) : ICasinoGamePort {
 
-    override suspend fun getAggregatorGames(): List<IGamePort.AggregatorGame> {
+    override suspend fun getAggregatorGames(): List<ICasinoGamePort.AggregatorGame> {
         return STATIC_GAMES.map { game ->
-            IGamePort.AggregatorGame(
+            ICasinoGamePort.AggregatorGame(
                 symbol = game.symbol,
                 name = game.name,
                 providerName = PROVIDER_NAME,
@@ -49,10 +49,10 @@ class PateplayGameAdapter(
         )
     }
 
-    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String, freespin: Freespin?): IGamePort.Launch {
+    override suspend fun getLaunchUrl(session: CasinoSession, lobbyUrl: String, freespin: Freespin?): ICasinoGamePort.Launch {
         check(config.gameLaunchUrl.isNotBlank()) { "PatePlay game launch URL not configured" }
 
-        return IGamePort.Launch(
+        return ICasinoGamePort.Launch(
             buildLaunchUrl(
                 baseHost = config.gameLaunchUrl,
                 gameSymbol = session.gameVariant.symbol.value,

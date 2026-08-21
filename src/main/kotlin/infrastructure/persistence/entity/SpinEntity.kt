@@ -9,7 +9,7 @@ class SpinEntity(id: EntityID<Long>) : LongEntity(id) {
     companion object : LongEntityClass<SpinEntity>(SpinTable)
 
     var externalId by SpinTable.externalId
-    var round by RoundEntity referencedOn SpinTable.round
+    var round by CasinoRoundEntity referencedOn SpinTable.round
     var reference by SpinEntity optionalReferencedOn SpinTable.reference
     var type by SpinTable.type
     var amount by SpinTable.amount

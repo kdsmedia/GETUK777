@@ -1,15 +1,15 @@
 package infrastructure.handler.common
 
 import application.command.collection.SetCollectionImageCommand
-import application.command.game.SetGameImageCommand
-import application.command.provider.SetProviderImageCommand
+import application.command.game.SetCasinoGameImageCommand
+import application.command.provider.SetCasinoProviderImageCommand
 import domain.exception.badrequest.BlankImageUrlException
 import domain.model.Collection
-import domain.model.Game
-import domain.model.Provider
+import domain.model.CasinoGame
+import domain.model.CasinoProvider
 import domain.repository.ICollectionRepository
-import domain.repository.IGameRepository
-import domain.repository.IProviderRepository
+import domain.repository.ICasinoGameRepository
+import domain.repository.ICasinoProviderRepository
 import domain.vo.Identity
 import domain.vo.Page
 import domain.vo.Pageable
@@ -28,25 +28,25 @@ class SetImageCommandHandlerTest : FunSpec({
 
     val sampleUrl = "https://cdn.example.com/casino/game/game_a/main.webp"
 
-    class FakeGameRepo : IGameRepository {
+    class FakeCasinoGameRepo : ICasinoGameRepository {
         val calls = mutableListOf<Triple<Identity, String, String>>()
-        override suspend fun save(game: Game): Game = game
-        override suspend fun saveAll(gameList: List<Game>): List<Game> = gameList
-        override suspend fun findByIdentity(identity: Identity): Game? = null
-        override suspend fun findAll(pageable: Pageable): Page<Game> = Page(emptyList(), 0, 0, 0)
-        override suspend fun findAll(): List<Game> = emptyList()
+        override suspend fun save(game: CasinoGame): CasinoGame = game
+        override suspend fun saveAll(gameList: List<CasinoGame>): List<CasinoGame> = gameList
+        override suspend fun findByIdentity(identity: Identity): CasinoGame? = null
+        override suspend fun findAll(pageable: Pageable): Page<CasinoGame> = Page(emptyList(), 0, 0, 0)
+        override suspend fun findAll(): List<CasinoGame> = emptyList()
         override suspend fun addImage(identity: Identity, key: String, url: String) {
             calls += Triple(identity, key, url)
         }
     }
 
-    class FakeProviderRepo : IProviderRepository {
+    class FakeCasinoProviderRepo : ICasinoProviderRepository {
         val calls = mutableListOf<Triple<Identity, String, String>>()
-        override suspend fun save(provider: Provider): Provider = provider
-        override suspend fun saveAll(providers: List<Provider>): List<Provider> = providers
-        override suspend fun findByIdentity(identity: Identity): Provider? = null
-        override suspend fun findAll(pageable: Pageable): Page<Provider> = Page(emptyList(), 0, 0, 0)
-        override suspend fun findAll(): List<Provider> = emptyList()
+        override suspend fun save(provider: CasinoProvider): CasinoProvider = provider
+        override suspend fun saveAll(providers: List<CasinoProvider>): List<CasinoProvider> = providers
+        override suspend fun findByIdentity(identity: Identity): CasinoProvider? = null
+        override suspend fun findAll(pageable: Pageable): Page<CasinoProvider> = Page(emptyList(), 0, 0, 0)
+        override suspend fun findAll(): List<CasinoProvider> = emptyList()
         override suspend fun addImage(identity: Identity, key: String, url: String) {
             calls += Triple(identity, key, url)
         }
@@ -60,15 +60,15 @@ class SetImageCommandHandlerTest : FunSpec({
         override suspend fun addImage(identity: Identity, key: String, url: String) {
             calls += Triple(identity, key, url)
         }
-        override suspend fun addGame(identity: Identity, gameIdentity: Identity) = Unit
-        override suspend fun removeGame(identity: Identity, gameIdentity: Identity) = Unit
-        override suspend fun updateGameOrder(identity: Identity, gameIdentity: Identity, order: Int) = Unit
+        override suspend fun addCasinoGame(identity: Identity, gameIdentity: Identity) = Unit
+        override suspend fun removeCasinoGame(identity: Identity, gameIdentity: Identity) = Unit
+        override suspend fun updateCasinoGameOrder(identity: Identity, gameIdentity: Identity, order: Int) = Unit
         override suspend fun deleteByIdentity(identity: Identity) = Unit
     }
 
     fun handler(
-        gameRepo: FakeGameRepo = FakeGameRepo(),
-        providerRepo: FakeProviderRepo = FakeProviderRepo(),
+        gameRepo: FakeCasinoGameRepo = FakeCasinoGameRepo(),
+        providerRepo: FakeCasinoProviderRepo = FakeCasinoProviderRepo(),
         collectionRepo: FakeCollectionRepo = FakeCollectionRepo(),
     ) = SetImageCommandHandler(
         gameRepository = gameRepo,
@@ -76,13 +76,13 @@ class SetImageCommandHandlerTest : FunSpec({
         collectionRepository = collectionRepo,
     )
 
-    test("SetGameImageCommand stores the URL via the game repository") {
-        val gameRepo = FakeGameRepo()
-        val providerRepo = FakeProviderRepo()
+    test("SetCasinoGameImageCommand stores the URL via the game repository") {
+        val gameRepo = FakeCasinoGameRepo()
+        val providerRepo = FakeCasinoProviderRepo()
         val collectionRepo = FakeCollectionRepo()
 
         val result = handler(gameRepo, providerRepo, collectionRepo)
-            .handle(SetGameImageCommand(Identity("game_a"), "main", sampleUrl))
+            .handle(SetCasinoGameImageCommand(Identity("game_a"), "main", sampleUrl))
 
         result.isSuccess shouldBe true
         gameRepo.calls.single() shouldBe Triple(Identity("game_a"), "main", sampleUrl)
@@ -90,13 +90,13 @@ class SetImageCommandHandlerTest : FunSpec({
         collectionRepo.calls.size shouldBe 0
     }
 
-    test("SetProviderImageCommand stores the URL via the provider repository") {
-        val gameRepo = FakeGameRepo()
-        val providerRepo = FakeProviderRepo()
+    test("SetCasinoProviderImageCommand stores the URL via the provider repository") {
+        val gameRepo = FakeCasinoGameRepo()
+        val providerRepo = FakeCasinoProviderRepo()
         val collectionRepo = FakeCollectionRepo()
 
         val result = handler(gameRepo, providerRepo, collectionRepo)
-            .handle(SetProviderImageCommand(Identity("prov_a"), "logo", sampleUrl))
+            .handle(SetCasinoProviderImageCommand(Identity("prov_a"), "logo", sampleUrl))
 
         result.isSuccess shouldBe true
         providerRepo.calls.single() shouldBe Triple(Identity("prov_a"), "logo", sampleUrl)
@@ -105,8 +105,8 @@ class SetImageCommandHandlerTest : FunSpec({
     }
 
     test("SetCollectionImageCommand stores the URL via the collection repository") {
-        val gameRepo = FakeGameRepo()
-        val providerRepo = FakeProviderRepo()
+        val gameRepo = FakeCasinoGameRepo()
+        val providerRepo = FakeCasinoProviderRepo()
         val collectionRepo = FakeCollectionRepo()
 
         val result = handler(gameRepo, providerRepo, collectionRepo)
@@ -119,10 +119,10 @@ class SetImageCommandHandlerTest : FunSpec({
     }
 
     test("blank URL is rejected with BlankImageUrlException and nothing is stored") {
-        val gameRepo = FakeGameRepo()
+        val gameRepo = FakeCasinoGameRepo()
 
         val result = handler(gameRepo = gameRepo)
-            .handle(SetGameImageCommand(Identity("game_a"), "main", "  "))
+            .handle(SetCasinoGameImageCommand(Identity("game_a"), "main", "  "))
 
         result.isFailure shouldBe true
         shouldThrow<BlankImageUrlException> { result.getOrThrow() }

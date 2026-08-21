@@ -1,8 +1,8 @@
 package api.grpc.service
 
 import api.grpc.config.handleGrpcCall
-import api.grpc.mapper.GameFilterProtoMapper.toDomain
-import api.grpc.mapper.GameProtoMapper.toProto
+import api.grpc.mapper.CasinoGameFilterProtoMapper.toDomain
+import api.grpc.mapper.CasinoGameProtoMapper.toProto
 import application.Bus
 import application.query.winner.LastWinnerQuery
 import application.query.winner.WinnerSort

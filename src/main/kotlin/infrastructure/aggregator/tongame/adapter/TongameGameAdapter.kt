@@ -1,10 +1,10 @@
 package infrastructure.aggregator.tongame.adapter
 
-import application.port.external.IGamePort
+import application.port.external.ICasinoGamePort
 import domain.exception.conflict.DemoNotSupportedException
 import domain.model.Freespin
 import domain.model.Platform
-import domain.model.Session
+import domain.model.CasinoSession
 import domain.vo.Currency
 import domain.vo.Locale
 import infrastructure.aggregator.tongame.TongameConfig
@@ -13,13 +13,13 @@ import io.ktor.http.URLBuilder
 
 class TongameGameAdapter(
     private val config: TongameConfig,
-) : IGamePort {
+) : ICasinoGamePort {
 
     private val client = TongameHttpClient(config)
 
-    override suspend fun getAggregatorGames(): List<IGamePort.AggregatorGame> {
+    override suspend fun getAggregatorGames(): List<ICasinoGamePort.AggregatorGame> {
         return client.getGames().map { game ->
-            IGamePort.AggregatorGame(
+            ICasinoGamePort.AggregatorGame(
                 symbol = game.identity,
                 name = game.identity,
                 providerName = PROVIDER_NAME,
@@ -43,7 +43,7 @@ class TongameGameAdapter(
         lobbyUrl: String,
     ): String = throw DemoNotSupportedException()
 
-    override suspend fun getLaunchUrl(session: Session, lobbyUrl: String, freespin: Freespin?): IGamePort.Launch {
+    override suspend fun getLaunchUrl(session: CasinoSession, lobbyUrl: String, freespin: Freespin?): ICasinoGamePort.Launch {
         check(config.gameHost.isNotBlank()) { "TONGame game host not configured" }
 
         val gameSymbol = session.gameVariant.symbol.value
@@ -62,7 +62,7 @@ class TongameGameAdapter(
             parameters.append("operator", config.operatorIdentity)
         }.buildString()
 
-        return IGamePort.Launch(url)
+        return ICasinoGamePort.Launch(url)
     }
 
     companion object {

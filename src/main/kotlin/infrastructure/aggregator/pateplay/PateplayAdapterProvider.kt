@@ -1,7 +1,7 @@
 package infrastructure.aggregator.pateplay
 
 import application.port.external.IFreespinPort
-import application.port.external.IGamePort
+import application.port.external.ICasinoGamePort
 import application.port.external.IJackpotStreamPort
 import application.port.factory.AggregatorAdapterProvider
 import domain.exception.conflict.JackpotStreamNotSupportedException
@@ -12,7 +12,7 @@ class PateplayAdapterProvider : AggregatorAdapterProvider {
 
     override val integration: String = INTEGRATION
 
-    override fun createGameAdapter(config: Map<String, Any>): IGamePort =
+    override fun createGameAdapter(config: Map<String, Any>): ICasinoGamePort =
         PateplayGameAdapter(PateplayConfig(config))
 
     override fun createFreespinAdapter(config: Map<String, Any>): IFreespinPort =

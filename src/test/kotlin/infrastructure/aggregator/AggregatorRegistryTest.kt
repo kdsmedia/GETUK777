@@ -1,7 +1,7 @@
 package infrastructure.aggregator
 
 import application.port.external.IFreespinPort
-import application.port.external.IGamePort
+import application.port.external.ICasinoGamePort
 import application.port.external.IJackpotStreamPort
 import application.port.factory.AggregatorAdapterProvider
 import domain.exception.badrequest.AggregatorNotSupportedException
@@ -14,11 +14,11 @@ import support.TestFixtures
 class AggregatorRegistryTest : FunSpec({
 
     class FakeProvider(override val integration: String) : AggregatorAdapterProvider {
-        val gamePort: IGamePort = mockk(relaxed = true)
+        val gamePort: ICasinoGamePort = mockk(relaxed = true)
         val freespinPort: IFreespinPort = mockk(relaxed = true)
         val jackpotStreamPort: IJackpotStreamPort = mockk(relaxed = true)
 
-        override fun createGameAdapter(config: Map<String, Any>): IGamePort = gamePort
+        override fun createGameAdapter(config: Map<String, Any>): ICasinoGamePort = gamePort
         override fun createFreespinAdapter(config: Map<String, Any>): IFreespinPort = freespinPort
         override fun createJackpotStreamAdapter(config: Map<String, Any>): IJackpotStreamPort = jackpotStreamPort
     }

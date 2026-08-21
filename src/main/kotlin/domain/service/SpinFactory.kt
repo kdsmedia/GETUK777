@@ -1,8 +1,8 @@
 package domain.service
 
-import domain.exception.conflict.RoundAlreadyFinishedException
+import domain.exception.conflict.CasinoRoundAlreadyFinishedException
 import domain.exception.domainRequire
-import domain.model.Round
+import domain.model.CasinoRound
 import domain.model.Spin
 import domain.model.SpinType
 import domain.vo.Amount
@@ -10,8 +10,8 @@ import domain.vo.ExternalSpinId
 
 object SpinFactory {
 
-    fun place(round: Round, externalId: ExternalSpinId, amount: Amount): Spin {
-        domainRequire(!round.isFinished) { RoundAlreadyFinishedException() }
+    fun place(round: CasinoRound, externalId: ExternalSpinId, amount: Amount): Spin {
+        domainRequire(!round.isFinished) { CasinoRoundAlreadyFinishedException() }
         return Spin(
             externalId = externalId,
             round = round,
@@ -20,8 +20,8 @@ object SpinFactory {
         )
     }
 
-    fun settle(round: Round, externalId: ExternalSpinId, amount: Amount): Spin {
-        domainRequire(!round.isFinished) { RoundAlreadyFinishedException() }
+    fun settle(round: CasinoRound, externalId: ExternalSpinId, amount: Amount): Spin {
+        domainRequire(!round.isFinished) { CasinoRoundAlreadyFinishedException() }
         return Spin(
             externalId = externalId,
             round = round,
@@ -36,7 +36,7 @@ object SpinFactory {
      * A finished round is no obstacle: a provider may give up on a transaction long after the round
      * closed, and the money still has to move back.
      */
-    fun rollback(round: Round, externalId: ExternalSpinId, reference: Spin): Spin =
+    fun rollback(round: CasinoRound, externalId: ExternalSpinId, reference: Spin): Spin =
         Spin(
             externalId = externalId,
             round = round,

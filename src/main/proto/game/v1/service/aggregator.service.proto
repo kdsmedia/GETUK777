@@ -43,6 +43,9 @@ message SaveAggregatorCommand {
   google.protobuf.Struct config = 3;
 
   bool active = 4;
+
+  // Product type. UNSPECIFIED is treated as CASINO for backward compatibility.
+  AggregatorTypeDto type = 5;
 }
 
 message DeleteAggregatorCommand {

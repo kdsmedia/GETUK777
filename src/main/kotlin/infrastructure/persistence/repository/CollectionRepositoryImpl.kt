@@ -2,7 +2,7 @@ package infrastructure.persistence.repository
 
 import domain.exception.domainRequireNotNull
 import domain.exception.notfound.CollectionNotFoundException
-import domain.exception.notfound.GameNotFoundException
+import domain.exception.notfound.CasinoGameNotFoundException
 import domain.model.Collection
 import domain.repository.ICollectionRepository
 import domain.vo.Identity
@@ -13,8 +13,8 @@ import infrastructure.persistence.dbTransaction
 import infrastructure.persistence.entity.CollectionEntity
 import infrastructure.persistence.mapper.CollectionMapper.toCollection
 import infrastructure.persistence.table.CollectionTable
-import infrastructure.persistence.table.GameCollectionTable
-import infrastructure.persistence.table.GameTable
+import infrastructure.persistence.table.CasinoGameCollectionTable
+import infrastructure.persistence.table.CasinoGameTable
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
@@ -74,26 +74,26 @@ class CollectionRepositoryImpl : ICollectionRepository {
         }
     }
 
-    override suspend fun addGame(identity: Identity, gameIdentity: Identity) {
+    override suspend fun addCasinoGame(identity: Identity, gameIdentity: Identity) {
         dbTransaction {
             val collectionId = resolveCollectionId(identity)
             val gameId = resolveGameId(gameIdentity)
 
-            val alreadyMember = GameCollectionTable
+            val alreadyMember = CasinoGameCollectionTable
                 .selectAll()
-                .where { (GameCollectionTable.collection eq collectionId) and (GameCollectionTable.game eq gameId) }
+                .where { (CasinoGameCollectionTable.collection eq collectionId) and (CasinoGameCollectionTable.game eq gameId) }
                 .any()
             if (alreadyMember) return@dbTransaction
 
-            val maxOrderExpr = GameCollectionTable.sortOrder.max()
-            val currentMaxOrder = GameCollectionTable
+            val maxOrderExpr = CasinoGameCollectionTable.sortOrder.max()
+            val currentMaxOrder = CasinoGameCollectionTable
                 .select(maxOrderExpr)
-                .where { GameCollectionTable.collection eq collectionId }
+                .where { CasinoGameCollectionTable.collection eq collectionId }
                 .singleOrNull()
                 ?.get(maxOrderExpr)
             val nextOrder = if (currentMaxOrder == null) 0 else currentMaxOrder + 1
 
-            GameCollectionTable.insert {
+            CasinoGameCollectionTable.insert {
                 it[collection] = collectionId
                 it[game] = gameId
                 it[sortOrder] = nextOrder
@@ -101,30 +101,30 @@ class CollectionRepositoryImpl : ICollectionRepository {
         }
     }
 
-    override suspend fun removeGame(identity: Identity, gameIdentity: Identity) {
+    override suspend fun removeCasinoGame(identity: Identity, gameIdentity: Identity) {
         dbTransaction {
             val collectionId = resolveCollectionId(identity)
             val gameId = resolveGameId(gameIdentity)
 
-            GameCollectionTable.deleteWhere {
+            CasinoGameCollectionTable.deleteWhere {
                 (collection eq collectionId) and (game eq gameId)
             }
         }
     }
 
-    override suspend fun updateGameOrder(identity: Identity, gameIdentity: Identity, order: Int) {
+    override suspend fun updateCasinoGameOrder(identity: Identity, gameIdentity: Identity, order: Int) {
         dbTransaction {
             val collectionId = resolveCollectionId(identity)
             val gameId = resolveGameId(gameIdentity)
 
-            val affected = GameCollectionTable.update(
-                { (GameCollectionTable.collection eq collectionId) and (GameCollectionTable.game eq gameId) }
+            val affected = CasinoGameCollectionTable.update(
+                { (CasinoGameCollectionTable.collection eq collectionId) and (CasinoGameCollectionTable.game eq gameId) }
             ) {
                 it[sortOrder] = order
             }
 
             // Zero rows touched → the game isn't actually a member of this collection.
-            domainRequireNotNull(if (affected > 0) Unit else null) { GameNotFoundException() }
+            domainRequireNotNull(if (affected > 0) Unit else null) { CasinoGameNotFoundException() }
         }
     }
 
@@ -134,7 +134,7 @@ class CollectionRepositoryImpl : ICollectionRepository {
 
             // Memberships first — game_collections references collections, and the
             // games on the other side of those rows must survive the delete.
-            GameCollectionTable.deleteWhere { GameCollectionTable.collection eq collectionId }
+            CasinoGameCollectionTable.deleteWhere { CasinoGameCollectionTable.collection eq collectionId }
             CollectionTable.deleteWhere { CollectionTable.id eq collectionId }
         }
     }
@@ -148,10 +148,10 @@ class CollectionRepositoryImpl : ICollectionRepository {
     ) { CollectionNotFoundException() }
 
     private fun resolveGameId(gameIdentity: Identity) = domainRequireNotNull(
-        GameTable
-            .select(GameTable.id)
-            .where { GameTable.identity eq gameIdentity.value }
+        CasinoGameTable
+            .select(CasinoGameTable.id)
+            .where { CasinoGameTable.identity eq gameIdentity.value }
             .singleOrNull()
-            ?.get(GameTable.id)
-    ) { GameNotFoundException() }
+            ?.get(CasinoGameTable.id)
+    ) { CasinoGameNotFoundException() }
 }

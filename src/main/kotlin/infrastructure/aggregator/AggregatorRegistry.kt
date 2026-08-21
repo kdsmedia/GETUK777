@@ -1,8 +1,9 @@
 package infrastructure.aggregator
 
 import application.port.external.IFreespinPort
-import application.port.external.IGamePort
+import application.port.external.ICasinoGamePort
 import application.port.external.IJackpotStreamPort
+import application.port.external.ISportbookPort
 import application.port.factory.AggregatorAdapterProvider
 import application.port.factory.IAggregatorFactory
 import domain.exception.badrequest.AggregatorNotSupportedException
@@ -22,7 +23,7 @@ class AggregatorRegistry(
     private val providersByIntegration: Map<String, AggregatorAdapterProvider> =
         providers.associateBy(AggregatorAdapterProvider::integration)
 
-    override fun createGameAdapter(aggregator: Aggregator): IGamePort =
+    override fun createGameAdapter(aggregator: Aggregator): ICasinoGamePort =
         resolve(aggregator).createGameAdapter(aggregator.config)
 
     override fun createFreespinAdapter(aggregator: Aggregator): IFreespinPort =
@@ -30,6 +31,9 @@ class AggregatorRegistry(
 
     override fun createJackpotStreamAdapter(aggregator: Aggregator): IJackpotStreamPort =
         resolve(aggregator).createJackpotStreamAdapter(aggregator.config)
+
+    override fun createSportbookAdapter(aggregator: Aggregator): ISportbookPort =
+        resolve(aggregator).createSportbookAdapter(aggregator.config)
 
     private fun resolve(aggregator: Aggregator): AggregatorAdapterProvider =
         providersByIntegration[aggregator.integration]

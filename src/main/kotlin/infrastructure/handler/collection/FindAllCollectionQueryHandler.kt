@@ -7,9 +7,9 @@ import domain.vo.Page
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.mapper.CollectionMapper.toCollection
 import infrastructure.persistence.table.CollectionTable
-import infrastructure.persistence.table.GameCollectionTable
-import infrastructure.persistence.table.GameTable
-import infrastructure.persistence.table.ProviderTable
+import infrastructure.persistence.table.CasinoGameCollectionTable
+import infrastructure.persistence.table.CasinoGameTable
+import infrastructure.persistence.table.CasinoProviderTable
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -64,15 +64,15 @@ class FindAllCollectionQueryHandler : IQueryHandler<FindAllCollectionQuery, Page
 
             if (query.inProviderIdentities.isNotEmpty()) {
                 add(exists(
-                    GameCollectionTable
-                        .join(GameTable, JoinType.INNER, GameCollectionTable.game, GameTable.id)
-                        .select(GameCollectionTable.collection)
+                    CasinoGameCollectionTable
+                        .join(CasinoGameTable, JoinType.INNER, CasinoGameCollectionTable.game, CasinoGameTable.id)
+                        .select(CasinoGameCollectionTable.collection)
                         .where {
-                            (GameCollectionTable.collection eq CollectionTable.id) and
-                                    (GameTable.provider inSubQuery (
-                                            ProviderTable
-                                                .select(ProviderTable.id)
-                                                .where { ProviderTable.identity inList query.inProviderIdentities.map { it.value } }
+                            (CasinoGameCollectionTable.collection eq CollectionTable.id) and
+                                    (CasinoGameTable.provider inSubQuery (
+                                            CasinoProviderTable
+                                                .select(CasinoProviderTable.id)
+                                                .where { CasinoProviderTable.identity inList query.inProviderIdentities.map { it.value } }
                                             ))
                         }
                 ))

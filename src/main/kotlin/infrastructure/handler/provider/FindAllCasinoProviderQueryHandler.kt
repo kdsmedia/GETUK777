@@ -1,0 +1,89 @@
+package infrastructure.handler.provider
+
+import application.IQueryHandler
+import application.query.provider.FindAllCasinoProviderQuery
+import domain.model.CasinoProvider
+import domain.vo.Page
+import infrastructure.persistence.dbRead
+import infrastructure.persistence.mapper.CasinoProviderMapper.toCasinoProvider
+import infrastructure.persistence.table.AggregatorTable
+import infrastructure.persistence.table.CollectionTable
+import infrastructure.persistence.table.CasinoGameCollectionTable
+import infrastructure.persistence.table.CasinoGameTable
+import infrastructure.persistence.table.CasinoProviderTable
+import org.jetbrains.exposed.sql.JoinType
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.TextColumnType
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.castTo
+import org.jetbrains.exposed.sql.exists
+import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.selectAll
+
+class FindAllCasinoProviderQueryHandler : IQueryHandler<FindAllCasinoProviderQuery, Page<CasinoProvider>> {
+
+    override suspend fun handle(query: FindAllCasinoProviderQuery): Page<CasinoProvider> = dbRead {
+        val filterCondition = buildFilterCondition(query)
+        val pageable = query.pageable
+
+        val totalItems = CasinoProviderTable.selectAll().where { filterCondition }.count()
+
+        val items = CasinoProviderTable
+            .join(AggregatorTable, JoinType.INNER, CasinoProviderTable.aggregator, AggregatorTable.id)
+            .selectAll()
+            .where { filterCondition }
+            .orderBy(CasinoProviderTable.sortOrder)
+            .limit(pageable.sizeReal)
+            .offset(pageable.offset)
+            .map { it.toCasinoProvider() }
+
+        Page(
+            items = items,
+            totalPages = pageable.getTotalPages(totalItems),
+            totalItems = totalItems,
+            currentPage = pageable.pageReal,
+        )
+    }
+
+    private fun buildFilterCondition(query: FindAllCasinoProviderQuery): Op<Boolean> {
+        val conditions = buildList {
+            if (query.query.isNotBlank()) {
+                val pattern = "%${query.query.lowercase()}%"
+                add(Op.build { (CasinoProviderTable.identity like pattern) or (CasinoProviderTable.name like pattern) })
+            }
+            query.active?.let { add(Op.build { CasinoProviderTable.active eq it }) }
+            query.aggregatorId?.let { aggId ->
+                add(Op.build {
+                    CasinoProviderTable.aggregator inSubQuery (
+                        AggregatorTable.select(AggregatorTable.id)
+                            .where { AggregatorTable.identity eq aggId }
+                    )
+                })
+            }
+
+            if (query.inCollectionIdentities.isNotEmpty()) {
+                add(exists(
+                    CasinoGameTable
+                        .join(CasinoGameCollectionTable, JoinType.INNER, CasinoGameTable.id, CasinoGameCollectionTable.game)
+                        .select(CasinoGameTable.provider)
+                        .where {
+                            (CasinoGameTable.provider eq CasinoProviderTable.id) and
+                                    (CasinoGameCollectionTable.collection inSubQuery (
+                                            CollectionTable
+                                                .select(CollectionTable.id)
+                                                .where { CollectionTable.identity inList query.inCollectionIdentities.map { it.value } }
+                                            ))
+                        }
+                ))
+            }
+
+            if (query.inTags.isNotEmpty()) {
+                add(query.inTags.map { tag ->
+                    Op.build { CasinoProviderTable.tags.castTo<String>(TextColumnType()) like "%\"$tag\"%" }
+                }.reduce { acc, op -> acc or op })
+            }
+        }
+        return conditions.reduceOrNull { acc, op -> acc and op } ?: Op.TRUE
+    }
+}

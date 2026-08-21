@@ -14,7 +14,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 
 /**
  * Fake-based tests for [DeleteCollectionCommandHandler] — same pattern as
- * `CollectionGameMembershipHandlerTest` (no mockk: value-class parameters trip
+ * `CollectionCasinoGameMembershipHandlerTest` (no mockk: value-class parameters trip
  * its signature generator).
  *
  * The fake models what the Exposed repository guarantees: deleting a rail drops
@@ -36,9 +36,9 @@ class DeleteCollectionCommandHandlerTest : FunSpec({
         override suspend fun findByIdentity(identity: Identity): Collection? = null
         override suspend fun findAll(pageable: Pageable): Page<Collection> = Page(emptyList(), 0, 0, 0)
         override suspend fun addImage(identity: Identity, key: String, url: String) = Unit
-        override suspend fun addGame(identity: Identity, gameIdentity: Identity) = Unit
-        override suspend fun removeGame(identity: Identity, gameIdentity: Identity) = Unit
-        override suspend fun updateGameOrder(identity: Identity, gameIdentity: Identity, order: Int) = Unit
+        override suspend fun addCasinoGame(identity: Identity, gameIdentity: Identity) = Unit
+        override suspend fun removeCasinoGame(identity: Identity, gameIdentity: Identity) = Unit
+        override suspend fun updateCasinoGameOrder(identity: Identity, gameIdentity: Identity, order: Int) = Unit
 
         override suspend fun deleteByIdentity(identity: Identity) {
             if (identity.value !in collections) throw CollectionNotFoundException()

@@ -1,14 +1,14 @@
 package application.usecase
 
 import application.port.factory.IAggregatorFactory
-import domain.repository.IGameRepository
-import domain.repository.IGameVariantRepository
-import domain.repository.IProviderRepository
+import domain.repository.ICasinoGameRepository
+import domain.repository.ICasinoGameVariantRepository
+import domain.repository.ICasinoProviderRepository
 import domain.model.Aggregator
-import domain.model.Game
-import domain.model.GameVariant
-import domain.model.Provider
-import domain.vo.GameSymbol
+import domain.model.CasinoGame
+import domain.model.CasinoGameVariant
+import domain.model.CasinoProvider
+import domain.vo.CasinoGameSymbol
 import domain.vo.Identity
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -16,9 +16,9 @@ import org.slf4j.LoggerFactory
 
 class SyncAggregatorUsecase(
     private val aggregatorFactory: IAggregatorFactory,
-    private val gameRepository: IGameRepository,
-    private val gameVariantRepository: IGameVariantRepository,
-    private val providerRepository: IProviderRepository
+    private val gameRepository: ICasinoGameRepository,
+    private val gameVariantRepository: ICasinoGameVariantRepository,
+    private val providerRepository: ICasinoProviderRepository
 ) {
 
     private val logger = LoggerFactory.getLogger(SyncAggregatorUsecase::class.java)
@@ -44,8 +44,8 @@ class SyncAggregatorUsecase(
 
         val aliases = providerAliases(aggregator)
 
-        val updateGames = LinkedHashMap<Identity, Game>()
-        val updatedVariants = mutableListOf<GameVariant>()
+        val updateGames = LinkedHashMap<Identity, CasinoGame>()
+        val updatedVariants = mutableListOf<CasinoGameVariant>()
         var newProviders = 0
         var newGames = 0
         var reusedGames = 0
@@ -57,7 +57,7 @@ class SyncAggregatorUsecase(
             var provider = allProvidersAsync.await().firstOrNull { it.identity == providerIdentity }
 
             if (provider == null) {
-                provider = Provider(
+                provider = CasinoProvider(
                     identity = providerIdentity,
                     name = aggregatorGame.providerName,
                     aggregator = aggregator
@@ -75,7 +75,7 @@ class SyncAggregatorUsecase(
             // Aggregator tags are MERGED into whatever the row already carries, never substituted:
             // the operator's editorial tags (hot/new/top) live in the same list and a plain
             // overwrite would erase them on every run. Images are NOT the aggregator's to set —
-            // artwork is uploaded by the operator through GameService.UpdateImage.
+            // artwork is uploaded by the operator through CasinoGameService.UpdateImage.
             // An existing game is reused as-is — same row, same provider, same artwork — and this
             // aggregator only contributes another variant below. Re-pointing its provider would
             // yank the game away from whichever aggregator currently serves it.
@@ -83,7 +83,7 @@ class SyncAggregatorUsecase(
                 ?: existingGame?.copy(
                     tags = (aggregatorGame.tags + existingGame.tags).distinct(),
                 )?.also { reusedGames++ }
-                ?: Game(
+                ?: CasinoGame(
                     identity = gameIdentity,
                     name = aggregatorGame.name,
                     provider = provider,
@@ -108,8 +108,8 @@ class SyncAggregatorUsecase(
                     playLines = aggregatorGame.playLines,
                 )
                 ?.also { updatedVariantsCount++ }
-                ?: GameVariant(
-                    symbol = GameSymbol(aggregatorGame.symbol),
+                ?: CasinoGameVariant(
+                    symbol = CasinoGameSymbol(aggregatorGame.symbol),
                     name = aggregatorGame.name,
                     integration = aggregator.integration,
                     game = game,

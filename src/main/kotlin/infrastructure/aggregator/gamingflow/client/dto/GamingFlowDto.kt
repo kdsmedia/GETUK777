@@ -9,7 +9,7 @@ data class GameListResultDto(
 )
 
 /**
- * One entry of `Game.List`. `Settings` is omitted — it only materializes when the request carries
+ * One entry of `CasinoGame.List`. `Settings` is omitted — it only materializes when the request carries
  * a `BankGroupId`, and nothing in the catalog sync needs bet levels or denominations.
  */
 @Serializable

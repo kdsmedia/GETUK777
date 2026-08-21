@@ -4,6 +4,7 @@ import application.command.aggregator.DeleteAggregatorCommand
 import application.query.aggregator.BatchAggregatorQuery
 import domain.exception.notfound.AggregatorNotFoundException
 import domain.model.Aggregator
+import domain.model.AggregatorType
 import domain.repository.IAggregatorRepository
 import domain.vo.Identity
 import io.kotest.core.spec.style.FunSpec
@@ -30,6 +31,8 @@ class AggregatorHandlerTest : FunSpec({
             return identities.mapNotNull { store[it.value] }
         }
         override suspend fun findAll(): List<Aggregator> = store.values.toList()
+        override suspend fun findFirstActiveByType(type: AggregatorType): Aggregator? =
+            store.values.firstOrNull { it.active && it.type == type }
         override suspend fun deleteByIdentity(identity: Identity) {
             if (identity.value !in store) throw AggregatorNotFoundException()
             deleted += identity
