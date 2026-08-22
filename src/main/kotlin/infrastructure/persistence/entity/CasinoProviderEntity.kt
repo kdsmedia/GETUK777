@@ -16,4 +16,5 @@ class CasinoProviderEntity(id: EntityID<Long>) : LongEntity(id) {
     var aggregator by AggregatorEntity referencedOn CasinoProviderTable.aggregator
     var blockedCountry by CasinoProviderTable.blockedCountry
     var tags by CasinoProviderTable.tags
+    var aliases by CasinoProviderTable.aliases
 }

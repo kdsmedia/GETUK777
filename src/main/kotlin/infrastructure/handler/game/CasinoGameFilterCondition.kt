@@ -19,27 +19,44 @@ import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.wrapAsExpression
 
 /**
- * A game is only listable through the variant its provider's aggregator serves. Everything the
- * storefront renders about a game — symbol, platforms, demo, paylines — is read off that variant,
- * and launching resolves it the same way. With no matching variant there is nothing to show and
- * nothing to open: the game would render with every variant field at its default (demo false,
- * empty platforms, zero paylines) and answer `CasinoGame not found` on click. Moving a provider to an
- * aggregator that does not carry part of its catalog is exactly when this happens.
+ * A game is listable only when it can actually be opened, which takes two things:
+ *
+ *  - a variant on an ACTIVE aggregator — the aggregator that serves it need not be the provider's
+ *    preferred one, any active aggregator carrying the game will do (see [loadVariantMap]);
+ *  - an active provider.
+ *
+ * Everything the storefront renders about a game — symbol, platforms, demo, paylines — is read off
+ * that variant, and launching resolves it the same way. With nothing to serve it the game would
+ * render with every variant field at its default (demo false, empty platforms, zero paylines) and
+ * answer `CasinoGame not found` on click. Switching an aggregator off is exactly when this happens.
  */
-private fun servedByItsAggregator(): Op<Boolean> = exists(
+private fun playableSomewhere(): Op<Boolean> = exists(
     CasinoGameVariantTable
-        .join(CasinoProviderTable, JoinType.INNER, CasinoGameTable.provider, CasinoProviderTable.id)
-        .join(AggregatorTable, JoinType.INNER, CasinoProviderTable.aggregator, AggregatorTable.id)
+        .join(
+            AggregatorTable,
+            JoinType.INNER,
+            CasinoGameVariantTable.integration,
+            AggregatorTable.integration,
+        )
         .select(CasinoGameVariantTable.id)
         .where {
-            (CasinoGameVariantTable.game eq CasinoGameTable.id) and
-                (CasinoGameVariantTable.integration eq AggregatorTable.integration)
+            (CasinoGameVariantTable.game eq CasinoGameTable.id) and (AggregatorTable.active eq true)
+        }
+)
+
+private fun providerIsActive(): Op<Boolean> = exists(
+    CasinoProviderTable
+        .select(CasinoProviderTable.id)
+        .where {
+            (CasinoProviderTable.id eq CasinoGameTable.provider) and (CasinoProviderTable.active eq true)
         }
 )
 
 fun CasinoGameFilter.toCondition(): Op<Boolean> {
     val conditions = buildList<Op<Boolean>> {
-        add(servedByItsAggregator())
+        add(playableSomewhere())
+
+        add(providerIsActive())
 
         if (query.isNotBlank()) {
             val pattern = "%${query.lowercase()}%"

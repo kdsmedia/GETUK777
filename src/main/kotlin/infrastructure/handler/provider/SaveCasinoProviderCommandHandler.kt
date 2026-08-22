@@ -26,6 +26,7 @@ class SaveCasinoProviderCommandHandler(
             aggregator = aggregator,
             blockedCountry = command.blockedCountry,
             tags = command.tags,
+            aliases = command.aliases,
         ) ?: CasinoProvider(
             identity = command.identity,
             name = command.name,
@@ -34,6 +35,7 @@ class SaveCasinoProviderCommandHandler(
             aggregator = aggregator,
             blockedCountry = command.blockedCountry,
             tags = command.tags,
+            aliases = command.aliases,
         )
 
         providerRepository.save(provider)

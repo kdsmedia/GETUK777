@@ -187,4 +187,74 @@ class SyncAggregatorUsecaseTest : FunSpec({
         harness.savedProviders.map { it.identity.value } shouldContainExactly listOf("netent")
         harness.persistedGames.map { it.identity.value } shouldContainExactly listOf("netent_starburst")
     }
+    test("a duplicate vendor is merged on name shape when the catalogues agree, and the alias is remembered") {
+        // The real case: GamingFlow calls Pragmatic "pragmatic", we already carry it from OneGameHub
+        // as "pragmatic_play". Nobody had configured that alias, so it imported as a second studio
+        // whose games were all inactive and unreachable.
+        val incumbent = TestFixtures.aggregator(identity = "onegamehub", integration = "ONEGAMEHUB")
+        val pragmatic = TestFixtures.provider(identity = "pragmatic_play", aggregator = incumbent)
+
+        val harness = Harness(
+            existingProviders = listOf(pragmatic),
+            existingGames = listOf(
+                TestFixtures.game(identity = "pragmatic_play_5_lions", provider = pragmatic),
+                TestFixtures.game(identity = "pragmatic_play_gates_of_olympus", provider = pragmatic),
+            ).mapIndexed { index, game -> game.copy(name = listOf("5 Lions", "Gates of Olympus")[index]) },
+            aggregator = TestFixtures.aggregator(identity = "gamingflow", integration = "GAMINGFLOW"),
+            games = listOf(aggregatorGame("5l_gf", "5 Lions", "Pragmatic")),
+        )
+
+        harness.run()
+
+        // Reused, not duplicated.
+        harness.persistedGames.map { it.identity.value } shouldContainExactly listOf("pragmatic_play_5_lions")
+        harness.persistedVariants.single().integration shouldBe "GAMINGFLOW"
+
+        // And written down, so the next run resolves it outright.
+        harness.savedProviders.single().identity.value shouldBe "pragmatic_play"
+        harness.savedProviders.single().aliases shouldContainExactly listOf("pragmatic")
+    }
+
+    test("a matching name with an unrelated catalogue is NOT merged") {
+        val incumbent = TestFixtures.aggregator(identity = "onegamehub", integration = "ONEGAMEHUB")
+        val pragmatic = TestFixtures.provider(identity = "pragmatic_play", aggregator = incumbent)
+
+        val harness = Harness(
+            existingProviders = listOf(pragmatic),
+            existingGames = listOf(
+                TestFixtures.game(identity = "pragmatic_play_gates_of_olympus", provider = pragmatic)
+                    .copy(name = "Gates of Olympus"),
+            ),
+            aggregator = TestFixtures.aggregator(identity = "gamingflow", integration = "GAMINGFLOW"),
+            games = listOf(aggregatorGame("unrelated", "Totally Different Game", "Pragmatic")),
+        )
+
+        harness.run()
+
+        // Name shape alone is not evidence — a human decides this one.
+        harness.savedProviders.map { it.identity.value } shouldContainExactly listOf("pragmatic")
+    }
+
+    test("a recorded alias resolves without re-deriving it") {
+        val incumbent = TestFixtures.aggregator(identity = "onegamehub", integration = "ONEGAMEHUB")
+        val pragmatic = TestFixtures.provider(identity = "pragmatic_play", aggregator = incumbent)
+            .copy(aliases = listOf("pragmatic"))
+
+        val harness = Harness(
+            existingProviders = listOf(pragmatic),
+            existingGames = listOf(
+                TestFixtures.game(identity = "pragmatic_play_5_lions", provider = pragmatic).copy(name = "5 Lions"),
+            ),
+            aggregator = TestFixtures.aggregator(identity = "gamingflow", integration = "GAMINGFLOW"),
+            // A title the incumbent does not carry: with no catalogue overlap to lean on, only the
+            // recorded alias can resolve this.
+            games = listOf(aggregatorGame("newone", "Brand New Title", "Pragmatic")),
+        )
+
+        harness.run()
+
+        harness.savedProviders.shouldBeEmpty()
+        harness.persistedGames.map { it.identity.value } shouldContainExactly
+            listOf("pragmatic_play_brand_new_title")
+    }
 })

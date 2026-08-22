@@ -26,6 +26,8 @@ class AggregatorHandlerTest : FunSpec({
         var lastBatchQuery: List<Identity> = emptyList()
         override suspend fun save(aggregator: Aggregator): Aggregator = aggregator
         override suspend fun findByIdentity(identity: Identity): Aggregator? = store[identity.value]
+        override suspend fun findByIntegration(integration: String): Aggregator? =
+            store.values.firstOrNull { it.integration == integration }
         override suspend fun findAllByIdentities(identities: List<Identity>): List<Aggregator> {
             lastBatchQuery = identities
             return identities.mapNotNull { store[it.value] }

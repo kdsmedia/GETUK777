@@ -4,7 +4,10 @@ import application.port.external.IEventPublisherPort
 import application.port.factory.IAggregatorFactory
 import domain.event.CasinoSessionEvent
 import domain.exception.DomainException
+import domain.exception.domainRequireNotNull
+import domain.exception.notfound.AggregatorNotFoundException
 import domain.model.CasinoSession
+import domain.repository.IAggregatorRepository
 import domain.repository.IFreespinRepository
 import domain.repository.ICasinoSessionRepository
 import domain.util.ext.InstantExt
@@ -12,6 +15,7 @@ import org.slf4j.LoggerFactory
 
 class OpenCasinoSessionUsecase(
     private val aggregatorFactory: IAggregatorFactory,
+    private val aggregatorRepository: IAggregatorRepository,
     private val sessionRepository: ICasinoSessionRepository,
     private val freespinRepository: IFreespinRepository,
     private val eventPublisher: IEventPublisherPort,
@@ -20,7 +24,11 @@ class OpenCasinoSessionUsecase(
     private val logger = LoggerFactory.getLogger(OpenCasinoSessionUsecase::class.java)
 
     suspend operator fun invoke(session: CasinoSession, lobbyUrl: String): Result<Response> = runCatching {
-        val aggregator = session.gameVariant.game.provider.aggregator
+        // Keyed off the variant, not the provider: a provider's aggregator is only the preferred
+        // one, and a game it does not carry is served by whichever active aggregator does.
+        val aggregator = domainRequireNotNull(
+            aggregatorRepository.findByIntegration(session.gameVariant.integration)
+        ) { AggregatorNotFoundException() }
 
         logger.info(
             "Opening session: player={} game={} aggregator={}",

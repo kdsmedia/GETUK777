@@ -37,6 +37,7 @@ class CasinoProviderRepositoryImpl : ICasinoProviderRepository {
             it[aggregator] = aggregatorId
             it[blockedCountry] = provider.blockedCountry.map { it.value }
             it[tags] = provider.tags
+            it[aliases] = provider.aliases
         }
 
         provider
@@ -61,6 +62,7 @@ class CasinoProviderRepositoryImpl : ICasinoProviderRepository {
             this[CasinoProviderTable.aggregator] = aggregatorId
             this[CasinoProviderTable.blockedCountry] = provider.blockedCountry.map { it.value }
             this[CasinoProviderTable.tags] = provider.tags
+            this[CasinoProviderTable.aliases] = provider.aliases
         }
 
         providers

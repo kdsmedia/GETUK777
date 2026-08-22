@@ -6,13 +6,16 @@ import application.command.game.PlayCasinoGameResult
 import application.port.external.IPlayerLimitPort
 import application.usecase.OpenCasinoSessionUsecase
 import domain.exception.domainRequireNotNull
+import domain.exception.notfound.AggregatorNotFoundException
 import domain.exception.notfound.CasinoGameNotFoundException
+import domain.repository.IAggregatorRepository
 import domain.repository.ICasinoGameVariantRepository
 import domain.service.CasinoSessionFactory
 import domain.vo.CasinoSessionToken
 
 class PlayCasinoGameCommandHandler(
     private val gameVariantRepository: ICasinoGameVariantRepository,
+    private val aggregatorRepository: IAggregatorRepository,
     private val playerLimitPort: IPlayerLimitPort,
     private val openSessionUsecase: OpenCasinoSessionUsecase,
 ) : ICommandHandler<PlayCasinoGameCommand, PlayCasinoGameResult> {
@@ -27,6 +30,12 @@ class PlayCasinoGameCommandHandler(
             gameVariantRepository.findActiveByGameIdentity(command.identity)
         ) { CasinoGameNotFoundException() }
 
+        // The variant that was picked names its own aggregator, which is not always the provider's
+        // — see CasinoSessionFactory.
+        val aggregator = domainRequireNotNull(
+            aggregatorRepository.findByIntegration(gameVariant.integration)
+        ) { AggregatorNotFoundException() }
+
         if (command.maxSpinPlaceAmount != null) {
             playerLimitPort.saveMaxPlaceAmount(command.playerId, command.maxSpinPlaceAmount)
         }
@@ -35,6 +44,7 @@ class PlayCasinoGameCommandHandler(
             token = CasinoSessionToken(generateBase24Token()),
             playerId = command.playerId,
             gameVariant = gameVariant,
+            aggregator = aggregator,
             currency = command.currency,
             locale = command.locale,
             platform = command.platform,

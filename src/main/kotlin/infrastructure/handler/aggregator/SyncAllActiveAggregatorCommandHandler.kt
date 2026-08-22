@@ -2,6 +2,7 @@ package infrastructure.handler.aggregator
 
 import application.ICommandHandler
 import application.command.aggregator.SyncAllActiveAggregatorCommand
+import domain.model.AggregatorType
 import domain.repository.IAggregatorRepository
 import application.usecase.SyncAggregatorUsecase
 import org.slf4j.LoggerFactory
@@ -15,9 +16,13 @@ class SyncAllActiveAggregatorCommandHandler(
 
     override suspend fun handle(command: SyncAllActiveAggregatorCommand): Result<Unit> = runCatching {
         val all = aggregatorRepository.findAll()
-        val aggregators = all.filter { it.active }
+        // Only casino aggregators expose a game catalog. A sportsbook has no games to sync and its
+        // provider throws CasinoNotSupportedException from createGameAdapter, which used to abort
+        // the whole job AFTER the casino aggregators had already committed — a permanently red
+        // cron that nobody could distinguish from a real failure.
+        val aggregators = all.filter { it.active && it.type == AggregatorType.CASINO }
 
-        logger.info("Aggregator sync: {} active of {} total", aggregators.size, all.size)
+        logger.info("Aggregator sync: {} active casino of {} total", aggregators.size, all.size)
         aggregators.forEach { logger.info("  active -> identity={} integration={}", it.identity.value, it.integration) }
 
         aggregators.forEachIndexed { index, aggregator ->

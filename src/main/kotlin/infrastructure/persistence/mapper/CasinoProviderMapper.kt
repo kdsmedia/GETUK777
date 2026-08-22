@@ -21,6 +21,7 @@ object CasinoProviderMapper {
         aggregator = aggregator.toDomain(),
         blockedCountry = blockedCountry.map { Country(it) },
         tags = tags,
+        aliases = aliases,
     )
 
     fun ResultRow.toCasinoProvider(): CasinoProvider = CasinoProvider(
@@ -32,5 +33,6 @@ object CasinoProviderMapper {
         aggregator = toAggregator(),
         blockedCountry = this[CasinoProviderTable.blockedCountry].map { Country(it) },
         tags = this[CasinoProviderTable.tags],
+        aliases = this[CasinoProviderTable.aliases],
     )
 }

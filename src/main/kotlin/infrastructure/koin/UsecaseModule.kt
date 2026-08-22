@@ -24,6 +24,7 @@ val usecaseModule = module {
     single {
         OpenCasinoSessionUsecase(
             aggregatorFactory = get(),
+            aggregatorRepository = get(),
             sessionRepository = get(),
             freespinRepository = get(),
             eventPublisher = get(),

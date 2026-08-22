@@ -8,6 +8,7 @@ import domain.model.Aggregator
 import domain.model.CasinoGame
 import domain.model.CasinoGameVariant
 import domain.model.CasinoProvider
+import domain.service.CasinoProviderMatcher
 import domain.vo.CasinoGameSymbol
 import domain.vo.Identity
 import kotlinx.coroutines.async
@@ -44,6 +45,41 @@ class SyncAggregatorUsecase(
 
         val aliases = providerAliases(aggregator)
 
+        // Provider resolution runs once per distinct spelling in the feed, not once per game: the
+        // catalog-overlap check needs the whole feed catalog for that spelling, which a per-game
+        // pass cannot see.
+        val feedCatalogs = aggregatorGames
+            .groupBy { it.providerName }
+            .mapValues { (_, games) -> games.mapTo(mutableSetOf()) { it.name.lowercase() } }
+
+        val existingCatalogs = existingGames.values
+            .groupBy { it.provider.identity }
+            .mapValues { (_, games) -> games.mapTo(mutableSetOf()) { it.name.lowercase() } }
+
+        val resolutions = feedCatalogs.mapValues { (providerName, feedCatalog) ->
+            resolveProvider(
+                providerName = providerName,
+                aliases = aliases,
+                providers = allProvidersAsync.await(),
+                feedCatalog = feedCatalog,
+                existingCatalogs = existingCatalogs,
+            )
+        }
+
+        // A spelling matched by name shape is written onto the provider as an alias, so the next
+        // run resolves it outright instead of re-deriving it from the catalogs.
+        for (resolution in resolutions.values) {
+            val alias = resolution.learnedAlias ?: continue
+            val provider = allProvidersAsync.await()
+                .firstOrNull { it.identity == resolution.identity && alias !in it.aliases }
+                ?: continue
+
+            val updated = providerRepository.save(provider.copy(aliases = provider.aliases + alias))
+            allProvidersAsync.await().replaceAll { if (it.identity == updated.identity) updated else it }
+
+            logger.info("[{}] provider alias learned: {} -> {}", id, alias, updated.identity.value)
+        }
+
         val updateGames = LinkedHashMap<Identity, CasinoGame>()
         val updatedVariants = mutableListOf<CasinoGameVariant>()
         var newProviders = 0
@@ -52,7 +88,7 @@ class SyncAggregatorUsecase(
         var updatedVariantsCount = 0
 
         for (aggregatorGame in aggregatorGames) {
-            val providerIdentity = resolveProviderIdentity(aggregatorGame.providerName, aliases)
+            val providerIdentity = resolutions.getValue(aggregatorGame.providerName).identity
 
             var provider = allProvidersAsync.await().firstOrNull { it.identity == providerIdentity }
 
@@ -141,20 +177,53 @@ class SyncAggregatorUsecase(
     }
 
     /**
-     * Canonical provider identity for a name as this aggregator spells it.
+     * Canonical provider for a name as this aggregator spells it.
      *
      * Providers are matched by identity, and identity is derived from the aggregator's own spelling
      * — so the same vendor listed as `egt` by one aggregator and `amusnet` by another looks like two
-     * vendors, and every one of its games gets duplicated under a second provider. No amount of
-     * identity comparison can see through that, because the names genuinely differ. The alias map
-     * (aggregator config key `providerAliases`, e.g. `{"egt": "amusnet"}`) is what collapses them:
-     * once the identity resolves to the one already in the database, the existing provider and its
-     * games are reused and this aggregator only adds variants.
+     * vendors, and every one of its games gets duplicated under a second provider. Four ways out,
+     * in descending order of how explicit they are:
+     *
+     *  1. the configured alias map (aggregator config key `providerAliases`, e.g. `{"egt":"amusnet"}`)
+     *     — a human said so, it wins;
+     *  2. an alias already recorded on a provider row, which is how step 4 remembers its own work;
+     *  3. an exact identity match;
+     *  4. [CasinoProviderMatcher]: same normalized name AND overlapping catalogs. This is what
+     *     catches the pairs nobody thought to configure — `pragmatic` next to `pragmatic_play` sat
+     *     unmerged and unusable until it did.
+     *
+     * Anything else is a genuinely new vendor and gets its own provider.
      */
-    private fun resolveProviderIdentity(providerName: String, aliases: Map<String, String>): Identity {
+    private fun resolveProvider(
+        providerName: String,
+        aliases: Map<String, String>,
+        providers: List<CasinoProvider>,
+        feedCatalog: Set<String>,
+        existingCatalogs: Map<Identity, Set<String>>,
+    ): Resolution {
         val declared = Identity.generate(providerName)
-        return aliases[declared.value]?.let { Identity(it) } ?: declared
+
+        aliases[declared.value]?.let { return Resolution(Identity(it)) }
+
+        providers.firstOrNull { declared.value in it.aliases }
+            ?.let { return Resolution(it.identity) }
+
+        providers.firstOrNull { it.identity == declared }
+            ?.let { return Resolution(it.identity) }
+
+        providers.firstOrNull {
+            CasinoProviderMatcher.isSameVendor(
+                leftName = it.identity.value,
+                rightName = declared.value,
+                leftCatalog = existingCatalogs[it.identity].orEmpty(),
+                rightCatalog = feedCatalog,
+            )
+        }?.let { return Resolution(it.identity, learnedAlias = declared.value) }
+
+        return Resolution(declared)
     }
+
+    private data class Resolution(val identity: Identity, val learnedAlias: String? = null)
 
     private fun providerAliases(aggregator: Aggregator): Map<String, String> {
         val configured = aggregator.config[PROVIDER_ALIASES] as? Map<*, *> ?: return emptyMap()

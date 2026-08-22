@@ -31,4 +31,9 @@ object CasinoProviderTable : LongIdTable("casino_providers") {
         { Json.encodeToString(stringListSerializer, it) },
         { Json.decodeFromString(stringListSerializer, it) }
     ).default(emptyList())
+    val aliases = json<List<String>>(
+        "aliases",
+        { Json.encodeToString(stringListSerializer, it) },
+        { Json.decodeFromString(stringListSerializer, it) }
+    ).default(emptyList())
 }

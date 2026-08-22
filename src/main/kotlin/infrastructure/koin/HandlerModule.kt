@@ -83,7 +83,14 @@ val handlerModule = module {
     single { FindCasinoSessionBalanceHandler(walletAdapter = get()) }
 
     // CasinoGame
-    single { PlayCasinoGameCommandHandler(gameVariantRepository = get(), playerLimitPort = get(), openSessionUsecase = get()) }
+    single {
+        PlayCasinoGameCommandHandler(
+            gameVariantRepository = get(),
+            aggregatorRepository = get(),
+            playerLimitPort = get(),
+            openSessionUsecase = get(),
+        )
+    }
     single { SaveCasinoGameCommandHandler(gameRepository = get(), providerRepository = get()) }
     single { RecalculateCasinoGameRtpCommandHandler(recalculateCasinoGameRtpUsecase = get()) }
     single { FindCasinoGameQueryHandler() }
@@ -91,7 +98,7 @@ val handlerModule = module {
     single { FindAllCasinoGameTagQueryHandler() }
     single { FindAllActiveRtpCasinoGameQueryHandler() }
     single { BatchCasinoGameQueryHandler() }
-    single { GetCasinoGameDemoUrlQueryHandler(gameVariantRepository = get(), aggregatorFactory = get()) }
+    single { GetCasinoGameDemoUrlQueryHandler(gameVariantRepository = get(), aggregatorRepository = get(), aggregatorFactory = get()) }
     single { FindAllCasinoGamePlayerFavoriteQueryHandler() }
     single { FindAllCasinoGamePlayerLastQueryHandler() }
     single { FindAllCasinoGameCollectionQueryHandler() }
@@ -100,8 +107,22 @@ val handlerModule = module {
 
     // Freespin
     single { GetFreespinPresetsQueryHandler(aggregatorFactory = get()) }
-    single { CreateFreespinCommandHandler(gameVariantRepository = get(), freespinRepository = get(), aggregatorFactory = get()) }
-    single { CancelFreespinCommandHandler(gameVariantRepository = get(), freespinRepository = get(), aggregatorFactory = get()) }
+    single {
+        CreateFreespinCommandHandler(
+            gameVariantRepository = get(),
+            freespinRepository = get(),
+            aggregatorRepository = get(),
+            aggregatorFactory = get(),
+        )
+    }
+    single {
+        CancelFreespinCommandHandler(
+            gameVariantRepository = get(),
+            freespinRepository = get(),
+            aggregatorRepository = get(),
+            aggregatorFactory = get(),
+        )
+    }
     single { ChargeFreespinCommandHandler(freespinRepository = get()) }
     single { FindRedeemableFreespinQueryHandler(freespinRepository = get()) }
 

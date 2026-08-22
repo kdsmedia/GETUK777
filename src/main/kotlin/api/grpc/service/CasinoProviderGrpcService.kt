@@ -41,6 +41,7 @@ class CasinoProviderGrpcService(
                 aggregatorIdentity = Identity(request.aggregatorIdentity),
                 blockedCountry = request.blockedCountryList.map { Country(it) },
                 tags = request.tagsList,
+                aliases = request.aliasesList,
             )
         )
         Empty.getDefaultInstance()

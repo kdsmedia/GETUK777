@@ -39,6 +39,14 @@ class AggregatorRepositoryImpl : IAggregatorRepository {
             ?.toAggregator()
     }
 
+    override suspend fun findByIntegration(integration: String): Aggregator? = dbRead {
+        AggregatorTable
+            .selectAll()
+            .where { AggregatorTable.integration eq integration }
+            .singleOrNull()
+            ?.toAggregator()
+    }
+
     override suspend fun findFirstActiveByType(type: AggregatorType): Aggregator? = dbRead {
         AggregatorTable
             .selectAll()

@@ -18,4 +18,6 @@ data class SaveCasinoProviderCommand(
     val blockedCountry: List<Country> = emptyList(),
 
     val tags: List<String> = emptyList(),
+
+    val aliases: List<String> = emptyList(),
 ) : ICommand<Unit>

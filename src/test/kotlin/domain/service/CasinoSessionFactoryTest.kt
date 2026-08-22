@@ -4,6 +4,7 @@ import domain.exception.badrequest.UnsupportedPlatformException
 import domain.exception.conflict.AggregatorNotActiveException
 import domain.exception.conflict.CasinoGameNotActiveException
 import domain.exception.conflict.CasinoProviderNotActiveException
+import domain.model.Aggregator
 import domain.model.Platform
 import domain.vo.Currency
 import domain.vo.Locale
@@ -20,6 +21,7 @@ class CasinoSessionFactoryTest : FunSpec({
         game: domain.model.CasinoGame = TestFixtures.game(),
         locale: String = "en",
         platform: Platform = Platform.DESKTOP,
+        aggregator: Aggregator = game.provider.aggregator,
     ) = CasinoSessionFactory.create(
         token = CasinoSessionToken("t"),
         playerId = PlayerId("p"),
@@ -28,6 +30,7 @@ class CasinoSessionFactoryTest : FunSpec({
             locales = listOf(Locale("en")),
             platforms = listOf(Platform.DESKTOP, Platform.MOBILE),
         ),
+        aggregator = aggregator,
         currency = Currency("USD"),
         locale = Locale(locale),
         platform = platform,
@@ -55,6 +58,21 @@ class CasinoSessionFactoryTest : FunSpec({
         val provider = TestFixtures.provider(aggregator = aggregator)
         val game = TestFixtures.game(provider = provider)
         shouldThrow<AggregatorNotActiveException> { call(game = game) }
+    }
+
+    test("the serving aggregator is checked, not the provider's") {
+        // A game the provider's own aggregator does not carry is served by another one. Rejecting
+        // it because the PROVIDER's aggregator is off would kill every fallback launch.
+        val provider = TestFixtures.provider(aggregator = TestFixtures.aggregator(active = false))
+        val game = TestFixtures.game(provider = provider)
+        val serving = TestFixtures.aggregator(identity = "other", integration = "GAMINGFLOW")
+
+        call(game = game, aggregator = serving).token shouldBe CasinoSessionToken("t")
+    }
+
+    test("an inactive serving aggregator throws even when the provider's is live") {
+        val serving = TestFixtures.aggregator(identity = "other", integration = "GAMINGFLOW", active = false)
+        shouldThrow<AggregatorNotActiveException> { call(aggregator = serving) }
     }
 
     test("unsupported locale falls back to en") {

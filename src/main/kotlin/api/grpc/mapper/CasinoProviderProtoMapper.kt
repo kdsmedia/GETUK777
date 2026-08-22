@@ -15,5 +15,6 @@ object CasinoProviderProtoMapper {
         aggregatorIdentity = this@toProto.aggregator.identity.value
         blockedCountry.addAll(this@toProto.blockedCountry.map { it.value })
         tags.addAll(this@toProto.tags)
+        aliases.addAll(this@toProto.aliases)
     }
 }

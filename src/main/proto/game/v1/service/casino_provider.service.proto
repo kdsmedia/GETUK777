@@ -49,6 +49,11 @@ message SaveCasinoProviderCommand {
   repeated string blocked_country = 6;
 
   repeated string tags = 7;
+
+  // Save is a full upsert. Omitting this wipes the aliases the catalog sync learned, which would
+  // let the merged vendor split back into two providers on the next run — read the provider first
+  // and send its aliases back.
+  repeated string aliases = 8;
 }
 
 message UpdateCasinoProviderImageCommand {

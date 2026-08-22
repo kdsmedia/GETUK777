@@ -4,14 +4,17 @@ import application.ICommandHandler
 import application.command.freespin.CancelFreespinCommand
 import application.port.factory.IAggregatorFactory
 import domain.exception.domainRequireNotNull
+import domain.exception.notfound.AggregatorNotFoundException
 import domain.exception.notfound.CasinoGameNotFoundException
 import domain.repository.IFreespinRepository
+import domain.repository.IAggregatorRepository
 import domain.repository.ICasinoGameVariantRepository
 import domain.vo.FreespinId
 
 class CancelFreespinCommandHandler(
     private val gameVariantRepository: ICasinoGameVariantRepository,
     private val freespinRepository: IFreespinRepository,
+    private val aggregatorRepository: IAggregatorRepository,
     private val aggregatorFactory: IAggregatorFactory
 ) : ICommandHandler<CancelFreespinCommand, Unit> {
 
@@ -25,7 +28,9 @@ class CancelFreespinCommandHandler(
         freespinRepository.findByReferenceId(FreespinId(command.referenceId))
             ?.let { freespinRepository.save(it.cancel()) }
 
-        val freespinAdapter = aggregatorFactory.createFreespinAdapter(variant.game.provider.aggregator)
+        val freespinAdapter = aggregatorFactory.createFreespinAdapter(
+            domainRequireNotNull(aggregatorRepository.findByIntegration(variant.integration)) { AggregatorNotFoundException() }
+        )
 
         freespinAdapter.cancel(command.referenceId)
     }
