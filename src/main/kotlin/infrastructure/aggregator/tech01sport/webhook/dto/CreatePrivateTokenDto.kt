@@ -14,11 +14,29 @@ data class CreatePrivateTokenRequest(
 @Serializable
 data class UserDataDto(
     val id: String,
+
+    val country: String = "",
+
+    val meta: List<UserMetaDto> = emptyList(),
+)
+
+@Serializable
+data class UserMetaDto(
+    val key: String,
+
+    val value: String,
+)
+
+@Serializable
+data class SessionDataDto(
+    val deviceType: String = "web-desktop",
 )
 
 @Serializable
 data class CreatePrivateTokenData(
     val privateToken: String,
+
+    val sessionData: SessionDataDto = SessionDataDto(),
 
     val userData: UserDataDto,
 )
