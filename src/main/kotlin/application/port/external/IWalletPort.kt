@@ -16,11 +16,6 @@ interface IWalletPort {
     suspend fun findBalance(playerId: PlayerId, currency: Currency): PlayerBalance
 
     /**
-     * All of the player's wallets across currencies. Empty when the player has no accounts yet.
-     */
-    suspend fun findBalances(playerId: PlayerId): List<PlayerBalance>
-
-    /**
      * Withdraw funds from player's wallet.
      * Returns the updated balance after withdrawal.
      */

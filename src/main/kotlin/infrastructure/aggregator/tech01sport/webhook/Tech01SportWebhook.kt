@@ -165,17 +165,15 @@ class Tech01SportWebhook(
                 return@post
             }
 
-            // A player without a single sportbook session has never opened the sportbook —
-            // answer the opt-in UserNotFound code.
+            // Currency comes from the player's last sportbook session; a player without one has
+            // never opened the sportbook — answer the opt-in UserNotFound code.
             val session = runCatching { bus(FindLastSportbookSessionByPlayerQuery(body.userId)) }.getOrNull()
             if (session == null) {
                 call.respondJson(GetUserResponse(Tech01SportCode.USER_NOT_FOUND, "Unknown user"))
                 return@post
             }
 
-            // ALL of the player's wallets: the Betting System side may operate a currency other
-            // than the session's (e.g. their brand is fixed to USD). No accounts yet → empty list.
-            val balances = runCatching { walletPort.findBalances(session.playerId) }.getOrElse { emptyList() }
+            val balance = walletPort.findBalance(session.playerId, session.currency)
 
             call.respondJson(
                 GetUserResponse(
@@ -183,20 +181,18 @@ class Tech01SportWebhook(
                     description = "Success",
                     data = GetUserData(
                         userData = UserDataDto(id = body.userId),
-                        wallets = balances.flatMap { balance ->
-                            listOf(
-                                GetUserWalletDto(
-                                    amount = Tech01SportMoney.fromAmount(balance.realAmount),
-                                    currencyCode = balance.currency.value,
-                                    typeId = WALLET_TYPE_REAL,
-                                ),
-                                GetUserWalletDto(
-                                    amount = Tech01SportMoney.fromAmount(balance.bonusAmount),
-                                    currencyCode = balance.currency.value,
-                                    typeId = WALLET_TYPE_BONUS,
-                                ),
-                            )
-                        },
+                        wallets = listOf(
+                            GetUserWalletDto(
+                                amount = Tech01SportMoney.fromAmount(balance.realAmount),
+                                currencyCode = session.currency.value,
+                                typeId = WALLET_TYPE_REAL,
+                            ),
+                            GetUserWalletDto(
+                                amount = Tech01SportMoney.fromAmount(balance.bonusAmount),
+                                currencyCode = session.currency.value,
+                                typeId = WALLET_TYPE_BONUS,
+                            ),
+                        ),
                         activeCurrencyCode = session.currency.value,
                     ),
                 )
