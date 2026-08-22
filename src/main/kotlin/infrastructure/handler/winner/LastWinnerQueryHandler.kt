@@ -68,6 +68,7 @@ class LastWinnerQueryHandler : IQueryHandler<LastWinnerQuery, Page<LastWin>> {
                 CasinoProviderTable.tags,
                 AggregatorTable.identity,
                 AggregatorTable.integration,
+                AggregatorTable.type,
                 AggregatorTable.config,
                 AggregatorTable.active,
                 CasinoGameVariantTable.id,
