@@ -45,12 +45,14 @@ import infrastructure.aggregator.tech01sport.webhook.dto.RollbackByBatchRequest
 import infrastructure.aggregator.tech01sport.webhook.dto.SimpleResponse
 import infrastructure.aggregator.tech01sport.webhook.dto.Tech01SportCode
 import infrastructure.aggregator.tech01sport.webhook.dto.UserDataDto
+import io.ktor.http.ContentType
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receiveText
-import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 
@@ -75,17 +77,24 @@ class Tech01SportWebhook(
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    // The 01.tech validator rejects explicit nulls (`"debt": null`) — optional fields must be
+    // absent. The app-wide serializer writes explicit nulls, so responses use this one.
+    private val responseJson = Json {
+        encodeDefaults = true
+        explicitNulls = false
+    }
+
     fun Route.route() = route("/tech01sport") {
         post("/ping") {
             val raw = call.receiveText()
             val config = activeConfig()
 
             if (!verified(call, raw, config)) {
-                call.respond(SimpleResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
+                call.respondJson(SimpleResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
                 return@post
             }
 
-            call.respond(SimpleResponse(Tech01SportCode.SUCCESS, "Success"))
+            call.respondJson(SimpleResponse(Tech01SportCode.SUCCESS, "Success"))
         }
 
         post("/create-private-token") {
@@ -93,37 +102,37 @@ class Tech01SportWebhook(
 
             val body = parse<CreatePrivateTokenRequest>(raw)
             if (body == null || body.publicToken.isBlank()) {
-                call.respond(CreatePrivateTokenResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
+                call.respondJson(CreatePrivateTokenResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
                 return@post
             }
 
             val session = runCatching { bus(FindSportbookSessionQuery(body.publicToken)) }.getOrNull()
             if (session == null) {
-                call.respond(CreatePrivateTokenResponse(Tech01SportCode.WRONG_TOKEN, "Unknown public token"))
+                call.respondJson(CreatePrivateTokenResponse(Tech01SportCode.WRONG_TOKEN, "Unknown public token"))
                 return@post
             }
 
             val config = Tech01SportConfig(session.aggregator.config)
 
             if (!verified(call, raw, config)) {
-                call.respond(CreatePrivateTokenResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
+                call.respondJson(CreatePrivateTokenResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
                 return@post
             }
 
             if (body.partnerId != config.partnerId) {
-                call.respond(CreatePrivateTokenResponse(Tech01SportCode.WRONG_TOKEN, "Unknown partner"))
+                call.respondJson(CreatePrivateTokenResponse(Tech01SportCode.WRONG_TOKEN, "Unknown partner"))
                 return@post
             }
 
             // The public token is one-time: a second exchange attempt is rejected.
             if (session.externalToken != null) {
-                call.respond(CreatePrivateTokenResponse(Tech01SportCode.WRONG_TOKEN, "Public token already used"))
+                call.respondJson(CreatePrivateTokenResponse(Tech01SportCode.WRONG_TOKEN, "Public token already used"))
                 return@post
             }
 
             val privateToken = bus(ExchangeSportbookTokenCommand(session))
 
-            call.respond(
+            call.respondJson(
                 CreatePrivateTokenResponse(
                     code = Tech01SportCode.SUCCESS,
                     description = "Success",
@@ -140,19 +149,19 @@ class Tech01SportWebhook(
 
             val body = parse<GetUserRequest>(raw)
             if (body == null) {
-                call.respond(GetUserResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
+                call.respondJson(GetUserResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
                 return@post
             }
 
             val config = activeConfig()
 
             if (!verified(call, raw, config)) {
-                call.respond(GetUserResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
+                call.respondJson(GetUserResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
                 return@post
             }
 
             if (body.partnerId != config.partnerId) {
-                call.respond(GetUserResponse(Tech01SportCode.WRONG_TOKEN, "Unknown partner"))
+                call.respondJson(GetUserResponse(Tech01SportCode.WRONG_TOKEN, "Unknown partner"))
                 return@post
             }
 
@@ -160,13 +169,13 @@ class Tech01SportWebhook(
             // never opened the sportbook — answer the opt-in UserNotFound code.
             val session = runCatching { bus(FindLastSportbookSessionByPlayerQuery(body.userId)) }.getOrNull()
             if (session == null) {
-                call.respond(GetUserResponse(Tech01SportCode.USER_NOT_FOUND, "Unknown user"))
+                call.respondJson(GetUserResponse(Tech01SportCode.USER_NOT_FOUND, "Unknown user"))
                 return@post
             }
 
             val balance = walletPort.findBalance(session.playerId, session.currency)
 
-            call.respond(
+            call.respondJson(
                 GetUserResponse(
                     code = Tech01SportCode.SUCCESS,
                     description = "Success",
@@ -195,25 +204,25 @@ class Tech01SportWebhook(
 
             val body = parse<PrepareCreditBetRequest>(raw)
             if (body == null || !Tech01SportMoney.isNegative(body.amount)) {
-                call.respond(SimpleResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
+                call.respondJson(SimpleResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
                 return@post
             }
 
             val session = runCatching { bus(FindSportbookSessionByPrivateTokenQuery(body.privateToken)) }.getOrNull()
             if (session == null) {
-                call.respond(SimpleResponse(Tech01SportCode.WRONG_TOKEN, "Unknown private token"))
+                call.respondJson(SimpleResponse(Tech01SportCode.WRONG_TOKEN, "Unknown private token"))
                 return@post
             }
 
             val config = Tech01SportConfig(session.aggregator.config)
 
             if (!verified(call, raw, config)) {
-                call.respond(SimpleResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
+                call.respondJson(SimpleResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
                 return@post
             }
 
             if (body.partnerId != config.partnerId) {
-                call.respond(SimpleResponse(Tech01SportCode.WRONG_TOKEN, "Unknown partner"))
+                call.respondJson(SimpleResponse(Tech01SportCode.WRONG_TOKEN, "Unknown partner"))
                 return@post
             }
 
@@ -226,12 +235,12 @@ class Tech01SportWebhook(
                         amount = Tech01SportMoney.toAmount(body.amount),
                     )
                 )
-                call.respond(SimpleResponse(Tech01SportCode.SUCCESS, "Success"))
+                call.respondJson(SimpleResponse(Tech01SportCode.SUCCESS, "Success"))
             } catch (e: InsufficientBalanceException) {
-                call.respond(SimpleResponse(Tech01SportCode.NOT_ENOUGH_BALANCE, "Not enough balance"))
+                call.respondJson(SimpleResponse(Tech01SportCode.NOT_ENOUGH_BALANCE, "Not enough balance"))
             } catch (e: DomainException) {
                 logger.warn("prepare-credit-bet failed: tx={} reason={}", body.transactionId, e.message)
-                call.respond(SimpleResponse(Tech01SportCode.INTERNAL_ERROR, "Internal error"))
+                call.respondJson(SimpleResponse(Tech01SportCode.INTERNAL_ERROR, "Internal error"))
             }
         }
 
@@ -240,19 +249,19 @@ class Tech01SportWebhook(
 
             val body = parse<CreditBetRequest>(raw)
             if (body == null) {
-                call.respond(SimpleResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
+                call.respondJson(SimpleResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
                 return@post
             }
 
             val config = activeConfig()
 
             if (!verified(call, raw, config)) {
-                call.respond(SimpleResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
+                call.respondJson(SimpleResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
                 return@post
             }
 
             if (body.partnerId != config.partnerId) {
-                call.respond(SimpleResponse(Tech01SportCode.WRONG_TOKEN, "Unknown partner"))
+                call.respondJson(SimpleResponse(Tech01SportCode.WRONG_TOKEN, "Unknown partner"))
                 return@post
             }
 
@@ -265,10 +274,10 @@ class Tech01SportWebhook(
                         selections = body.bet.selections.map { it.toDomain() },
                     )
                 )
-                call.respond(SimpleResponse(Tech01SportCode.SUCCESS, "Success"))
+                call.respondJson(SimpleResponse(Tech01SportCode.SUCCESS, "Success"))
             } catch (e: DomainException) {
                 logger.warn("credit-bet failed: tx={} bet={} reason={}", body.transactionId, body.bet.id, e.message)
-                call.respond(SimpleResponse(Tech01SportCode.INTERNAL_ERROR, "Internal error"))
+                call.respondJson(SimpleResponse(Tech01SportCode.INTERNAL_ERROR, "Internal error"))
             }
         }
 
@@ -277,14 +286,14 @@ class Tech01SportWebhook(
 
             val body = parse<DebitBetByBatchRequest>(raw)
             if (body == null) {
-                call.respond(BatchResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
+                call.respondJson(BatchResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
                 return@post
             }
 
             val config = activeConfig()
 
             if (!verified(call, raw, config)) {
-                call.respond(BatchResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
+                call.respondJson(BatchResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
                 return@post
             }
 
@@ -314,7 +323,7 @@ class Tech01SportWebhook(
                 }
             }
 
-            call.respond(BatchResponse(Tech01SportCode.SUCCESS, "Success", BatchData(items)))
+            call.respondJson(BatchResponse(Tech01SportCode.SUCCESS, "Success", BatchData(items)))
         }
 
         post("/rollback-bet-by-batch") {
@@ -322,14 +331,14 @@ class Tech01SportWebhook(
 
             val body = parse<RollbackBetByBatchRequest>(raw)
             if (body == null) {
-                call.respond(BatchResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
+                call.respondJson(BatchResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
                 return@post
             }
 
             val config = activeConfig()
 
             if (!verified(call, raw, config)) {
-                call.respond(BatchResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
+                call.respondJson(BatchResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
                 return@post
             }
 
@@ -354,7 +363,7 @@ class Tech01SportWebhook(
                 BatchItemResult(code = code, transactionId = item.transactionId)
             }
 
-            call.respond(BatchResponse(Tech01SportCode.SUCCESS, "Success", BatchData(items)))
+            call.respondJson(BatchResponse(Tech01SportCode.SUCCESS, "Success", BatchData(items)))
         }
 
         post("/credit") {
@@ -362,25 +371,25 @@ class Tech01SportWebhook(
 
             val body = parse<CreditRequest>(raw)
             if (body == null || !Tech01SportMoney.isNegative(body.amount)) {
-                call.respond(SimpleResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
+                call.respondJson(SimpleResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
                 return@post
             }
 
             val session = runCatching { bus(FindSportbookSessionByPrivateTokenQuery(body.privateToken)) }.getOrNull()
             if (session == null) {
-                call.respond(SimpleResponse(Tech01SportCode.WRONG_TOKEN, "Unknown private token"))
+                call.respondJson(SimpleResponse(Tech01SportCode.WRONG_TOKEN, "Unknown private token"))
                 return@post
             }
 
             val config = Tech01SportConfig(session.aggregator.config)
 
             if (!verified(call, raw, config)) {
-                call.respond(SimpleResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
+                call.respondJson(SimpleResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
                 return@post
             }
 
             if (body.partnerId != config.partnerId) {
-                call.respond(SimpleResponse(Tech01SportCode.WRONG_TOKEN, "Unknown partner"))
+                call.respondJson(SimpleResponse(Tech01SportCode.WRONG_TOKEN, "Unknown partner"))
                 return@post
             }
 
@@ -393,12 +402,12 @@ class Tech01SportWebhook(
                         amount = Tech01SportMoney.toAmount(body.amount),
                     )
                 )
-                call.respond(SimpleResponse(Tech01SportCode.SUCCESS, "Success"))
+                call.respondJson(SimpleResponse(Tech01SportCode.SUCCESS, "Success"))
             } catch (e: InsufficientBalanceException) {
-                call.respond(SimpleResponse(Tech01SportCode.NOT_ENOUGH_BALANCE, "Not enough balance"))
+                call.respondJson(SimpleResponse(Tech01SportCode.NOT_ENOUGH_BALANCE, "Not enough balance"))
             } catch (e: DomainException) {
                 logger.warn("wheel credit failed: tx={} reason={}", body.transactionId, e.message)
-                call.respond(SimpleResponse(Tech01SportCode.INTERNAL_ERROR, "Internal error"))
+                call.respondJson(SimpleResponse(Tech01SportCode.INTERNAL_ERROR, "Internal error"))
             }
         }
 
@@ -407,14 +416,14 @@ class Tech01SportWebhook(
 
             val body = parse<DebitByBatchRequest>(raw)
             if (body == null) {
-                call.respond(BatchResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
+                call.respondJson(BatchResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
                 return@post
             }
 
             val config = activeConfig()
 
             if (!verified(call, raw, config)) {
-                call.respond(BatchResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
+                call.respondJson(BatchResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
                 return@post
             }
 
@@ -436,7 +445,7 @@ class Tech01SportWebhook(
                 BatchItemResult(code = code, transactionId = item.transactionId)
             }
 
-            call.respond(BatchResponse(Tech01SportCode.SUCCESS, "Success", BatchData(items)))
+            call.respondJson(BatchResponse(Tech01SportCode.SUCCESS, "Success", BatchData(items)))
         }
 
         post("/rollback-by-batch") {
@@ -444,14 +453,14 @@ class Tech01SportWebhook(
 
             val body = parse<RollbackByBatchRequest>(raw)
             if (body == null) {
-                call.respond(BatchResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
+                call.respondJson(BatchResponse(Tech01SportCode.VALIDATION_FAILED, "Invalid request body"))
                 return@post
             }
 
             val config = activeConfig()
 
             if (!verified(call, raw, config)) {
-                call.respond(BatchResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
+                call.respondJson(BatchResponse(Tech01SportCode.WRONG_SIGNATURE, "Wrong signature"))
                 return@post
             }
 
@@ -475,7 +484,7 @@ class Tech01SportWebhook(
                 BatchItemResult(code = code, transactionId = item.transactionId)
             }
 
-            call.respond(BatchResponse(Tech01SportCode.SUCCESS, "Success", BatchData(items)))
+            call.respondJson(BatchResponse(Tech01SportCode.SUCCESS, "Success", BatchData(items)))
         }
     }
 
@@ -484,6 +493,9 @@ class Tech01SportWebhook(
 
     private fun verified(call: ApplicationCall, rawBody: String, config: Tech01SportConfig): Boolean =
         Tech01SportSignatureVerifier.verify(call.request.headers[SIGNATURE_HEADER], rawBody, config.secretKeys)
+
+    private suspend inline fun <reified T> ApplicationCall.respondJson(body: T) =
+        respondText(responseJson.encodeToString(body), ContentType.Application.Json)
 
     private inline fun <reified T> parse(raw: String): T? =
         runCatching { json.decodeFromString<T>(raw) }.getOrNull()

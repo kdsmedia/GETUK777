@@ -16,7 +16,7 @@ data class BatchItemResult(
 
     val transactionId: Long,
 
-    val description: String? = null,
+    val description: String = "Success",
 
     val debt: String? = null,
 )
