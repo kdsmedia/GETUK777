@@ -226,6 +226,12 @@ class Tech01SportWebhook(
                 return@post
             }
 
+            // A session works only in the currency it was opened with.
+            if (body.currencyCode != session.currency.value) {
+                call.respondJson(SimpleResponse(Tech01SportCode.VALIDATION_FAILED, "Currency mismatch"))
+                return@post
+            }
+
             try {
                 bus(
                     PlaceBetCommand(
@@ -390,6 +396,12 @@ class Tech01SportWebhook(
 
             if (body.partnerId != config.partnerId) {
                 call.respondJson(SimpleResponse(Tech01SportCode.WRONG_TOKEN, "Unknown partner"))
+                return@post
+            }
+
+            // A session works only in the currency it was opened with.
+            if (body.currencyCode != session.currency.value) {
+                call.respondJson(SimpleResponse(Tech01SportCode.VALIDATION_FAILED, "Currency mismatch"))
                 return@post
             }
 

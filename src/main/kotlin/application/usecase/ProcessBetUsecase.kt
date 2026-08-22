@@ -4,6 +4,8 @@ import application.command.bet.SettleBetResult
 import application.port.external.IEventPublisherPort
 import application.port.external.IWalletPort
 import domain.event.BetEvent
+import domain.exception.badrequest.BetCurrencyMismatchException
+import domain.exception.domainRequire
 import domain.exception.domainRequireNotNull
 import domain.exception.notfound.BetNotFoundException
 import domain.model.Bet
@@ -115,6 +117,8 @@ class ProcessBetUsecase(
             betRepository.findByExternalId(ExternalBetId(externalId))
         ) { BetNotFoundException() }
 
+        domainRequire(bet.currency == currency) { BetCurrencyMismatchException() }
+
         var debt = Amount.ZERO
 
         if (realAmount.value > 0 || bonusAmount.value > 0) {
@@ -170,6 +174,8 @@ class ProcessBetUsecase(
         val bet = domainRequireNotNull(
             betRepository.findByExternalId(ExternalBetId(transactionId))
         ) { BetNotFoundException() }
+
+        domainRequire(bet.currency == currency) { BetCurrencyMismatchException() }
 
         walletPort.deposit(bet.playerId, rollbackTx(transactionId), currency, amount, Amount.ZERO)
 

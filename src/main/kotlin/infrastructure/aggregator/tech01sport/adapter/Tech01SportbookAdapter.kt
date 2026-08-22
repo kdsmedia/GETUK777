@@ -13,5 +13,7 @@ class Tech01SportbookAdapter(
         "partnerId" to config.partnerId,
         // Base URL of the Betting System backend the SDK frame talks to.
         "apiUrl" to config.apiUrl,
+        // The session works in exactly this currency; the frontend passes it to the SDK init.
+        "currency" to session.currency.value,
     )
 }
