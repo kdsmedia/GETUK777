@@ -133,6 +133,11 @@ class SyncAggregatorUsecase(
 
             val variant = existingVariant
                 ?.copy(
+                    // Re-pointed, not just refreshed: the feed decides which game a symbol belongs
+                    // to, and that answer changes the moment a provider is merged into another.
+                    // Leaving it be stranded the merged aggregator's variants on the abandoned
+                    // game rows, so the merge looked done and served nothing.
+                    game = game,
                     providerName = aggregatorGame.providerName,
                     freeSpinEnable = aggregatorGame.freeSpinEnable,
                     freeChipEnable = aggregatorGame.freeChipEnable,

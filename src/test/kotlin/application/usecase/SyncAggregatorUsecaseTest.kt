@@ -50,6 +50,10 @@ class SyncAggregatorUsecaseTest : FunSpec({
         val aggregator: Aggregator,
         games: List<ICasinoGamePort.AggregatorGame>,
     ) {
+        private var seededVariants: List<CasinoGameVariant> = emptyList()
+
+        fun withExistingVariants(variants: List<CasinoGameVariant>) = apply { seededVariants = variants }
+
         val savedProviders = mutableListOf<CasinoProvider>()
         val savedGames = mutableListOf<List<CasinoGame>>()
         val savedVariants = mutableListOf<List<CasinoGameVariant>>()
@@ -72,7 +76,7 @@ class SyncAggregatorUsecaseTest : FunSpec({
             coEvery { gameRepository.saveAll(any()) } answers {
                 firstArg<List<CasinoGame>>().also { savedGames += it }
             }
-            coEvery { variantRepository.findAllByIntegration(any()) } returns emptyList()
+            coEvery { variantRepository.findAllByIntegration(any()) } answers { seededVariants }
             coEvery { variantRepository.saveAll(any()) } answers {
                 firstArg<List<CasinoGameVariant>>().also { savedVariants += it }
             }
@@ -256,5 +260,34 @@ class SyncAggregatorUsecaseTest : FunSpec({
         harness.savedProviders.shouldBeEmpty()
         harness.persistedGames.map { it.identity.value } shouldContainExactly
             listOf("pragmatic_play_brand_new_title")
+    }
+    test("merging an already-imported vendor re-points its variants onto the surviving games") {
+        // The duplicate provider is already in the catalogue with variants of its own. Refreshing
+        // them in place would leave every one attached to the abandoned game rows — the merge would
+        // report success and serve nothing.
+        val incumbent = TestFixtures.aggregator(identity = "onegamehub", integration = "ONEGAMEHUB")
+        val gamingflow = TestFixtures.aggregator(identity = "gamingflow", integration = "GAMINGFLOW")
+
+        val survivor = TestFixtures.provider(identity = "pragmatic_play", aggregator = incumbent)
+            .copy(aliases = listOf("pragmatic"))
+        val duplicate = TestFixtures.provider(identity = "pragmatic", aggregator = gamingflow)
+
+        val survivingGame = TestFixtures.game(identity = "pragmatic_play_5_lions", provider = survivor)
+            .copy(name = "5 Lions")
+        val abandonedGame = TestFixtures.game(identity = "pragmatic_5_lions", provider = duplicate)
+            .copy(name = "5 Lions")
+
+        val harness = Harness(
+            existingProviders = listOf(survivor, duplicate),
+            existingGames = listOf(survivingGame, abandonedGame),
+            aggregator = gamingflow,
+            games = listOf(aggregatorGame("5l_gf", "5 Lions", "Pragmatic")),
+        ).withExistingVariants(
+            listOf(TestFixtures.gameVariant(game = abandonedGame, symbol = "5l_gf").copy(integration = "GAMINGFLOW"))
+        )
+
+        harness.run()
+
+        harness.persistedVariants.single().game.identity.value shouldBe "pragmatic_play_5_lions"
     }
 })
