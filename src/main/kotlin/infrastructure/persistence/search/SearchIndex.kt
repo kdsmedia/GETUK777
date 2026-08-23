@@ -109,15 +109,19 @@ class SearchIndex(vararg parts: Expression<*>) {
     }
 
     /**
-     * Ordering key for a searched listing: an exact prefix beats an exact fragment beats a fuzzy
-     * hit, and inside each band the trigram score decides. `null` when nothing was typed, so the
-     * caller keeps its own catalog ordering untouched.
+     * Ordering key for a searched listing: an exact prefix beats an exact fragment beats a row that
+     * merely *sounds* like the query beats a loose trigram resemblance, and inside each band the
+     * trigram score decides. The phonetic band matters — without it "gaets" ranked *Gaelic Warrior*
+     * (trigram noise) above *Gates of Olympus*, which is the very row the query is about.
+     * `null` when nothing was typed, so the caller keeps its own catalog ordering untouched.
      */
     fun relevance(rawQuery: String): Expression<Double>? {
         val needle = normalizeSearchQuery(rawQuery)
         if (needle.isEmpty()) return null
 
-        return Relevance(text, needle)
+        val hasPhoneticCodes = needle.split(' ').any { it.length >= MIN_PHONETIC_LENGTH }
+
+        return Relevance(text, phonetic.takeIf { hasPhoneticCodes }, needle)
     }
 
     fun relevanceOrdering(rawQuery: String): Array<Pair<Expression<*>, SortOrder>> =
@@ -205,12 +209,18 @@ private class CloseWordOp(
 
 private class Relevance(
     private val text: Expression<String>,
+    private val phonetic: Expression<String>?,
     private val needle: String,
 ) : Expression<Double>() {
 
     override fun toQueryBuilder(queryBuilder: QueryBuilder): Unit = queryBuilder {
         append("(CASE WHEN ", text, " LIKE ", stringParam("$needle%"), " THEN 3.0")
         append(" WHEN ", text, " LIKE ", stringParam("%$needle%"), " THEN 2.0 ELSE 0.0 END")
+
+        if (phonetic != null) {
+            append(" + CASE WHEN ", PhoneticContainsOp(phonetic, stringParam(needle)), " THEN 1.0 ELSE 0.0 END")
+        }
+
         append(" + word_similarity(", stringParam(needle), ", ", text, "))")
     }
 }

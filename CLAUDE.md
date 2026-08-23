@@ -195,8 +195,11 @@ mistyped badly gets the closest games instead of an empty screen. Handlers reach
 `searchPass(relaxable, condition, count)` — strict condition, count, and only on zero the wider one.
 
 `SearchIndex.relevanceOrdering(query)` leads a searched listing with exact-prefix > exact-fragment >
-fuzzy (trigram score inside each band); the curated `sort_order` / rail position stays as the
-tiebreaker, and the array is empty when nothing was typed, so an unsearched listing is unchanged.
+*sounds like it* > loose trigram resemblance, with the trigram score deciding inside each band. The
+phonetic band earns its place: without it `gaets` ranked *Gaelic Warrior* — trigram noise — above
+*Gates of Olympus*, the row the query was actually about. The curated `sort_order` / rail position
+stays as the tiebreaker, and the array is empty when nothing was typed, so an unsearched listing is
+unchanged.
 
 `SearchIndexes` (one entry per listing) is the **mirror of the expression indexes in
 `V11__fuzzy_search.sql`** — Postgres matches an expression index structurally, so adding a column on
