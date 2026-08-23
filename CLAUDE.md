@@ -179,8 +179,12 @@ branches, all served by the GIN indexes of `V11__fuzzy_search.sql`:
    one of its words (pg_trgm `<%`). Tokens are ANDed, so word order and missing words don't matter —
    `gates olimpus` finds *Gates of Olympus*, `bonanca` finds *Sweet Bonanza*;
 2. the **whole phrase** is trigram-similar, covering a query typed without spaces (`bookofra`);
-3. the query's **double-metaphone** codes are all present in the row's codes, which catches what
-   trigrams give up on — `rulet` → *Roulette*, `gaets` → *Gates*, `krown` → *Crown*.
+3. the query's **metaphone** codes are all present in the row's codes, which catches what trigrams
+   give up on — `rulet` → *Roulette*, `gaets` → *Gates*, `krown` → *Crown*. Codes are taken at full
+   length (`metaphone(word, 16)`), never `dmetaphone`: its four-character code collapses
+   *startbust*, *street* and *stardom* onto one key and answers a search with everything but the
+   game asked for. Changing the code function means **rebuilding the phonetic indexes** — replacing
+   an `IMMUTABLE` body leaves them holding the old codes (see `V14__phonetic_full_code.sql`).
 
 When those three answer **nothing at all**, `searchPass` retries once with a fourth, deliberately
 generous branch (`V12__fuzzy_search_fallback.sql`): any word of the row that *starts* within a few
