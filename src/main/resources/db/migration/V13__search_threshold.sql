@@ -8,8 +8,14 @@
 -- pooled connection then dies with "Cannot change transaction isolation level in the middle of a
 -- transaction". On the database it needs no statement per connection at all, and psql sees the
 -- same threshold the engine does.
+-- The `PERFORM` is load-bearing: until a pg_trgm function runs in this session, its library is not
+-- loaded and its parameters are not registered, so Postgres cannot tell that this one is USERSET
+-- and refuses the ALTER for anyone but a superuser ("permission denied to set parameter"). One
+-- call registers it, and the database owner may then set it.
 DO $$
 BEGIN
+    PERFORM similarity('a', 'a');
+
     EXECUTE format('ALTER DATABASE %I SET pg_trgm.word_similarity_threshold = 0.45', current_database());
 END
 $$;
