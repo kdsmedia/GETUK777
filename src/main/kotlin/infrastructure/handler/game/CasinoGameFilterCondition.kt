@@ -2,6 +2,7 @@ package infrastructure.handler.game
 
 import application.query.game.CasinoGameFilter
 import infrastructure.persistence.search.SearchIndexes
+import infrastructure.persistence.search.searchCanRelax
 import infrastructure.persistence.table.AggregatorTable
 import infrastructure.persistence.table.CollectionTable
 import infrastructure.persistence.table.CasinoGameCollectionTable
@@ -53,14 +54,14 @@ private fun providerIsActive(): Op<Boolean> = exists(
         }
 )
 
-fun CasinoGameFilter.toCondition(): Op<Boolean> {
+fun CasinoGameFilter.toCondition(relaxed: Boolean = false): Op<Boolean> {
     val conditions = buildList<Op<Boolean>> {
         add(playableSomewhere())
 
         add(providerIsActive())
 
         if (query.isNotBlank()) {
-            add(SearchIndexes.games.matches(query))
+            add(SearchIndexes.games.matches(query, relaxed))
         }
 
         active?.let {
@@ -165,3 +166,6 @@ fun CasinoGameFilter.toOrdering(): Array<Pair<Expression<*>, SortOrder>> {
  */
 fun CasinoGameFilter.relevanceOrdering(): Array<Pair<Expression<*>, SortOrder>> =
     SearchIndexes.games.relevanceOrdering(query)
+
+/** Whether a failed search of this filter is worth retrying with the wide net. */
+fun CasinoGameFilter.isRelaxable(): Boolean = query.isNotBlank() && searchCanRelax(query)

@@ -7,6 +7,8 @@ import domain.vo.Page
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.mapper.CasinoProviderMapper.toCasinoProvider
 import infrastructure.persistence.search.SearchIndexes
+import infrastructure.persistence.search.searchCanRelax
+import infrastructure.persistence.search.searchPass
 import infrastructure.persistence.table.AggregatorTable
 import infrastructure.persistence.table.CollectionTable
 import infrastructure.persistence.table.CasinoGameCollectionTable
@@ -26,10 +28,15 @@ import org.jetbrains.exposed.sql.selectAll
 class FindAllCasinoProviderQueryHandler : IQueryHandler<FindAllCasinoProviderQuery, Page<CasinoProvider>> {
 
     override suspend fun handle(query: FindAllCasinoProviderQuery): Page<CasinoProvider> = dbRead {
-        val filterCondition = buildFilterCondition(query)
+        val pass = searchPass(
+            relaxable = searchCanRelax(query.query),
+            condition = { relaxed -> buildFilterCondition(query, relaxed) },
+            count = { condition -> CasinoProviderTable.selectAll().where { condition }.count() },
+        )
+        val filterCondition = pass.condition
         val pageable = query.pageable
 
-        val totalItems = CasinoProviderTable.selectAll().where { filterCondition }.count()
+        val totalItems = pass.totalItems
 
         val items = CasinoProviderTable
             .join(AggregatorTable, JoinType.INNER, CasinoProviderTable.aggregator, AggregatorTable.id)
@@ -51,10 +58,10 @@ class FindAllCasinoProviderQueryHandler : IQueryHandler<FindAllCasinoProviderQue
         )
     }
 
-    private fun buildFilterCondition(query: FindAllCasinoProviderQuery): Op<Boolean> {
+    private fun buildFilterCondition(query: FindAllCasinoProviderQuery, relaxed: Boolean): Op<Boolean> {
         val conditions = buildList {
             if (query.query.isNotBlank()) {
-                add(SearchIndexes.providers.matches(query.query))
+                add(SearchIndexes.providers.matches(query.query, relaxed))
             }
             query.active?.let { add(Op.build { CasinoProviderTable.active eq it }) }
             query.aggregatorId?.let { aggId ->

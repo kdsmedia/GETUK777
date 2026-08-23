@@ -182,6 +182,14 @@ branches, all served by the GIN indexes of `V11__fuzzy_search.sql`:
 3. the query's **double-metaphone** codes are all present in the row's codes, which catches what
    trigrams give up on — `rulet` → *Roulette*, `gaets` → *Gates*, `krown` → *Crown*.
 
+When those three answer **nothing at all**, `searchPass` retries once with a fourth, deliberately
+generous branch (`V12__fuzzy_search_fallback.sql`): any word of the row that *starts* within a few
+edits of the typed word — `startbust` → *Starburst*, `blakj` → *Blackjack*, `ruletka` → *Roulette*.
+It is a Levenshtein scan with no index behind it, which is exactly why it is a fallback: a player
+whose query the catalog recognises never pays for it and never sees its noise, and a player who
+mistyped badly gets the closest games instead of an empty screen. Handlers reach it through
+`searchPass(relaxable, condition, count)` — strict condition, count, and only on zero the wider one.
+
 `SearchIndex.relevanceOrdering(query)` leads a searched listing with exact-prefix > exact-fragment >
 fuzzy (trigram score inside each band); the curated `sort_order` / rail position stays as the
 tiebreaker, and the array is empty when nothing was typed, so an unsearched listing is unchanged.

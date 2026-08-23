@@ -11,6 +11,7 @@ import infrastructure.persistence.entity.CasinoGameEntity
 import infrastructure.persistence.entity.CasinoProviderEntity
 import infrastructure.persistence.mapper.CasinoGameMapper.toDomain
 import infrastructure.persistence.mapper.CasinoGameVariantMapper.toDomain
+import infrastructure.persistence.search.searchPass
 import infrastructure.persistence.table.CasinoGameTable
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.Op
@@ -29,10 +30,15 @@ class FindAllActiveRtpCasinoGameQueryHandler : IQueryHandler<FindAllActiveRtpCas
             CasinoGameRtpType.COLD -> SortOrder.ASC
         }
 
-        val baseQuery = CasinoGameEntity.find {
-            query.filter.toCondition() and Op.build { CasinoGameTable.active eq true } and rtpCondition
-        }
-        val totalItems = baseQuery.count()
+        val pass = searchPass(
+            relaxable = query.filter.isRelaxable(),
+            condition = { relaxed ->
+                query.filter.toCondition(relaxed) and Op.build { CasinoGameTable.active eq true } and rtpCondition
+            },
+            count = { condition -> CasinoGameEntity.find { condition }.count() },
+        )
+        val baseQuery = CasinoGameEntity.find { pass.condition }
+        val totalItems = pass.totalItems
         val pageable = query.pageable
 
         // id tiebreaker: same reason as CasinoGameFilter.toOrdering — equal (rtp, sortOrder)

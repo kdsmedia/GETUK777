@@ -9,24 +9,32 @@ import infrastructure.persistence.entity.CasinoGameEntity
 import infrastructure.persistence.entity.CasinoProviderEntity
 import infrastructure.persistence.mapper.CasinoGameMapper.toDomain
 import infrastructure.persistence.mapper.CasinoGameVariantMapper.toDomain
+import infrastructure.persistence.search.searchPass
 import infrastructure.persistence.table.CasinoGameFavouriteTable
 import infrastructure.persistence.table.CasinoGameTable
 import org.jetbrains.exposed.dao.with
+import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 
 class FindAllCasinoGamePlayerFavoriteQueryHandler : IQueryHandler<FindAllCasinoGamePlayerFavoriteQuery, Page<CasinoGameView>> {
 
     override suspend fun handle(query: FindAllCasinoGamePlayerFavoriteQuery): Page<CasinoGameView> = dbRead {
-        val filterCondition = query.filter.toCondition()
+        fun favourites(filterCondition: Op<Boolean>) =
+            (CasinoGameFavouriteTable innerJoin CasinoGameTable)
+                .select(CasinoGameTable.id, CasinoGameFavouriteTable.id)
+                .where {
+                    (CasinoGameFavouriteTable.playerId eq query.playerId.value) and filterCondition
+                }
 
-        val baseQuery = (CasinoGameFavouriteTable innerJoin CasinoGameTable)
-            .select(CasinoGameTable.id, CasinoGameFavouriteTable.id)
-            .where {
-                (CasinoGameFavouriteTable.playerId eq query.playerId.value) and filterCondition
-            }
+        val pass = searchPass(
+            relaxable = query.filter.isRelaxable(),
+            condition = { relaxed -> query.filter.toCondition(relaxed) },
+            count = { condition -> favourites(condition).count() },
+        )
+        val baseQuery = favourites(pass.condition)
 
-        val totalItems = baseQuery.count()
+        val totalItems = pass.totalItems
         val pageable = query.pageable
 
         val gameIds = baseQuery

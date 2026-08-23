@@ -7,6 +7,8 @@ import domain.vo.Page
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.mapper.CollectionMapper.toCollection
 import infrastructure.persistence.search.SearchIndexes
+import infrastructure.persistence.search.searchCanRelax
+import infrastructure.persistence.search.searchPass
 import infrastructure.persistence.table.CollectionTable
 import infrastructure.persistence.table.CasinoGameCollectionTable
 import infrastructure.persistence.table.CasinoGameTable
@@ -25,10 +27,15 @@ import org.jetbrains.exposed.sql.selectAll
 class FindAllCollectionQueryHandler : IQueryHandler<FindAllCollectionQuery, Page<Collection>> {
 
     override suspend fun handle(query: FindAllCollectionQuery): Page<Collection> = dbRead {
-        val filterCondition = buildFilterCondition(query)
+        val pass = searchPass(
+            relaxable = searchCanRelax(query.query),
+            condition = { relaxed -> buildFilterCondition(query, relaxed) },
+            count = { condition -> CollectionTable.selectAll().where { condition }.count() },
+        )
+        val filterCondition = pass.condition
         val pageable = query.pageable
 
-        val totalItems = CollectionTable.selectAll().where { filterCondition }.count()
+        val totalItems = pass.totalItems
 
         val items = CollectionTable
             .selectAll()
@@ -49,10 +56,10 @@ class FindAllCollectionQueryHandler : IQueryHandler<FindAllCollectionQuery, Page
         )
     }
 
-    private fun buildFilterCondition(query: FindAllCollectionQuery): Op<Boolean> {
+    private fun buildFilterCondition(query: FindAllCollectionQuery, relaxed: Boolean): Op<Boolean> {
         val conditions = buildList {
             if (query.query.isNotBlank()) {
-                add(SearchIndexes.collections.matches(query.query))
+                add(SearchIndexes.collections.matches(query.query, relaxed))
             }
             query.active?.let { add(Op.build { CollectionTable.active eq it }) }
 
