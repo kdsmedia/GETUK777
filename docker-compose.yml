@@ -99,8 +99,6 @@ services:
       - DB_URL=${DB_URL:-jdbc:postgresql://postgres:5432}
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - WALLET_GRPC_HOST=${WALLET_GRPC_HOST:-host.docker.internal}
-      - WALLET_GRPC_PORT=${WALLET_GRPC_PORT:-5555}
       - REDIS_HOST=${REDIS_HOST:-redis}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - RABBIT_HOST=${RABBIT_HOST:-rabbitmq}

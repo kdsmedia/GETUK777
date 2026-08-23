@@ -9,8 +9,6 @@
 | `DATABASE_URL` | JDBC PostgreSQL URL | `jdbc:postgresql://localhost:5432/game_db` |
 | `DATABASE_USER` | Database username | — |
 | `DATABASE_PASSWORD` | Database password | — |
-| `WALLET_GRPC_HOST` | Wallet service gRPC host | `localhost` |
-| `WALLET_GRPC_PORT` | Wallet service gRPC port | `5555` |
 | `REDIS_HOST` | Redis host | `localhost` |
 | `REDIS_PORT` | Redis port | `6379` |
 | `RABBITMQ_URL` | RabbitMQ AMQP URL | `amqp://guest:guest@localhost:5672` |

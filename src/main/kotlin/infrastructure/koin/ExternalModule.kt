@@ -19,7 +19,9 @@ import infrastructure.aggregator.pateplay.PateplayAdapterProvider
 import infrastructure.aggregator.pragmatic.PragmaticAdapterProvider
 import infrastructure.aggregator.tech01sport.Tech01SportAdapterProvider
 import infrastructure.aggregator.tongame.TongameAdapterProvider
+import infrastructure.pam.CurrencyAdapter
 import infrastructure.pam.PamAdapter
+import infrastructure.pam.WalletAdapter
 import infrastructure.pam.pamChannel
 import infrastructure.rabbitmq.PlaceSpinEventConsumer
 import infrastructure.rabbitmq.RabbitAppEventPublisher
@@ -27,23 +29,20 @@ import infrastructure.rabbitmq.rabbitMqConnection
 import infrastructure.redis.PlayerLimitRedis
 import infrastructure.redis.WebhookGuardRedis
 import infrastructure.util.BackgroundWorker
-import infrastructure.wallet.CurrencyAdapter
-import infrastructure.wallet.WalletAdapter
-import infrastructure.wallet.walletChannel
 import io.grpc.ManagedChannel
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val externalModule = module {
-    // One shared gRPC channel to wallet-engine for both wallet + currency adapters.
-    single<ManagedChannel> { walletChannel(get()) }
+    // One gRPC channel to pam-engine: the player account, the wallet ledger and the currency
+    // registry all live there now, so the wallet/currency/profile adapters share it.
+    single<ManagedChannel> { pamChannel(get()) }
     single<IWalletPort> { WalletAdapter(channel = get()) }
     single<IPlayerLimitPort> { PlayerLimitRedis(config = get()) }
     single<IWebhookGuardPort> { WebhookGuardRedis(config = get()) }
     single<ICurrencyPort> { CurrencyAdapter(channel = get()) }
-    // Separate gRPC channel to pam-engine (user-engine) for player profile lookups.
-    single<IPlayerPort> { PamAdapter(channel = pamChannel(get())) }
+    single<IPlayerPort> { PamAdapter(channel = get()) }
     single<IBackgroundTaskPort> { BackgroundWorker() }
     // One RabbitMQ connection, split channels: the publisher owns a dedicated confirm-mode
     // channel (created lazily inside RabbitAppEventPublisher); this Channel single backs the

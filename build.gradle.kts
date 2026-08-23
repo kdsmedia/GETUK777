@@ -132,9 +132,10 @@ dependencies {
     implementation(libs.bundles.grpc)
     implementation(libs.protobuf.kotlin)
 
-    // Sibling gRPC clients published to GitHub Packages
-    implementation("com.nekgambling:user-grpc-client:1.0.0")
-    implementation("com.nekgamebling:wallet-grpc-client:1.0.0")
+    // Sibling gRPC client published to GitHub Packages. One artifact covers the player
+    // account, the wallet ledger and the currency registry — pam-engine absorbed the
+    // retired user-engine and wallet-engine.
+    implementation("com.nekgambling:pam-grpc-client:1.0.0")
 
 
     // Testing

@@ -5,9 +5,10 @@ import io.grpc.ManagedChannelBuilder
 import java.util.concurrent.TimeUnit
 
 /**
- * gRPC channel to pam-engine (user-engine), mirroring [infrastructure.wallet.walletChannel].
- * Keep-alive pings keep the HTTP/2 connection warm so a call after an idle gap doesn't pay a
- * reconnect.
+ * The single gRPC channel to pam-engine, shared by [PamAdapter], [WalletAdapter] and
+ * [CurrencyAdapter] — the player account, the wallet ledger and the currency registry all live
+ * behind one address now. Keep-alive pings keep the HTTP/2 connection warm so a call after an
+ * idle gap doesn't pay a reconnect.
  */
 fun pamChannel(config: PamConfig): ManagedChannel =
     ManagedChannelBuilder

@@ -102,10 +102,11 @@ class ProcessSpinUsecase(
         // PLACE takes money, SETTLE gives it back. A ROLLBACK moves it opposite to the spin it
         // reverses, so rolling back a win is a withdrawal, not a deposit.
         val takesMoney = spin.isPlace || (spin.isRollback && spin.reference?.isSettle == true)
+        val reference = reference(spin)
         if (takesMoney) {
             walletPort.withdraw(
                 playerId = session.playerId,
-                transactionId = session.id.toString(),
+                transactionId = reference,
                 currency = session.currency,
                 realAmount = spin.realAmount,
                 bonusAmount = spin.bonusAmount,
@@ -113,13 +114,23 @@ class ProcessSpinUsecase(
         } else {
             walletPort.deposit(
                 playerId = session.playerId,
-                transactionId = session.id.toString(),
+                transactionId = reference,
                 currency = session.currency,
                 realAmount = spin.realAmount,
                 bonusAmount = spin.bonusAmount,
             )
         }
     }
+
+    /**
+     * The wallet key of ONE movement. It has to name the spin, not the session: the wallet is
+     * idempotent by this string, so a session-wide key would make every spin after the first look
+     * like a retry of it and move no money at all. `externalId` is the aggregator's spin id and is
+     * already unique-constrained here, and the type separates the place from the settle that
+     * follows it — which is also what makes a redelivered webhook harmless.
+     */
+    private fun reference(spin: Spin): String =
+        "spin:${spin.type.name.lowercase()}:${spin.externalId.value}"
 
     private suspend fun calculateResult(spin: Spin): SpinResult {
         val session = spin.round.session

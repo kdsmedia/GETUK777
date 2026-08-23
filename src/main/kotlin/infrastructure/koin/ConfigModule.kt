@@ -5,7 +5,6 @@ import infrastructure.persistence.CASINO_DB_NAME
 import infrastructure.persistence.DatabaseConfig
 import infrastructure.rabbitmq.RabbitMqConfig
 import infrastructure.redis.RedisConfig
-import infrastructure.wallet.WalletConfig
 import org.koin.dsl.module
 
 val configModule = module {
@@ -15,12 +14,6 @@ val configModule = module {
             url = "$baseUrl/$CASINO_DB_NAME",
             user = System.getenv("DB_USERNAME") ?: "user",
             password = System.getenv("DB_PASSWORD") ?: "password"
-        )
-    }
-    single {
-        WalletConfig(
-            address = System.getenv("WALLET_GRPC_HOST") ?: "localhost",
-            port = (System.getenv("WALLET_GRPC_PORT") ?: "5555").toInt()
         )
     }
     single {
