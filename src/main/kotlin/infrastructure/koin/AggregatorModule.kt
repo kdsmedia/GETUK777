@@ -1,5 +1,6 @@
 package infrastructure.koin
 
+import infrastructure.aggregator.gambutsoft.webhook.GambutsoftWebhook
 import infrastructure.aggregator.gamingflow.webhook.GamingFlowWebhook
 import infrastructure.aggregator.onegamehub.webhook.OneGameHubWebhook
 import infrastructure.aggregator.pragmatic.webhook.PragmaticWebhook
@@ -13,4 +14,5 @@ val aggregatorModule = module {
     single { TongameWebhook(bus = get(), playerPort = get(), walletPort = get()) }
     single { GamingFlowWebhook(bus = get(), currencyPort = get(), guardPort = get()) }
     single { Tech01SportWebhook(bus = get(), walletPort = get()) }
+    single { GambutsoftWebhook(bus = get(), guardPort = get()) }
 }
