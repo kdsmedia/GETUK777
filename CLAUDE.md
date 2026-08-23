@@ -199,7 +199,10 @@ tiebreaker, and the array is empty when nothing was typed, so an unsearched list
 one side without the other silently degrades that search to a sequential scan. The two SQL helpers
 (`casino_search_norm`, `casino_search_phonetic`) need the `pg_trgm` and `fuzzystrmatch` extensions,
 created by the same migration (both are *trusted* since PG13, so the database owner suffices).
-The `<%` threshold is a session setting applied to every pooled connection by `DatabaseFactory`.
+The `<%` threshold is set **on the database** by `V13__search_threshold.sql`, not per connection —
+routing it through Hikari's `connectionInitSql` leaves an uncommitted transaction on every fresh
+pooled connection (`isolateInternalQueries` is false by default) and every query on that connection
+then fails with *"Cannot change transaction isolation level in the middle of a transaction"*.
 
 ## Proto / gRPC
 
