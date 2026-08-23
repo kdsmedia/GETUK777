@@ -1,6 +1,7 @@
 package infrastructure.handler.game
 
 import application.query.game.CasinoGameFilter
+import infrastructure.persistence.search.SearchIndexes
 import infrastructure.persistence.table.AggregatorTable
 import infrastructure.persistence.table.CollectionTable
 import infrastructure.persistence.table.CasinoGameCollectionTable
@@ -59,10 +60,7 @@ fun CasinoGameFilter.toCondition(): Op<Boolean> {
         add(providerIsActive())
 
         if (query.isNotBlank()) {
-            val pattern = "%${query.lowercase()}%"
-            add(Op.build {
-                (CasinoGameTable.identity like pattern) or (CasinoGameTable.name like pattern)
-            })
+            add(SearchIndexes.games.matches(query))
         }
 
         active?.let {
@@ -146,7 +144,8 @@ fun CasinoGameFilter.toOrdering(): Array<Pair<Expression<*>, SortOrder>> {
     // id tiebreaker: sortOrder is not unique (bulk-synced games share 0), and equal keys
     // give unstable pagination — a game could repeat or vanish across pages.
     val collectionIdentity = collection
-        ?: return arrayOf(CasinoGameTable.sortOrder to SortOrder.ASC, CasinoGameTable.id to SortOrder.ASC)
+        ?: return relevanceOrdering() +
+            arrayOf(CasinoGameTable.sortOrder to SortOrder.ASC, CasinoGameTable.id to SortOrder.ASC)
 
     val railPosition = wrapAsExpression<Int>(
         (CasinoGameCollectionTable innerJoin CollectionTable)
@@ -157,5 +156,12 @@ fun CasinoGameFilter.toOrdering(): Array<Pair<Expression<*>, SortOrder>> {
             }
     )
 
-    return arrayOf(railPosition to SortOrder.ASC, CasinoGameTable.id to SortOrder.ASC)
+    return relevanceOrdering() + arrayOf(railPosition to SortOrder.ASC, CasinoGameTable.id to SortOrder.ASC)
 }
+
+/**
+ * A searched listing leads with how well the row answers what was typed; the curated catalog /
+ * rail position stays as the tiebreaker below it. Empty when nothing was typed.
+ */
+fun CasinoGameFilter.relevanceOrdering(): Array<Pair<Expression<*>, SortOrder>> =
+    SearchIndexes.games.relevanceOrdering(query)

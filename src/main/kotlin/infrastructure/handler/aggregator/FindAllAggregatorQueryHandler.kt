@@ -5,6 +5,7 @@ import application.IQueryHandler
 import domain.model.Aggregator
 import domain.vo.Page
 import infrastructure.persistence.mapper.AggregatorMapper.toAggregator
+import infrastructure.persistence.search.SearchIndexes
 import infrastructure.persistence.table.AggregatorTable
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.selectAll
@@ -15,7 +16,7 @@ class FindAllAggregatorQueryHandler : IQueryHandler<FindAllAggregatorQuery, Page
     override suspend fun handle(query: FindAllAggregatorQuery): Page<Aggregator> = dbRead {
         val baseQuery = AggregatorTable
             .selectAll()
-            .where { AggregatorTable.identity like "%${query.query.lowercase()}%" }
+            .where { SearchIndexes.aggregators.matches(query.query) }
 
         query.integration?.let {
             baseQuery.andWhere { AggregatorTable.integration eq it }

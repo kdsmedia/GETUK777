@@ -6,12 +6,14 @@ import domain.model.Collection
 import domain.vo.Page
 import infrastructure.persistence.dbRead
 import infrastructure.persistence.mapper.CollectionMapper.toCollection
+import infrastructure.persistence.search.SearchIndexes
 import infrastructure.persistence.table.CollectionTable
 import infrastructure.persistence.table.CasinoGameCollectionTable
 import infrastructure.persistence.table.CasinoGameTable
 import infrastructure.persistence.table.CasinoProviderTable
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.TextColumnType
 import org.jetbrains.exposed.sql.and
@@ -31,7 +33,10 @@ class FindAllCollectionQueryHandler : IQueryHandler<FindAllCollectionQuery, Page
         val items = CollectionTable
             .selectAll()
             .where { filterCondition }
-            .orderBy(CollectionTable.sortOrder)
+            .orderBy(
+                *SearchIndexes.collections.relevanceOrdering(query.query),
+                CollectionTable.sortOrder to SortOrder.ASC,
+            )
             .limit(pageable.sizeReal)
             .offset(pageable.offset)
             .map { it.toCollection() }
@@ -47,11 +52,7 @@ class FindAllCollectionQueryHandler : IQueryHandler<FindAllCollectionQuery, Page
     private fun buildFilterCondition(query: FindAllCollectionQuery): Op<Boolean> {
         val conditions = buildList {
             if (query.query.isNotBlank()) {
-                val pattern = "%${query.query.lowercase()}%"
-                add(Op.build {
-                    (CollectionTable.identity like pattern) or
-                            (CollectionTable.name.castTo<String>(TextColumnType()) like pattern)
-                })
+                add(SearchIndexes.collections.matches(query.query))
             }
             query.active?.let { add(Op.build { CollectionTable.active eq it }) }
 

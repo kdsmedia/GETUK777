@@ -168,6 +168,31 @@ Repository methods raise domain exceptions on FK violations (`CasinoProviderNotF
 
 See `.claude/rules/exposed-database.md` for detailed Exposed ORM conventions.
 
+### Catalog search (fuzzy, typo-tolerant)
+
+Every `query` string on a listing (`CasinoGameFilter.query`, `FindAllCasinoProviderQuery.query`,
+`FindAllCollectionQuery.query`, `FindAllAggregatorQuery.query`) goes through
+`infrastructure/persistence/search/SearchIndex.matches(...)` instead of a `LIKE '%q%'`. Three OR-ed
+branches, all served by the GIN indexes of `V11__fuzzy_search.sql`:
+
+1. **every token** of the query is a substring of the row's searchable text *or* trigram-similar to
+   one of its words (pg_trgm `<%`). Tokens are ANDed, so word order and missing words don't matter —
+   `gates olimpus` finds *Gates of Olympus*, `bonanca` finds *Sweet Bonanza*;
+2. the **whole phrase** is trigram-similar, covering a query typed without spaces (`bookofra`);
+3. the query's **double-metaphone** codes are all present in the row's codes, which catches what
+   trigrams give up on — `rulet` → *Roulette*, `gaets` → *Gates*, `krown` → *Crown*.
+
+`SearchIndex.relevanceOrdering(query)` leads a searched listing with exact-prefix > exact-fragment >
+fuzzy (trigram score inside each band); the curated `sort_order` / rail position stays as the
+tiebreaker, and the array is empty when nothing was typed, so an unsearched listing is unchanged.
+
+`SearchIndexes` (one entry per listing) is the **mirror of the expression indexes in
+`V11__fuzzy_search.sql`** — Postgres matches an expression index structurally, so adding a column on
+one side without the other silently degrades that search to a sequential scan. The two SQL helpers
+(`casino_search_norm`, `casino_search_phonetic`) need the `pg_trgm` and `fuzzystrmatch` extensions,
+created by the same migration (both are *trusted* since PG13, so the database owner suffices).
+The `<%` threshold is a session setting applied to every pooled connection by `DatabaseFactory`.
+
 ## Proto / gRPC
 
 Proto files in `src/main/proto/game/v1/`. Package: `game.v1` (Java: `com.nekgamebling.game.v1`).

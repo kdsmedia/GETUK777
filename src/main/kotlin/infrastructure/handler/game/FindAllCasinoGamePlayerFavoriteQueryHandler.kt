@@ -30,7 +30,10 @@ class FindAllCasinoGamePlayerFavoriteQueryHandler : IQueryHandler<FindAllCasinoG
         val pageable = query.pageable
 
         val gameIds = baseQuery
-            .orderBy(CasinoGameFavouriteTable.id to SortOrder.DESC)
+            .orderBy(
+                *query.filter.relevanceOrdering(),
+                CasinoGameFavouriteTable.id to SortOrder.DESC,
+            )
             .limit(pageable.sizeReal)
             .offset(pageable.offset)
             .map { it[CasinoGameTable.id] }

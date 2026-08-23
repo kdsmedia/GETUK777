@@ -35,6 +35,7 @@ class FindAllCasinoGameCollectionQueryHandler : IQueryHandler<FindAllCasinoGameC
 
         val gameIds = baseQuery
             .orderBy(
+                *query.filter.relevanceOrdering(),
                 CasinoGameCollectionTable.sortOrder to SortOrder.ASC,
                 CasinoGameTable.id to SortOrder.ASC,
             )
