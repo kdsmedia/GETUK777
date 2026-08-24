@@ -18,6 +18,7 @@ import infrastructure.persistence.table.CasinoProviderTable
 import org.jetbrains.exposed.dao.load
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.JoinType
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.batchUpsert
 import org.jetbrains.exposed.sql.insertAndGetId
@@ -104,10 +105,12 @@ class CasinoGameVariantRepositoryImpl : ICasinoGameVariantRepository {
     }
 
     /**
-     * The variant a launch will actually use: the provider's aggregator when it carries the game,
-     * otherwise any other ACTIVE aggregator that does. The provider's aggregator is a preference,
-     * not a binding — binding them meant that moving a provider made every game the new aggregator
-     * lacked unopenable, even though another live aggregator was still serving it.
+     * The variant a launch will use: the one from the aggregator set on the game's PROVIDER.
+     *
+     * The provider's aggregator is a binding, not a preference. A game its aggregator does not
+     * carry has nothing to open — no other aggregator stands in for it, even when one carries the
+     * same game. Listings resolve the variant by the same rule (`loadVariantMap`), so a game is
+     * listed exactly when it can be opened.
      */
     override suspend fun findActiveByGameIdentity(gameIdentity: Identity): CasinoGameVariant? = dbRead {
         val game = CasinoGameTable
@@ -117,42 +120,22 @@ class CasinoGameVariantRepositoryImpl : ICasinoGameVariantRepository {
             .where {
                 (CasinoGameTable.identity eq gameIdentity.value) and
                     (CasinoGameTable.active eq true) and
-                    (CasinoProviderTable.active eq true)
+                    (CasinoProviderTable.active eq true) and
+                    (AggregatorTable.active eq true)
             }
             .firstOrNull()
             ?: return@dbRead null
 
-        val preferredIntegration = game[AggregatorTable.integration]
-
-        val candidates = CasinoGameVariantTable
-            .join(
-                AggregatorTable,
-                JoinType.INNER,
-                CasinoGameVariantTable.integration,
-                AggregatorTable.integration,
-            )
-            .select(CasinoGameVariantTable.id, CasinoGameVariantTable.integration, AggregatorTable.id)
-            .where {
-                (CasinoGameVariantTable.game eq game[CasinoGameTable.id]) and (AggregatorTable.active eq true)
+        CasinoGameVariantEntity
+            .find {
+                (CasinoGameVariantTable.game eq game[CasinoGameTable.id]) and
+                    (CasinoGameVariantTable.integration eq game[AggregatorTable.integration])
             }
-            .map {
-                Candidate(
-                    variantId = it[CasinoGameVariantTable.id].value,
-                    integration = it[CasinoGameVariantTable.integration],
-                    aggregatorId = it[AggregatorTable.id].value,
-                )
-            }
-
-        val chosen = candidates.minWithOrNull(
-            compareBy({ if (it.integration == preferredIntegration) 0 else 1 }, { it.aggregatorId })
-        ) ?: return@dbRead null
-
-        CasinoGameVariantEntity.findById(chosen.variantId)
+            .orderBy(CasinoGameVariantTable.id to SortOrder.ASC)
+            .firstOrNull()
             ?.load(*variantChain)
             ?.toDomain()
     }
-
-    private data class Candidate(val variantId: Long, val integration: String, val aggregatorId: Long)
 
     private fun UpdateBuilder<*>.fromDomain(gameVariant: CasinoGameVariant) {
         val gameId = domainRequireNotNull(
