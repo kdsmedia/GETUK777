@@ -13,20 +13,19 @@ import domain.vo.PlayerId
 import io.grpc.ManagedChannel
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
-import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * The wallet ledger, now inside pam-engine. Two things differ from the retired wallet-engine and
- * both are visible here rather than in the use cases:
+ * The wallet ledger, inside pam-engine.
  *
- * 1. **Money moves on an account id, not on (player, currency).** A purse is minted once and keeps
- *    its id forever, so the lookup is cached per (player, currency) and costs one extra call the
- *    first time a player touches a currency.
- * 2. **One signed `Transact` replaces Deposit/Withdraw.** A withdrawal is the same call with
- *    negative amounts, and it is idempotent by `reference` — a retry of the same reference moves
- *    nothing and answers the balance the first call produced.
+ * **Money moves on (player, currency) — there is no account id anywhere.** A movement is one call:
+ * pam resolves the purse from the pair and mints it on the player's first movement in a currency, so
+ * nothing is looked up, nothing is cached and nothing has to be created first.
+ *
+ * **One signed `Transact` replaces Deposit/Withdraw.** A withdrawal is the same call with negative
+ * amounts, and it is idempotent by `reference` — a retry of the same reference moves nothing and
+ * answers the balance the first call produced.
  */
 class WalletAdapter(
     channel: ManagedChannel
@@ -39,8 +38,6 @@ class WalletAdapter(
 
     private val stub: WalletServiceGrpc.WalletServiceBlockingStub =
         WalletServiceGrpc.newBlockingStub(channel)
-
-    private val accountIds = ConcurrentHashMap<String, Long>()
 
     override suspend fun findBalance(playerId: PlayerId, currency: Currency): PlayerBalance =
         account(playerId, currency).toPlayerBalance(currency)
@@ -75,7 +72,8 @@ class WalletAdapter(
         }
 
         val request = TransactRequest.newBuilder()
-            .setAccountId(accountId(playerId, currency))
+            .setUserId(playerId.value.toLong())
+            .setCurrency(currency.value)
             .setReference(reference)
             .setType(TYPE)
             .setRealAmount(realAmount)
@@ -87,11 +85,10 @@ class WalletAdapter(
         return response.account.toPlayerBalance(currency)
     }
 
-    private suspend fun accountId(playerId: PlayerId, currency: Currency): Long =
-        accountIds[key(playerId, currency)]
-            ?: account(playerId, currency).id.also { accountIds[key(playerId, currency)] = it }
-
-    /** Answers the purse, minting it first when the player has never held this currency. */
+    /**
+     * The purse behind a balance read. Unlike a movement this still has to exist, because there is
+     * nothing to report for a currency the player has never held — so a miss mints it and reads again.
+     */
     private suspend fun account(playerId: PlayerId, currency: Currency): WalletAccount {
         val request = FindAccountRequest.newBuilder()
             .setUserId(playerId.value.toLong())
@@ -102,7 +99,7 @@ class WalletAdapter(
             withContext(Dispatchers.IO) { stub.findAccount(request) }
         } catch (e: StatusRuntimeException) {
             if (e.status.code != Status.Code.NOT_FOUND) throw e
-            // EnsureAccount is idempotent, so two racing spins both end up with the same purse.
+            // EnsureAccount is idempotent, so two racing reads both end up with the same purse.
             withContext(Dispatchers.IO) {
                 stub.ensureAccount(
                     EnsureAccountRequest.newBuilder()
@@ -114,9 +111,6 @@ class WalletAdapter(
             }
         }
     }
-
-    private fun key(playerId: PlayerId, currency: Currency): String =
-        "${playerId.value}:${currency.value}"
 
     private fun WalletAccount.toPlayerBalance(currency: Currency): PlayerBalance = PlayerBalance(
         realAmount = Amount(realBalance),
