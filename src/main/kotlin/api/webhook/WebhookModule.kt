@@ -4,6 +4,7 @@ import infrastructure.aggregator.gambutsoft.webhook.GambutsoftWebhook
 import infrastructure.aggregator.gamingflow.webhook.GamingFlowWebhook
 import infrastructure.aggregator.onegamehub.webhook.OneGameHubWebhook
 import infrastructure.aggregator.pragmatic.webhook.PragmaticWebhook
+import infrastructure.aggregator.skyline.webhook.SkylineWebhook
 import infrastructure.aggregator.tech01sport.webhook.Tech01SportWebhook
 import infrastructure.aggregator.tongame.webhook.TongameWebhook
 import io.ktor.server.application.Application
@@ -22,6 +23,7 @@ fun Application.configureWebhook() {
     val gamingFlowWebhook = get<GamingFlowWebhook>()
     val tech01SportWebhook = get<Tech01SportWebhook>()
     val gambutsoftWebhook = get<GambutsoftWebhook>()
+    val skylineWebhook = get<SkylineWebhook>()
 
     routing {
         route("/api/webhook") {
@@ -31,6 +33,7 @@ fun Application.configureWebhook() {
             with(gamingFlowWebhook) { route() }
             with(tech01SportWebhook) { route() }
             with(gambutsoftWebhook) { route() }
+            with(skylineWebhook) { route() }
         }
     }
 }

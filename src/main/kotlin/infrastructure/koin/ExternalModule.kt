@@ -17,6 +17,7 @@ import infrastructure.aggregator.gamingflow.GamingFlowAdapterProvider
 import infrastructure.aggregator.onegamehub.OneGameHubAdapterProvider
 import infrastructure.aggregator.pateplay.PateplayAdapterProvider
 import infrastructure.aggregator.pragmatic.PragmaticAdapterProvider
+import infrastructure.aggregator.skyline.SkylineAdapterProvider
 import infrastructure.aggregator.tech01sport.Tech01SportAdapterProvider
 import infrastructure.aggregator.tongame.TongameAdapterProvider
 import infrastructure.pam.CurrencyAdapter
@@ -59,6 +60,7 @@ val externalModule = module {
     single(named("gamingflow")) { GamingFlowAdapterProvider() } bind AggregatorAdapterProvider::class
     single(named("tech01sport")) { Tech01SportAdapterProvider() } bind AggregatorAdapterProvider::class
     single(named("gambutsoft")) { GambutsoftAdapterProvider() } bind AggregatorAdapterProvider::class
+    single(named("skyline")) { SkylineAdapterProvider() } bind AggregatorAdapterProvider::class
     single<IAggregatorFactory> {
         AggregatorRegistry(providers = getAll<AggregatorAdapterProvider>())
     }
