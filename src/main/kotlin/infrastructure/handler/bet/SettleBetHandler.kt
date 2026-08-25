@@ -14,8 +14,7 @@ class SettleBetHandler(
             externalId = command.externalId,
             transactionId = command.transactionId,
             currency = command.currency,
-            realAmount = command.realAmount,
-            bonusAmount = command.bonusAmount,
+            amount = command.amount,
             credit = command.credit,
             won = command.won,
         )

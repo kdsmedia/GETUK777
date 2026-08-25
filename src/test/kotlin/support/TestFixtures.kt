@@ -1,6 +1,7 @@
 package support
 
 import domain.model.Aggregator
+import domain.model.AggregatorType
 import domain.model.Collection
 import domain.model.CasinoGame
 import domain.model.CasinoGameVariant
@@ -33,11 +34,13 @@ object TestFixtures {
         integration: String = "ONEGAMEHUB",
         active: Boolean = true,
         config: Map<String, Any> = emptyMap(),
+        type: AggregatorType = AggregatorType.CASINO,
     ): Aggregator = Aggregator(
         identity = Identity(identity),
         integration = integration,
         config = config,
         active = active,
+        type = type,
     )
 
     fun provider(

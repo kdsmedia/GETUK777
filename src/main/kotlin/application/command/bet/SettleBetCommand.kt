@@ -9,8 +9,9 @@ data class SettleBetCommand(
     val externalId: String,
     val transactionId: String,
     val currency: Currency,
-    val realAmount: Amount,
-    val bonusAmount: Amount,
+    /** The whole settlement, always against the REAL balance — a sportbook bet is staked from
+     *  real money only, so everything it pays back (express bonus included) returns there. */
+    val amount: Amount,
     val credit: Boolean,
     val won: Boolean,
 ) : ICommand<SettleBetResult>

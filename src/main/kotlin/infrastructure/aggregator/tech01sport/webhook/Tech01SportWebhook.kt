@@ -187,8 +187,12 @@ class Tech01SportWebhook(
                                 currencyCode = session.currency.value,
                                 typeId = WALLET_TYPE_REAL,
                             ),
+                            // Deliberately zero, not the player's real bonus balance. The
+                            // sportbook spends real money only, so advertising a spendable bonus
+                            // wallet invites a stake we would silently fund from real. The entry
+                            // stays in the response because their contract expects both types.
                             GetUserWalletDto(
-                                amount = Tech01SportMoney.fromAmount(balance.bonusAmount),
+                                amount = Tech01SportMoney.fromAmount(Amount.ZERO),
                                 currencyCode = session.currency.value,
                                 typeId = WALLET_TYPE_BONUS,
                             ),
@@ -310,8 +314,11 @@ class Tech01SportWebhook(
                             externalId = item.bet.id.toString(),
                             transactionId = item.transactionId.toString(),
                             currency = Currency(item.currencyCode),
-                            realAmount = Tech01SportMoney.toAmount(item.amount),
-                            bonusAmount = item.bonusAmount?.let { Tech01SportMoney.toAmount(it) } ?: Amount.ZERO,
+                            // Their `bonusAmount` is the accumulator-bonus SHARE OF THE WINNINGS,
+                            // not a credit to the player's bonus wallet. The stake came off real,
+                            // so the whole payout goes back to real — see ProcessBetUsecase.settle.
+                            amount = Tech01SportMoney.toAmount(item.amount) +
+                                (item.bonusAmount?.let { Tech01SportMoney.toAmount(it) } ?: Amount.ZERO),
                             credit = !Tech01SportMoney.isNegative(item.amount),
                             won = item.bet.status == Tech01SportBetMapper.STATUS_WIN,
                         )

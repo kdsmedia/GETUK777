@@ -103,13 +103,18 @@ class ProcessBetUsecase(
      * status + winAmount. A clawback the balance cannot fully cover withdraws what is
      * available and reports the shortfall as Betting-managed [SettleBetResult.debt] —
      * the aggregator stores it and subtracts it from the bet's future payouts itself.
+     *
+     * [amount] moves against the REAL balance and nothing else. A sportbook stake is taken from
+     * real money ([place] passes no bonus), so every payout returns there — including the parts
+     * the aggregator itemises separately, such as an accumulator bonus. Splitting a payout onto
+     * the bonus wallet also broke reversal: a clawback drains real, so a player kept the bonus
+     * half of a win while the real half was taken back.
      */
     suspend fun settle(
         externalId: String,
         transactionId: String,
         currency: Currency,
-        realAmount: Amount,
-        bonusAmount: Amount,
+        amount: Amount,
         credit: Boolean,
         won: Boolean,
     ): Result<SettleBetResult> = runCatching {
@@ -121,18 +126,18 @@ class ProcessBetUsecase(
 
         var debt = Amount.ZERO
 
-        if (realAmount.value > 0 || bonusAmount.value > 0) {
+        if (amount.value > 0) {
             if (credit) {
-                walletPort.deposit(bet.playerId, settleTx(transactionId), currency, realAmount, bonusAmount)
+                walletPort.deposit(bet.playerId, settleTx(transactionId), currency, amount, Amount.ZERO)
             } else {
-                debt = clawback(bet.playerId, transactionId, currency, required = realAmount + bonusAmount)
+                debt = clawback(bet.playerId, transactionId, currency, required = amount)
             }
         }
 
         val settled = betRepository.save(
             bet.copy(
                 status = if (won) BetStatus.WON else BetStatus.LOST,
-                winAmount = if (won && credit) realAmount + bonusAmount else Amount.ZERO,
+                winAmount = if (won && credit) amount else Amount.ZERO,
                 updatedAt = InstantExt.now(),
             )
         )
@@ -142,25 +147,32 @@ class ProcessBetUsecase(
         SettleBetResult(bet = settled, debt = debt)
     }
 
-    /** Withdraws up to [required], draining the balance if needed; returns the uncovered rest. */
+    /**
+     * Withdraws up to [required] from the REAL balance, draining it if needed; returns the
+     * uncovered rest as debt.
+     *
+     * Bonus money is out of reach here for the same reason it is out of reach everywhere else in
+     * the sportbook: it never funded the stake, so it cannot be seized to reverse the payout. It
+     * used to be drained on the shortfall path, which took a casino bonus to settle a sport debt.
+     */
     private suspend fun clawback(
         playerId: PlayerId,
         transactionId: String,
         currency: Currency,
         required: Amount,
     ): Amount {
-        val balance = walletPort.findBalance(playerId, currency)
+        val real = walletPort.findBalance(playerId, currency).realAmount
 
-        if (balance.total >= required) {
+        if (real >= required) {
             walletPort.withdraw(playerId, settleTx(transactionId), currency, required, Amount.ZERO)
             return Amount.ZERO
         }
 
-        if (balance.total.value > 0) {
-            walletPort.withdraw(playerId, settleTx(transactionId), currency, balance.realAmount, balance.bonusAmount)
+        if (real.value > 0) {
+            walletPort.withdraw(playerId, settleTx(transactionId), currency, real, Amount.ZERO)
         }
 
-        val debt = required - balance.total
+        val debt = required - real
         logger.warn("Clawback not covered: player={} tx={} debt={}", playerId.value, transactionId, debt.value)
         return debt
     }
