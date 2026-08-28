@@ -8,6 +8,12 @@ class Tech01SportbookAdapter(
     private val config: Tech01SportConfig,
 ) : ISportbookPort {
 
+    override suspend fun init(): Map<String, String> = mapOf(
+        "partnerId" to config.partnerId,
+        // Base URL of the Betting System backend the SDK frame talks to.
+        "apiUrl" to config.apiUrl,
+    )
+
     override suspend fun open(session: SportbookSession): Map<String, String> = mapOf(
         "token" to session.token.value,
         "partnerId" to config.partnerId,

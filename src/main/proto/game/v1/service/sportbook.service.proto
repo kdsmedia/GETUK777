@@ -11,9 +11,27 @@ option java_multiple_files = true;
 // Open resolves the single active SPORTBOOK aggregator, mints a session with a
 // one-time public token and returns what the frontend needs to boot the
 // provider SDK. Mirrors `application.command.sportbook.OpenSportbookCommand`.
+//
+// Init is the anonymous half of the same bootstrap: it resolves the active
+// aggregator and returns the SDK init payload (partnerId, apiUrl) with no
+// player and no session — a guest browses the line with exactly this. The
+// aggregator config is the single source of these values; frontends must not
+// duplicate them in their own env.
 // ---------------------------------------------------------------------------
 service SportbookService {
   rpc Open(OpenSportbookCommand) returns (OpenSportbookCommand.Result);
+
+  rpc Init(InitSportbookQuery) returns (InitSportbookQuery.Result);
+}
+
+message InitSportbookQuery {
+  message Result {
+    // Aggregator integration key (e.g. "01TECHSPORT") — tells the frontend which SDK to load.
+    string integration = 1;
+
+    // Aggregator-specific anonymous SDK init payload (e.g. partnerId, apiUrl).
+    map<string, string> data = 2;
+  }
 }
 
 message OpenSportbookCommand {

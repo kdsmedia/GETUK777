@@ -64,6 +64,7 @@ import application.query.sportbook.FindActiveSportbookAggregatorQuery
 import application.query.sportbook.FindLastSportbookSessionByPlayerQuery
 import application.query.sportbook.FindSportbookSessionByPrivateTokenQuery
 import application.query.sportbook.FindSportbookSessionQuery
+import application.query.sportbook.InitSportbookQuery
 import application.query.winner.LastWinnerQuery
 import infrastructure.handler.aggregator.BatchAggregatorQueryHandler
 import infrastructure.handler.aggregator.DeleteAggregatorCommandHandler
@@ -122,6 +123,7 @@ import infrastructure.handler.sportbook.FindActiveSportbookAggregatorHandler
 import infrastructure.handler.sportbook.FindLastSportbookSessionByPlayerHandler
 import infrastructure.handler.sportbook.FindSportbookSessionByPrivateTokenHandler
 import infrastructure.handler.sportbook.FindSportbookSessionHandler
+import infrastructure.handler.sportbook.InitSportbookHandler
 import infrastructure.handler.sportbook.OpenSportbookHandler
 import infrastructure.handler.wheel.CreditWheelHandler
 import infrastructure.handler.wheel.PayoutWheelHandler
@@ -215,6 +217,7 @@ val busModule = module {
                 FindSportbookSessionByPrivateTokenQuery::class.java to get<FindSportbookSessionByPrivateTokenHandler>(),
                 FindLastSportbookSessionByPlayerQuery::class.java to get<FindLastSportbookSessionByPlayerHandler>(),
                 FindActiveSportbookAggregatorQuery::class.java to get<FindActiveSportbookAggregatorHandler>(),
+                InitSportbookQuery::class.java to get<InitSportbookHandler>(),
             ),
         )
     }

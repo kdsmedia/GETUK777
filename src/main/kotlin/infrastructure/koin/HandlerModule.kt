@@ -57,6 +57,7 @@ import infrastructure.handler.sportbook.FindActiveSportbookAggregatorHandler
 import infrastructure.handler.sportbook.FindLastSportbookSessionByPlayerHandler
 import infrastructure.handler.sportbook.FindSportbookSessionByPrivateTokenHandler
 import infrastructure.handler.sportbook.FindSportbookSessionHandler
+import infrastructure.handler.sportbook.InitSportbookHandler
 import infrastructure.handler.sportbook.OpenSportbookHandler
 import infrastructure.handler.wheel.CreditWheelHandler
 import infrastructure.handler.wheel.PayoutWheelHandler
@@ -172,6 +173,7 @@ val handlerModule = module {
     single { FindSportbookSessionByPrivateTokenHandler(sessionRepository = get()) }
     single { FindLastSportbookSessionByPlayerHandler(sessionRepository = get()) }
     single { FindActiveSportbookAggregatorHandler(aggregatorRepository = get()) }
+    single { InitSportbookHandler(aggregatorRepository = get(), aggregatorFactory = get()) }
     single { ExchangeSportbookTokenHandler(sessionRepository = get()) }
     single { OpenSportbookHandler(openSportbookUsecase = get()) }
 

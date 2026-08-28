@@ -699,6 +699,7 @@ Opens the sportbook for a player. Resolves the single active `SPORTBOOK` aggrega
 | RPC | Request | Response | Description |
 |-----|---------|----------|-------------|
 | `Open` | `OpenSportbookCommand` | `OpenSportbookCommand.Result` | Open a sportbook session for a player |
+| `Init` | `InitSportbookQuery` | `InitSportbookQuery.Result` | Anonymous SDK bootstrap — no player, no session |
 
 ### Open
 
@@ -717,6 +718,21 @@ message OpenSportbookCommand.Result {
 ```
 
 Errors: `NOT_FOUND` when no active `SPORTBOOK` aggregator exists; `INVALID_ARGUMENT` for a sportbook-incapable aggregator (`SportbookNotSupportedException`).
+
+### Init
+
+```protobuf
+// Request
+message InitSportbookQuery {}
+
+// Response
+message InitSportbookQuery.Result {
+  string integration = 1;           // Aggregator integration key (e.g. "01TECHSPORT") — which SDK to load
+  map<string, string> data = 2;     // Anonymous SDK init payload (e.g. partnerId, apiUrl)
+}
+```
+
+The anonymous half of the sportbook bootstrap: resolves the active `SPORTBOOK` aggregator and returns the SDK init payload without a player or session — a guest browses the line with exactly this. The aggregator config is the single source of these values; frontends must not duplicate them in their own env. Errors: same as `Open`.
 
 ---
 
