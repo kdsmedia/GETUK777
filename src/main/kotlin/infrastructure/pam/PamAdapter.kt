@@ -32,6 +32,7 @@ class PamAdapter(
         return IPlayerPort.Player(
             username = if (username.isNullOrBlank()) playerId.value else username,
             profilePic = avatar,
+            country = user.profile.country.takeIf { it.isNotBlank() },
         )
     }
 }

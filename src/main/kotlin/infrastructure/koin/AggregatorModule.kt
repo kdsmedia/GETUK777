@@ -14,7 +14,7 @@ val aggregatorModule = module {
     single { PragmaticWebhook(bus = get(), currencyPort = get()) }
     single { TongameWebhook(bus = get(), playerPort = get(), walletPort = get()) }
     single { GamingFlowWebhook(bus = get(), currencyPort = get(), guardPort = get()) }
-    single { Tech01SportWebhook(bus = get(), walletPort = get()) }
+    single { Tech01SportWebhook(bus = get(), walletPort = get(), playerPort = get()) }
     single { GambutsoftWebhook(bus = get(), guardPort = get()) }
     single { SkylineWebhook(bus = get(), currencyPort = get(), guardPort = get()) }
 }

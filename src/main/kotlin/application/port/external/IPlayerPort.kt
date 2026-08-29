@@ -15,5 +15,6 @@ interface IPlayerPort {
     data class Player(
         val username: String,
         val profilePic: String?,
+        val country: String? = null,
     )
 }

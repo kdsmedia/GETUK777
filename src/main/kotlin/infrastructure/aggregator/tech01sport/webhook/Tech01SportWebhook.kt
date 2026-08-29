@@ -9,6 +9,7 @@ import application.command.sportbook.ExchangeSportbookTokenCommand
 import application.command.wheel.CreditWheelCommand
 import application.command.wheel.PayoutWheelCommand
 import application.command.wheel.RollbackWheelCommand
+import application.port.external.IPlayerPort
 import application.port.external.IWalletPort
 import application.query.sportbook.FindActiveSportbookAggregatorQuery
 import application.query.sportbook.FindLastSportbookSessionByPlayerQuery
@@ -71,6 +72,7 @@ import org.slf4j.LoggerFactory
 class Tech01SportWebhook(
     private val bus: Bus,
     private val walletPort: IWalletPort,
+    private val playerPort: IPlayerPort,
 ) {
 
     private val logger = LoggerFactory.getLogger(Tech01SportWebhook::class.java)
@@ -138,7 +140,10 @@ class Tech01SportWebhook(
                     description = "Success",
                     data = CreatePrivateTokenData(
                         privateToken = privateToken,
-                        userData = UserDataDto(id = session.playerId.value),
+                        userData = UserDataDto(
+                            id = session.playerId.value,
+                            country = playerCountry(session.playerId),
+                        ),
                     ),
                 )
             )
@@ -180,7 +185,10 @@ class Tech01SportWebhook(
                     code = Tech01SportCode.SUCCESS,
                     description = "Success",
                     data = GetUserData(
-                        userData = UserDataDto(id = body.userId),
+                        userData = UserDataDto(
+                            id = body.userId,
+                            country = playerCountry(session.playerId),
+                        ),
                         wallets = listOf(
                             GetUserWalletDto(
                                 amount = Tech01SportMoney.fromAmount(balance.realAmount),
@@ -509,6 +517,11 @@ class Tech01SportWebhook(
 
     private suspend fun activeConfig(): Tech01SportConfig =
         Tech01SportConfig(bus(FindActiveSportbookAggregatorQuery).config)
+
+    /** The Betting System sorts matches by the player's geo, so `country` must be filled — but a
+     *  PAM hiccup must not fail the login path, so absence degrades to the empty string. */
+    private suspend fun playerCountry(playerId: PlayerId): String =
+        runCatching { playerPort.findPlayer(playerId).country }.getOrNull().orEmpty()
 
     private fun verified(call: ApplicationCall, rawBody: String, config: Tech01SportConfig): Boolean =
         Tech01SportSignatureVerifier.verify(call.request.headers[SIGNATURE_HEADER], rawBody, config.secretKeys)
