@@ -361,8 +361,9 @@ class GamingFlowWebhookTest : FunSpec({
         }
     }
 
-    test("a charged free round replaces the bet and still pays the win") {
+    test("a charged free round records its stake as a spin of the grant") {
         coEvery { bus(ofType<ChargeFreespinCommand>()) } returns freespin(remaining = 4)
+        coEvery { bus(ofType<PlaceSpinCasinoSessionCommand>()) } returns balance
         coEvery { bus(ofType<SettleSpinCasinoSessionCommand>()) } returns balance
 
         runWebhook { client ->
@@ -378,10 +379,47 @@ class GamingFlowWebhookTest : FunSpec({
             result["freeroundWasCharged"]!!.jsonPrimitive.boolean shouldBe true
         }
 
-        // The stake is not taken — that is what "free" means — but the win is credited as usual,
-        // and both spins carry the grant so the round is identifiable as a bonus round.
-        coVerify(exactly = 0) { bus(ofType<PlaceSpinCasinoSessionCommand>()) }
+        // The stake is RECORDED, not taken — keeping it off the wallet is ProcessSpinUsecase's job.
+        // Dropping the spin instead would leave the promotion's owner with no sign a round was spent.
+        coVerify(exactly = 1) { bus(match<PlaceSpinCasinoSessionCommand> { it.freespinId == "bonus-1" }) }
         coVerify(exactly = 1) { bus(match<SettleSpinCasinoSessionCommand> { it.freespinId == "bonus-1" }) }
+    }
+
+    test("the collect that pays a free round carries the grant even though it charges nothing") {
+        coEvery { bus(ofType<SettleSpinCasinoSessionCommand>()) } returns balance
+
+        runWebhook { client ->
+            client.call(
+                method = "withdrawAndDeposit",
+                params = """{"withdraw":0,"deposit":1000,"currency":"UAH","transactionRef":"ref-collect",
+                     "gameRoundRef":"r-fs","bonusId":"bonus-1","chargeFreerounds":0,"freeround":true,
+                     "sessionAlternativeId":"token_abc"}""",
+            )
+        }
+
+        // Only the FIRST call of a free round charges one; its tumbles and this collect say
+        // `freeround: true` instead. Reading the charge as the marker settles the win as ordinary
+        // money on the real balance and tells the promotion's owner nothing.
+        coVerify(exactly = 0) { bus(ofType<ChargeFreespinCommand>()) }
+        coVerify(exactly = 1) { bus(match<SettleSpinCasinoSessionCommand> { it.freespinId == "bonus-1" }) }
+    }
+
+    test("a paid spin inside a bonus session is still an ordinary spin") {
+        coEvery { bus(ofType<PlaceSpinCasinoSessionCommand>()) } returns balance
+
+        runWebhook { client ->
+            client.call(
+                method = "withdrawAndDeposit",
+                params = """{"withdraw":25,"deposit":0,"currency":"UAH","transactionRef":"ref-paid",
+                     "gameRoundRef":"r-paid","bonusId":"bonus-1","chargeFreerounds":0,
+                     "sessionAlternativeId":"token_abc"}""",
+            )
+        }
+
+        // `bonusId` rides along on every call once a session was opened against a grant, so it cannot
+        // be the marker on its own: without a charge and without `freeround` the stake is the
+        // player's own and has to be taken.
+        coVerify(exactly = 1) { bus(match<PlaceSpinCasinoSessionCommand> { it.freespinId == null }) }
     }
 
     test("a free round the grant cannot cover is refused, not silently billed") {

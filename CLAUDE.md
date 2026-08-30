@@ -252,6 +252,16 @@ The registry picks it up through `getAll<AggregatorAdapterProvider>()` at boot �
 
 See `.claude/skills/add-aggregator.md` for the step-by-step guide. See `.claude/agents/seed-collections.md` for the collection seeding agent.
 
+**GamingFlow free rounds**: ONE free round arrives as SEVERAL `withdrawAndDeposit` calls sharing a
+`gameRoundRef` — the spin that charges a round (`chargeFreerounds: 1`, a non-zero `withdraw`), its
+tumbles, and the collect that pays the win (`deposit > 0`). Only the FIRST carries the charge; the rest
+say `freeround: true`, and `bonusId` rides on all of them, including plain `getBalance`. So the marker
+for "this call belongs to the grant" is `chargeFreerounds > 0 || freeround`, never `bonusId` alone (a
+paid spin in a bonus session carries it too and its stake must still be taken) and never the charge
+alone (that loses the win, which then settles as ordinary money). The charged spin IS recorded as a
+PLACE carrying the grant — keeping it off the wallet is `ProcessSpinUsecase`'s job, and dropping the
+spin instead would leave the promotion's owner with no sign a round was spent.
+
 **Pragmatic specifics**: Uses MD5 hash authentication (sorted params + secret key), form-encoded POST requests, GET webhook endpoints at `/pragmatic/*.html`, and decimal string amounts (converted to/from minor units via ×100).
 
 **Pateplay specifics**: Static game catalog (no game discovery API), launch URLs constructed locally (no API call), HMAC-SHA256 authentication for freespin API, no webhook handler (wallet callback not yet implemented).

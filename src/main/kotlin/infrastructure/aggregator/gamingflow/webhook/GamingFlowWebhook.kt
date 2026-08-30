@@ -197,14 +197,24 @@ class GamingFlowWebhook(
         // A round id is optional on the wire; the transaction ref keeps single-shot rounds distinct.
         val roundId = params.gameRoundRef ?: params.transactionRef
 
-        // Per the provider's own order of operations: charging free rounds REPLACES the bet, it
-        // does not precede it. A win is still paid either way.
         val charged = chargeFreerounds(session, params)
-        val freespinId = charged?.referenceId?.value
+
+        // ONE free round arrives as SEVERAL calls sharing a `gameRoundRef`: the spin that charges a
+        // round, its tumbles, and the collect that pays the win — and only the first carries
+        // `chargeFreerounds`. The rest say `freeround: true`, and `bonusId` is on all of them. Reading
+        // the CHARGE as the marker loses the win: it settles as ordinary money on the real balance,
+        // and the promotion that owes it never hears about it.
+        //
+        // A paid spin inside a bonus session carries neither flag, so it stays an ordinary spin and
+        // its stake is still taken.
+        val freespinId = if (charged != null || params.freeround) params.bonusId?.takeIf { it.isNotBlank() } else null
 
         var balance: PlayerBalance? = null
 
-        if (charged == null && params.withdraw > 0) {
+        // The stake of a free round is recorded, not taken: ProcessSpinUsecase keeps a freespin PLACE
+        // off the wallet. Skipping the spin entirely would be cheaper here and wrong everywhere else —
+        // it is this event that tells the promotion's owner a round was spent.
+        if (params.withdraw > 0) {
             balance = bus(
                 PlaceSpinCasinoSessionCommand(
                     session = session,

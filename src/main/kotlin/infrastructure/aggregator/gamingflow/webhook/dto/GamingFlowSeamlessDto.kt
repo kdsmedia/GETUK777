@@ -54,6 +54,13 @@ data class WithdrawAndDepositParams(
     val reason: String? = null,
 
     val chargeFreerounds: Int? = null,
+
+    /**
+     * Set on the calls of a free round that do NOT charge one — its tumbles and the collect that pays
+     * the win. Together with a charging call it is what marks a call as belonging to the grant named
+     * by [bonusId]; `chargeFreerounds` alone marks only the first of them.
+     */
+    val freeround: Boolean = false,
 )
 
 @Serializable
