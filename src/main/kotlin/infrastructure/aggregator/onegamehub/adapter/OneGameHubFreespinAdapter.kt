@@ -8,12 +8,18 @@ import infrastructure.aggregator.onegamehub.client.OneGameHubHttpClient
 import infrastructure.aggregator.onegamehub.client.dto.CancelFreespinDto
 import infrastructure.aggregator.onegamehub.client.dto.CreateFreespinDto
 import kotlinx.datetime.LocalDateTime
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 class OneGameHubFreespinAdapter(
     config: OneGameHubConfig,
 ) : IFreespinPort {
 
     private val client = OneGameHubHttpClient(config)
+
+    private companion object {
+        const val NANO_PER_UNIT = 1_000_000_000L
+    }
 
     override suspend fun getPreset(gameSymbol: String): Map<String, Any> {
         val response = client.listGames()
@@ -41,7 +47,7 @@ class OneGameHubFreespinAdapter(
         spinAmount: Long,
         spinCount: Int
     ) {
-        val bet = spinAmount.toInt()
+        val bet = spinAmount.toProviderBet()
         val number = spinCount
         val lineNumber = (presetValue["paylines"] as? Number)?.toInt() ?: 0
 
@@ -61,6 +67,18 @@ class OneGameHubFreespinAdapter(
 
         check(response.success) { "OneGameHub createFreespin failed with ${response.describe()}" }
     }
+
+    /**
+     * The stake reaches us in the wallet's system unit (nano) and OneGameHub counts money in whole
+     * currency units — the same units its webhook posts back as a decimal `amount`. Sending nano
+     * straight through is what `toInt()` used to do: `bet` went out as 2 000 000 000 for a UAH 2 spin,
+     * and the provider accepts it without a word, so nothing downstream catches it.
+     *
+     * `bet` is an integer on their wire, so a sub-unit stake cannot be expressed at all and rounds
+     * down to zero; that is the provider's contract, not a rounding choice made here.
+     */
+    private fun Long.toProviderBet(): Int =
+        BigDecimal(this).divide(BigDecimal(NANO_PER_UNIT)).setScale(0, RoundingMode.DOWN).toInt()
 
     override suspend fun cancel(referenceId: String) {
         val payload = CancelFreespinDto(id = referenceId)
