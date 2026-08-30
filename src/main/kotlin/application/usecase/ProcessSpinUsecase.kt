@@ -16,11 +16,20 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
 
+/**
+ * [freespinToPayout] decides WHO settles a free round's winnings. On (the default) the win is
+ * credited to the player's real balance right here, the way it always was. Off, no spin of a free
+ * round touches the wallet at all — the win reaches the outside only as a `SpinEvent`, and whoever
+ * owns the promotion (crm, which already tracks `settleAmount` on the grant) pays it out when the
+ * grant closes. That is the point of the switch: a bonus must be settled once, by one owner, and
+ * an installation picks which one.
+ */
 class ProcessSpinUsecase(
     private val spinRepository: ISpinRepository,
     private val eventPublisher: IEventPublisherPort,
     private val walletPort: IWalletPort,
     private val playerLimitPort: IPlayerLimitPort,
+    private val freespinToPayout: Boolean,
 ) {
 
     private val logger = LoggerFactory.getLogger(ProcessSpinUsecase::class.java)
@@ -32,10 +41,11 @@ class ProcessSpinUsecase(
         )
 
         // A free round's BET costs nothing, so it neither checks nor moves the balance. Its
-        // WINNINGS are ordinary money and go through the normal path — skipping those too would
-        // mean the player never receives what the bonus paid out.
-        val result = if (spin.round.freespinId != null && spin.isPlace) {
-            freeBet(spin)
+        // WINNINGS are ordinary money: with [freespinToPayout] they go through the normal path
+        // and land on the wallet here; without it the whole round stays off the wallet and the
+        // promotion's owner settles it, so the player is never paid twice for the same spin.
+        val result = if (spin.round.freespinId != null && (spin.isPlace || !freespinToPayout)) {
+            offWallet(spin)
         } else {
             process(spin)
         }
@@ -67,7 +77,12 @@ class ProcessSpinUsecase(
         }
     }
 
-    private suspend fun freeBet(spin: Spin): SpinResult {
+    /**
+     * Records the spin and answers with the balance as it stands. The spin keeps its `amount` — the
+     * bet or the win — while its real/bonus split stays zero, which is what says "no money moved
+     * here" to everything downstream, the event included.
+     */
+    private suspend fun offWallet(spin: Spin): SpinResult {
         val balance = walletPort.findBalance(
             playerId = spin.round.session.playerId,
             currency = spin.round.session.currency,

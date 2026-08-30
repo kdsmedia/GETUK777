@@ -42,6 +42,7 @@ class SpinIdempotencyTest : FunSpec({
         playerLimitPort = mockk<IPlayerLimitPort>(relaxed = true).also {
             coEvery { it.getMaxPlaceAmount(any()) } returns null
         },
+        freespinToPayout = true,
     )
 
     test("a PLACE that loses the unique-constraint race answers with the settled balance") {

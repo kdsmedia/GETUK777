@@ -110,7 +110,8 @@ Boot sequence (each step is a `configure*()` extension function on `Application`
 7. `configureGrpc()` — launches gRPC server on separate coroutine (IO dispatcher) with 6 services (defined in `api/grpc/GrpcModule.kt`)
 8. `configureConsumers()` — starts RabbitMQ event consumers
 
-Environment variables: `HTTP_PORT` (default 8080), `GRPC_PORT` (default 5050).
+Environment variables: `HTTP_PORT` (default 8080), `GRPC_PORT` (default 5050),
+`FREESPIN_TO_PAYOUT` (default `true` — see the spin lifecycle below).
 
 ### Sync Job (SyncJob.kt)
 
@@ -139,7 +140,13 @@ That's it — `BusModule` never needs to be edited.
 
 1. **OpenCasinoSessionUsecase** — aggregator creates game adapter → gets launch URL via `getLaunchUrl(session, lobbyUrl)` → saves session → publishes `CasinoSessionEvent(session)` via `IEventPublisherPort`
 2. **ProcessSpinUsecase** — for each spin (PLACE/SETTLE/ROLLBACK):
-   - Freespin rounds skip balance calculation entirely
+   - A freespin BET skips balance calculation entirely — a free round costs nothing
+   - A freespin WIN depends on **`FREESPIN_TO_PAYOUT`** (env, default `true`): on, it is credited
+     to the real balance here like any win; off, NO spin of a free round touches the wallet and the
+     win reaches the outside only as a `SpinEvent`, for whoever owns the promotion to settle. crm
+     already tracks `settleAmount` on the grant, so on prematch this is **off** — a bonus is settled
+     once, by one owner. The spin row still carries the full `amount`; only its real/bonus split is
+     zero, which is what says "no money moved here" downstream
    - Regular rounds: check player limits → calculate balance via `SpinBalanceCalculator` → withdraw/deposit via `IWalletPort` → save spin → publish `SpinEvent(spin)` (lifecycle carried by `Spin.type`, not separate event types)
 3. **FinishCasinoRoundUsecase** — `round.finish()` returns the finished `CasinoRound` → save → publish `CasinoRoundEvent(round)` (with `finished = true`)
 

@@ -19,6 +19,9 @@ val usecaseModule = module {
             eventPublisher = get(),
             walletPort = get(),
             playerLimitPort = get(),
+            // On by default: an installation that has nobody else settling free rounds must keep
+            // paying them, and a missing variable must not quietly stop paying players.
+            freespinToPayout = System.getenv("FREESPIN_TO_PAYOUT")?.toBooleanStrictOrNull() ?: true,
         )
     }
     single {
