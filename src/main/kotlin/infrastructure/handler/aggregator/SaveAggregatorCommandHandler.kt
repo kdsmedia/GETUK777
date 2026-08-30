@@ -15,12 +15,14 @@ class SaveAggregatorCommandHandler(
             integration = command.integration,
             type = command.type,
             config = command.config,
+            isProxy = command.isProxy,
             active = command.active,
         ) ?: Aggregator(
             identity = command.identity,
             integration = command.integration,
             type = command.type,
             config = command.config,
+            isProxy = command.isProxy,
             active = command.active,
         )
 

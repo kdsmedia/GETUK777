@@ -10,6 +10,7 @@ import domain.model.CasinoSession
 import domain.repository.IAggregatorRepository
 import domain.repository.IFreespinRepository
 import domain.repository.ICasinoSessionRepository
+import domain.service.CasinoGameProxy
 import domain.util.ext.InstantExt
 import org.slf4j.LoggerFactory
 
@@ -62,6 +63,17 @@ class OpenCasinoSessionUsecase(
 
         val launch = gameAdapter.getLaunchUrl(savedSession, lobbyUrl, freespin)
 
+        // Hand the player our own host instead of the provider's when the aggregator asks for it.
+        // Only this first URL is rewritten here — everything the game requests afterwards is
+        // rewritten by the proxy itself, in the response bodies, as the browser asks for it.
+        val launchUrl = if (aggregator.isProxy) {
+            CasinoGameProxy.proxify(launch.url).also {
+                logger.info("CasinoSession launches through the proxy: aggregator={}", aggregator.identity.value)
+            }
+        } else {
+            launch.url
+        }
+
         // Providers that mint their own session id report it back here. Persisting it lets an
         // inbound webhook resolve the session by the provider's identifier as well as by ours.
         val updatedSession = if (launch.externalToken != null && launch.externalToken != savedSession.externalToken) {
@@ -83,7 +95,7 @@ class OpenCasinoSessionUsecase(
 
         logger.info("CasinoSession opened: id={} player={}", updatedSession.id, updatedSession.playerId.value)
 
-        Response(session = updatedSession, launchUrl = launch.url)
+        Response(session = updatedSession, launchUrl = launchUrl)
     }.onFailure { e ->
         if (e !is DomainException) {
             logger.error(

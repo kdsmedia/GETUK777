@@ -35,6 +35,7 @@ class AggregatorGrpcService(
                 integration = request.integration,
                 type = request.type.toDomain(),
                 config = if (request.hasConfig()) request.config.toDomainMap() else emptyMap(),
+                isProxy = request.isProxy,
                 active = request.active,
             )
         )

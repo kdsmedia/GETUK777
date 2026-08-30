@@ -23,4 +23,7 @@ message AggregatorDto {
   bool active = 4;
 
   AggregatorTypeDto type = 5;
+
+  // Serve this aggregator's games through our own proxy domain instead of the provider's.
+  bool is_proxy = 6;
 }

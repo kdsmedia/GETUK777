@@ -25,6 +25,7 @@ class AggregatorRepositoryImpl : IAggregatorRepository {
             it[integration] = aggregator.integration
             it[type] = aggregator.type
             it[config] = aggregator.config.toJsonObject()
+            it[isProxy] = aggregator.isProxy
             it[active] = aggregator.active
         }
 

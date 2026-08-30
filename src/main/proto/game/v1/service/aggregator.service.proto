@@ -46,6 +46,10 @@ message SaveAggregatorCommand {
 
   // Product type. UNSPECIFIED is treated as CASINO for backward compatibility.
   AggregatorTypeDto type = 5;
+
+  // Serve this aggregator's games through our own proxy domain instead of the provider's.
+  // Save is a full upsert, so an omitted field reads as false and turns proxying OFF.
+  bool is_proxy = 6;
 }
 
 message DeleteAggregatorCommand {

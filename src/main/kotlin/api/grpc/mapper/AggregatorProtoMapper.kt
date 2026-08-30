@@ -17,6 +17,7 @@ object AggregatorProtoMapper {
         integration = this@toProto.integration
         type = this@toProto.type.toProto()
         config = this@toProto.config.toProtoStruct()
+        isProxy = this@toProto.isProxy
         active = this@toProto.active
     }
 

@@ -15,5 +15,6 @@ object AggregatorTable : LongIdTable("aggregators") {
         { Json.encodeToString(JsonObject.serializer(), it) },
         { Json.decodeFromString(JsonObject.serializer(), it) }
     )
+    val isProxy = bool("is_proxy").default(false)
     val active = bool("active")
 }

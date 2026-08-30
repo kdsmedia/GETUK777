@@ -12,5 +12,6 @@ class AggregatorEntity(id: EntityID<Long>) : LongEntity(id) {
     var integration by AggregatorTable.integration
     var type by AggregatorTable.type
     var config by AggregatorTable.config
+    var isProxy by AggregatorTable.isProxy
     var active by AggregatorTable.active
 }

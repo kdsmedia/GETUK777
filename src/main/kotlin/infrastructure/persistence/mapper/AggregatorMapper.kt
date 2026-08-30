@@ -21,6 +21,7 @@ object AggregatorMapper {
         integration = integration,
         type = type,
         config = config.toMap(),
+        isProxy = isProxy,
         active = active,
     )
 
@@ -29,6 +30,7 @@ object AggregatorMapper {
         integration = this[AggregatorTable.integration],
         type = this[AggregatorTable.type],
         config = this[AggregatorTable.config].toMap(),
+        isProxy = this[AggregatorTable.isProxy],
         active = this[AggregatorTable.active],
     )
 

@@ -1,0 +1,37 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/nekzabirov/Documents/NekGaming/1638/engine-apps/casino-engine/.codex/hooks/track-edit.sh'",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "'/Users/nekzabirov/Documents/NekGaming/1638/engine-apps/casino-engine/.codex/hooks/track-proto-edit.sh'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/nekzabirov/Documents/NekGaming/1638/engine-apps/casino-engine/.codex/hooks/stop-init.sh'",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "'/Users/nekzabirov/Documents/NekGaming/1638/engine-apps/casino-engine/.codex/hooks/stop-proto-api.sh'",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -7,6 +7,7 @@ import domain.vo.Identity
 data class SaveAggregatorCommand(
     val identity: Identity,
     val config: Map<String, Any>,
+    val isProxy: Boolean,
     val active: Boolean,
     val integration: String,
     val type: AggregatorType,
