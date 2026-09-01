@@ -2,210 +2,211 @@
 
 # Casino Engine
 
-**Open-source game aggregator core for iGaming platforms.**
+**Inti agregator game sumber terbuka untuk platform iGaming.**
 
-The game-mechanics engine powering casinos on [1638.cloud](https://1638.cloud) —
-released under Apache 2.0 so any operator can audit, fork, or drop it into
-their existing stack.
+Mesin mekanika game yang menggerakkan kasino di [1638.cloud](https://1638.cloud) —
+dirilis di bawah lisensi Apache 2.0 sehingga operator mana pun bisa mengaudit, fork, atau menaruhnya langsung ke
+stack yang sudah ada.
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-D4AF37.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-7F52FF.svg)](https://kotlinlang.org)
 [![JVM](https://img.shields.io/badge/JVM-21-0A2818.svg)](https://openjdk.org)
 [![Built in Malta](https://img.shields.io/badge/Built%20in-Malta-D4AF37.svg)](https://1638.cloud)
 
-[Website](https://1638.cloud) · [Live on moonbet.casino](https://moonbet.casino) · [Live on 2k.ua](https://2k.ua) · [Report an issue](https://github.com/nekzabirov/IGaming-Game-Engine/issues/new/choose)
+[Website](https://1638.cloud) · [Live di moonbet.casino](https://moonbet.casino) · [Live di 2k.ua](https://2k.ua) · [Laporkan masalah](https://github.com/nekzabirov/IGaming-Game-Engine/issues/new/choose)
 
 </div>
 
 ---
 
-## What this is
+## Apa ini
 
-Casino Engine is a production-grade Kotlin microservice that handles the
-**game side of an iGaming platform**: provider/aggregator integrations,
-session orchestration, betting logic, freespin mechanics, and round
-lifecycle. It runs in production on [moonbet.casino](https://moonbet.casino)
-and [2k.ua](https://2k.ua).
+Casino Engine adalah microservice Kotlin kelas produksi yang menangani
+**sisi game dari sebuah platform iGaming**: integrasi provider/aggregator,
+orkestrasi sesi, logika taruhan, mekanika freespin, dan siklus
+putaran (round). Engine ini berjalan di produksi pada [moonbet.casino](https://moonbet.casino)
+dan [2k.ua](https://2k.ua).
 
-It's the **only open-source module** of the [1638.cloud](https://1638.cloud)
-platform — the other seven engines (PAM, Wallet, Payment, Risk, Engagement,
-Intelligence, CMS) are proprietary. Operators can use Casino Engine standalone
-through custom adapters, or run it as part of the full 1638.cloud white-label
-platform.
+Ini adalah **satu-satunya modul sumber terbuka** dari platform [1638.cloud](https://1638.cloud) —
+tujuh engine lainnya(PAM, Wallet, Payment, Risk, Engagement,
+Intelligence, CMS) bersifat proprietary. Operator bisa memakai Casino Engine berdiri sendiri
+lewat adaptor kustom, atau menjalankannya sebagai bagian dari platform white-label
+1638.cloud yang lengkap.
 
-> **Why open-source?** Operators deserve to see the code that handles their
-> money flow. Aggregator integrations should be auditable. Game session logic
-> should not be a black box. Every line is on GitHub.
+> **Kenapa sumber terbuka??** Operator berhak melihat kode yang menangani
+> aliran uang mereka. Integrasi aggregator harus bisa diaudit. Logika sesi game.
+> tidak boleh menjadi kotak hitam. Setiap baris ada di GitHub.
 
 ---
 
-## Who this is for
+## Untuk siapa ini
 
-| You are... | What this gives you |
+| Kamu... | Yang kamu dapat |
 | --- | --- |
-| **A casino operator** running your own platform | A production-grade aggregator integration layer you can drop into your stack. No vendor lock-in, no rev share, no licence fees. |
-| **A platform engineer** evaluating iGaming infrastructure | A reference implementation of session, bet, round, and freespin mechanics in Kotlin/Ktor with hexagonal architecture. |
-| **A startup** thinking about launching a casino | A way to validate the technical model before committing. When you're ready to go live, [1638.cloud](https://1638.cloud) handles the licence, payments, KYC, and the rest. |
+| **Operator kasino** yang menjalankan platform sendiri | Lapisan integrasi aggregator kelas produksi yang bisa langsung kamu pasang ke stack-mu. Tanpa vendor lock-in, tanpa bagi hasil, tanpa biaya lisensi. |
+| **Engineer platform** yang mengevaluasi infrastruktur iGaming | Implementasi referensi mekanika sesi, bet, round, dan freespin dalam Kotlin/Ktor dengan arsitektur hexagonal. |
+| **Startup** yang berencana meluncurkan kasino | Cara untuk memvalidasi model teknis sebelum berkomitmen. Saat kamu siap go-live, [1638.cloud](https://1638.cloud) mengurus lisensi, pembayaran, KYC, dan sisanya. |
 
 ---
 
-## Features
+## Fitur
 
-- **Aggregator integrations** — Pragmatic Play, OneGameHub, Pateplay, with a
-  documented pattern for adding more
-- **Full betting lifecycle** — PLACE, SETTLE, ROLLBACK with idempotency
-  guarantees
-- **Freespin mechanics** — preset retrieval, creation, cancellation
-- **Round management** — first-bet creation, multi-bet round reuse via
-  external ID, finish lifecycle
-- **Event-driven** — RabbitMQ publisher for session, spin, round, and game
-  events
-- **Hexagonal architecture** — clean separation of domain, application,
+- **Integrasi aggregator** — Pragmatic Play, OneGameHub, Pateplay, dengan
+  pola yang terdokumentasi untuk menambah yang lain.
+
+- **Siklus taruhan lengkap** — PLACE, SETTLE, ROLLBACK dengan jaminan
+  idempotensi
+- **Mekanika freespin** — pengambilan preset, pembuatan, pembatalan
+- **Manajemen round** — pembuatan bet pertama, penggunaan ulang round multi-bet via
+  external ID, siklus selesai
+- **Event-driven** — publisher RabbitMQ untuk event sesi, spin, round, dan game
+- **Arsitektur hexagonal** — pemisahan bersih antara domain, application,
   infrastructure
-- **gRPC API** — `game.v1` protocol with 5 services and published client JAR
-- **Pluggable adapters** — Wallet, PlayerLimit, File, Currency, Event ports
-  you implement for your stack
-- **Production-tested** — runs on moonbet.casino and 2k.ua
+- **API gRPC** — protokol `game.v1` dengan 5 service dan JAR klien yang dipublikasikan
+- **Adaptor pluggable** — port Wallet, PlayerLimit, File, Currency, Event
+  yang kamu implementasikan untuk stack-mu
+- **Teruji di produksi** — berjalan di moonbet.casino dan 2k.ua
 
 ---
 
-## Quick start
+## Mulai cepat
 
 ```bash
-# 1. Clone
+# 1. Klone
 git clone https://github.com/nekzabirov/IGaming-Game-Engine.git
 cd IGaming-Game-Engine
 
-# 2. Start infrastructure
+# 2. Jalankan infrastruktur
 docker-compose up -d postgres rabbitmq redis minio minio-init
 
-# 3. Configure
+# 3. Konfigurasi
 cp .env.example .env
 
-# 4. Run
+# 4. Jalankan
 ./gradlew run                  # HTTP :8080, gRPC :5050
 ```
 
-Full setup, integration guides, and operations docs are in [`docs/`](./docs) — see the [Documentation](#documentation) section below.
+Panduan setup lengkap, panduan integrasi, dan dokumentasi operasional ada di [`docs/`](./docs) — lihat bagian [Dokumentasi](#documentation) di bawah.
 
 ---
 
 ## Tech stack
 
-| Component | Choice |
+| Komponen | Pilihan |
 | --- | --- |
-| Language | Kotlin 2.0.21 on JVM 21 |
-| HTTP server | Ktor 3.0 (CIO) |
+| Bahasa | Kotlin 2.0.21 di JVM 21 |
+| Server HTTP | Ktor 3.0 (CIO) |
 | RPC | gRPC + Protobuf |
 | Database | PostgreSQL via Exposed ORM |
 | Messaging | RabbitMQ |
 | Cache | Redis (Lettuce) |
-| Object storage | S3-compatible (MinIO local) |
+| Object storage | Kompatibel S3 (MinIO lokal) |
 | DI | Koin |
 | Build | Gradle (Kotlin DSL) |
 
-Architecture: hexagonal (ports & adapters) with CQRS.
+Arsitektur: hexagonal (ports & adapters) dengan CQRS.
 
 ---
 
-## Documentation
+## Dokumentasi
 
-Technical documentation lives under [`docs/`](./docs):
+Dokumentasi teknis berada di [`docs/`](./docs):
 
-- [Architecture](./docs/ARCHITECTURE.md) — system design, layers, source structure, event flow
-- [Integrations](./docs/INTEGRATIONS.md) — supported aggregators and how to add a new one
-- [Adapters](./docs/ADAPTERS.md) — required adapters (Wallet, PlayerLimit, File, Event, Currency) you implement for production
-- [API](./docs/API.md) — gRPC API reference (`game.v1` package)
-- [Configuration](./docs/CONFIGURATION.md) — environment variables and infrastructure
-- [Errors](./docs/ERRORS.md) — domain exception hierarchy and gRPC status mapping
+- [Arsitektur](./docs/ARCHITECTURE.md) — desain sistem, lapisan, struktur sumber, alur event
+- [Integrasi](./docs/INTEGRATIONS.md) — aggregator yang didukung dan cara menambah yang baru
+- [Adaptor](./docs/ADAPTERS.md) — adaptor wajib (Wallet, PlayerLimit, File, Event, Currency) yang kamu implementasikan untuk produksi
+- [API](./docs/API.md) — referensi API gRPC (`game.v1` package)
+- [Konfigurasi](./docs/CONFIGURATION.md) — variabel lingkungan dan infrastruktur
+- [Error](./docs/ERRORS.md) — hierarki exception domain dan pemetaan status gRPC
 
 ---
 
-## The bigger picture — 1638.cloud platform
+## Gambaran besar — platform 1638.cloud
 
-Casino Engine is one of eight engines that make up the
-[1638.cloud](https://1638.cloud) iGaming platform:
+Casino Engine adalah satu dari delapan engine yang membentuk platform iGaming
+[1638.cloud](https://1638.cloud):
 
 | # | Engine | Status |
 | --- | --- | --- |
-| 01 | **Casino Engine** — game mechanics, provider integrations | **Open-source** (this repo) |
-| 02 | PAM Engine — player accounts, KYC, lifecycle | Proprietary |
-| 03 | Wallet Engine — multi-currency, real-time balance | Proprietary |
-| 04 | Payment Engine — 76+ providers, fiat & crypto | Proprietary |
-| 05 | Risk Engine — anti-fraud, AML, behavioural scoring | Proprietary |
-| 06 | Engagement Engine — bonuses, tournaments, loyalty | Proprietary |
-| 07 | Intelligence Engine — segmentation, churn, LTV | Proprietary |
-| 08 | CMS Engine — content, theming, localisation | Proprietary |
+| 01 | **Casino Engine** — mekanika game, integrasi provider | **Sumber terbuka** (repo ini) |
+| 02 | PAM Engine — akun pemain, KYC, siklus hidup | Proprietary |
+| 03 | Wallet Engine — multi-mata uang, saldo real-time | Proprietary |
+| 04 | Payment Engine — 76+ provider, fiat & kripto | Proprietary |
+| 05 | Risk Engine — anti-penipuan, AML, skor perilaku | Proprietary |
+| 06 | Engagement Engine — bonus, turnamen, loyalitas | Proprietary |
+| 07 | Intelligence Engine — segmentasi, churn, LTV | Proprietary |
+| 08 | CMS Engine — konten, theming, lokalisasi | Proprietary |
 
-Operators can use the full stack as a white-label or turnkey deployment
-under our [Anjouan](https://1638.cloud) master licence, or drop individual
-engines into their existing platform. Casino Engine works in both modes.
+Operator bisa memakai seluruh stack sebagai deployment white-label atau turnkey
+di bawah lisensi master [Anjouan](https://1638.cloud) kami, atau menaruh masing-masing
+engine ke platform yang sudah ada. Casino Engine bekerja di kedua mode tersebut.
 
-**Go-live from contract:** 7 days. **Setup:** from €0 with Founders Circle.
-See [1638.cloud](https://1638.cloud) for full terms.
-
----
-
-## Want to use this in production?
-
-You have three paths:
-
-**1. Run it yourself (free, Apache 2.0).**
-Implement the adapters, host the infrastructure, integrate with your own
-wallet and player systems. The code is yours. We don't charge, we don't
-audit, we don't gatekeep.
-
-**2. Use Casino Engine on the 1638.cloud platform.**
-Drop into our managed stack — we run the infrastructure, you keep the
-flexibility. Useful when you want the open-source engine but not the ops
-burden.
-
-**3. Full white-label on 1638.cloud.**
-Casino Engine plus the other seven engines, plus our Anjouan master
-licence. Live in 7 days. From €0 setup. Contact
-[customer@1638.cloud](mailto:customer@1638.cloud).
+**Go-live sejak kontrak:** 7 hari. **Setup:** mulai €0 dengan Founders Circle.
+Lihat [1638.cloud](https://1638.cloud) untuk syarat lengkap.
 
 ---
 
-## Contributing
+## Mau pakai ini di produksi?
 
-Issues, discussions, and pull requests are welcome. Before contributing,
-please read [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+Ada tiga jalur:
 
-We're especially interested in:
-- New aggregator integration adapters
-- Bug reports from production deployments
-- Performance benchmarks and profiling reports
-- Documentation improvements
+**1. Jalankan sendiri (gratis, Apache 2.0).**
+Implementasikan adaptornya, hosting infrastrukturnya, integrasikan dengan sistem
+wallet dan pemain milikmu. Kodenya milikmu. Kami tidak memungut biaya, tidak
+mengaudit, tidak menghalangi.
 
----
+**2. Pakai Casino Engine di platform 1638.cloud.**
+Masuk ke managed stack kami — kami yang menjalankan infrastrukturnya, kamu tetap
+punya fleksibilitas. Berguna saat kamu menginginkan engine sumber terbuka tetapi tanpa
+beban urusan operasional.
 
-## Security
-
-This is financial infrastructure. If you find a security issue, **do not
-open a public issue** — see [`SECURITY.md`](./SECURITY.md) for responsible
-disclosure.
-
----
-
-## Licence
-
-Apache 2.0 — see [`LICENSE`](./LICENSE).
-
-You can use Casino Engine commercially, modify it, distribute it, and run
-it on any operator platform without paying royalties to 1638.cloud. The
-only requirements are attribution and not using the 1638.cloud trademarks
-without permission.
+**3. White-label penuh di 1638.cloud.**
+Casino Engine plus tujuh engine lainnya, plus lisensi master Anjouan kami.
+Go-live dalam 7 hari. Setup mulai €0. Hubungi
+[customer@1638.cloud](mailto:customer@1638.cloud.
 
 ---
 
-## About 1638.cloud
+## Kontribusi
 
-[1638.cloud](https://1638.cloud) is a B2B iGaming platform built in Malta.
-We provide white-label and turnkey casino infrastructure under our Anjouan
-master licence. We open-source the Casino Engine because game mechanics
-should not be a black box — and because the best way to earn an operator's
-trust is to let them read the code first.
+Issue, diskusi, dan pull request sangat diterima. Sebelum berkontribusi,
+silakan baca [`CONTRIBUTING.md`](./CONTRIBUTING.md.
+
+Kami sangat tertarik pada:
+- Adaptor integrasi aggregator baru
+- Laporan bug dari deployment produksi
+- Benchmark performa dan laporan profiling
+- Perbaikan dokumentasi
+
+---
+
+## Keamanan
+
+Ini adalah infrastruktur keuangan. Jika kamu menemukan masalah keamanan, **jangan
+buka issue publik** — baca [`SECURITY.md`](./SECURITY.md) untuk pengungkapan yang
+bertanggung jawab.
+
+---
+
+## Lisensi
+
+Apache 2.0 — lihat [`LICENSE`](./LICENSE.
+
+Kamu boleh memakai Casino Engine secara komersial, memodifikasinya, mendistribusikannya, dan menjalankannya
+di platform operator mana pun tanpa membayar royalti ke 1638.cloud. Satu-satunya
+
+syarat adalah atribusi dan tidak memakai merek dagang 1638.cloud
+tanpa izin.
+
+---
+
+## Tentang 1638.cloud
+
+[1638.cloud](https://1638.cloud) adalah platform iGaming B2B yang dibangun di Malta.
+Kami menyediakan infrastruktur kasino white-label dan turnkey di bawah
+lisensi master Anjouan kami. Kami membuka sumber kode Casino Engine karena mekanika game.
+tidak seharusnya menjadi kotak hitam — dan karena cara terbaik untuk mendapatkan
+kepercayaan operator adalah membiarkan mereka membaca kodenya lebih dulu.
 
 **Founder:** [Nekbakht Zabirov](https://github.com/nekzabirov)
 **Email:** [customer@1638.cloud](mailto:customer@1638.cloud)
@@ -213,6 +214,6 @@ trust is to let them read the code first.
 
 <div align="center">
 
-— Built for operators who move first —
+— Dibuat untuk operator yang bergerak lebih dulu —
 
 </div>
