@@ -1,5 +1,7 @@
 # AGENTS.md
 
+> **Workflow rule (owner-mandated):** After **every** change or edit to this repository, commit and push the update **immediately** to the `kdsmedia/GETUK777` remote. Do not batch changes or wait for the end of the task — push right after each change.
+
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## What This Is
